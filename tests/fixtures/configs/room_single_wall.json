@@ -1,0 +1,44 @@
+{
+  "schema_version": "1.1",
+  "room": {
+    "name": "alcove",
+    "walls": [
+      {
+        "length": 72,
+        "height": 84,
+        "angle": 0,
+        "name": "back",
+        "depth": 12
+      }
+    ]
+  },
+  "cabinet": {
+    "width": 72,
+    "height": 84,
+    "depth": 12,
+    "material": {
+      "type": "plywood",
+      "thickness": 0.75
+    },
+    "sections": [
+      {
+        "width": 24,
+        "wall": "back",
+        "shelves": 4
+      },
+      {
+        "width": 24,
+        "wall": "back",
+        "shelves": 4
+      },
+      {
+        "width": "fill",
+        "wall": "back",
+        "shelves": 4
+      }
+    ]
+  },
+  "output": {
+    "format": "all"
+  }
+}

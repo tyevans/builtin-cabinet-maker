@@ -1,0 +1,29 @@
+[project]
+name = "builtin-cabinets-and-shelves"
+version = "0.1.0"
+description = "Generate shelves and built-in cabinets from wall dimensions"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "numpy-stl>=3.2.0",
+    "typer>=0.21.0",
+    "pydantic>=2.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+]
+
+[project.scripts]
+cabinets = "cabinets.cli.main:app"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+"cabinets.application.templates" = ["data/*.json"]
+
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"

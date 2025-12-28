@@ -1,0 +1,22 @@
+{
+  "schema_version": "1.0",
+  "room": {
+    "name": "busy-wall",
+    "walls": [
+      {"length": 144, "height": 96}
+    ],
+    "obstacles": [
+      {"type": "door", "wall": 0, "horizontal_offset": 0, "bottom": 0, "width": 36, "height": 84},
+      {"type": "outlet", "wall": 0, "horizontal_offset": 48, "bottom": 12, "width": 3, "height": 5},
+      {"type": "vent", "wall": 0, "horizontal_offset": 100, "bottom": 0, "width": 12, "height": 4}
+    ]
+  },
+  "cabinet": {
+    "width": 144,
+    "height": 96,
+    "depth": 12,
+    "sections": [
+      {"width": "fill", "shelves": 4}
+    ]
+  }
+}

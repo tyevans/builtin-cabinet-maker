@@ -1,0 +1,78 @@
+{
+  "schema_version": "1.1",
+  "room": {
+    "name": "kitchen-u-shape",
+    "walls": [
+      {
+        "length": 96,
+        "height": 84,
+        "angle": 0,
+        "name": "south",
+        "depth": 24
+      },
+      {
+        "length": 60,
+        "height": 84,
+        "angle": 90,
+        "name": "west",
+        "depth": 24
+      },
+      {
+        "length": 96,
+        "height": 84,
+        "angle": 90,
+        "name": "north",
+        "depth": 24
+      }
+    ]
+  },
+  "cabinet": {
+    "width": 96,
+    "height": 84,
+    "depth": 24,
+    "material": {
+      "type": "plywood",
+      "thickness": 0.75
+    },
+    "back_material": {
+      "type": "plywood",
+      "thickness": 0.25
+    },
+    "sections": [
+      {
+        "width": 30,
+        "wall": "south",
+        "shelves": 3
+      },
+      {
+        "width": 36,
+        "wall": "south",
+        "shelves": 3
+      },
+      {
+        "width": 30,
+        "wall": "south",
+        "shelves": 3
+      },
+      {
+        "width": 60,
+        "wall": "west",
+        "shelves": 4
+      },
+      {
+        "width": 48,
+        "wall": "north",
+        "shelves": 3
+      },
+      {
+        "width": "fill",
+        "wall": "north",
+        "shelves": 5
+      }
+    ]
+  },
+  "output": {
+    "format": "all",
+    "stl_file": "kitchen_cabinets.stl"
+  }
+}

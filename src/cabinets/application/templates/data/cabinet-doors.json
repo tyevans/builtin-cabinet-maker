@@ -1,0 +1,13 @@
+{
+  "schema_version": "1.0",
+  "cabinet": {
+    "width": 48,
+    "height": 34,
+    "depth": 24,
+    "material": {"type": "plywood", "thickness": 0.75},
+    "sections": [
+      {"width": 24, "shelves": 1},
+      {"width": "fill", "shelves": 1}
+    ]
+  }
+}

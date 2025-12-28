@@ -1,0 +1,33 @@
+{
+  "schema_version": "1.0",
+  "obstacle_defaults": {
+    "window": {"top": 3, "bottom": 3, "left": 3, "right": 3}
+  },
+  "room": {
+    "name": "custom-clearance-room",
+    "walls": [
+      {"length": 96, "height": 96}
+    ],
+    "obstacles": [
+      {
+        "type": "window",
+        "wall": 0,
+        "horizontal_offset": 24,
+        "bottom": 30,
+        "width": 48,
+        "height": 36,
+        "clearance": {"top": 1, "bottom": 6, "left": 2, "right": 2}
+      }
+    ]
+  },
+  "cabinet": {
+    "width": 96,
+    "height": 96,
+    "depth": 24,
+    "sections": [
+      {"width": 22, "shelves": 3},
+      {"width": "fill", "height_mode": "auto", "shelves": 2},
+      {"width": 22, "shelves": 3}
+    ]
+  }
+}

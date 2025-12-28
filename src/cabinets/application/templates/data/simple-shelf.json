@@ -1,0 +1,9 @@
+{
+  "schema_version": "1.0",
+  "cabinet": {
+    "width": 36,
+    "height": 48,
+    "depth": 10,
+    "sections": [{"shelves": 4}]
+  }
+}

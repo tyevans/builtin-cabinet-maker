@@ -1,0 +1,51 @@
+{
+  "schema_version": "1.1",
+  "room": {
+    "name": "corner-unit",
+    "walls": [
+      {
+        "length": 72,
+        "height": 84,
+        "angle": 0,
+        "name": "left",
+        "depth": 12
+      },
+      {
+        "length": 48,
+        "height": 84,
+        "angle": 90,
+        "name": "right",
+        "depth": 12
+      }
+    ]
+  },
+  "cabinet": {
+    "width": 72,
+    "height": 84,
+    "depth": 12,
+    "material": {
+      "type": "plywood",
+      "thickness": 0.75
+    },
+    "sections": [
+      {
+        "width": 36,
+        "wall": "left",
+        "shelves": 4
+      },
+      {
+        "width": 36,
+        "wall": "left",
+        "shelves": 4
+      },
+      {
+        "width": 48,
+        "wall": "right",
+        "shelves": 4
+      }
+    ]
+  },
+  "output": {
+    "format": "all"
+  }
+}

@@ -1,0 +1,29 @@
+{
+  "schema_version": "1.0",
+  "room": {
+    "name": "window-wall",
+    "walls": [
+      {"length": 120, "height": 96}
+    ],
+    "obstacles": [
+      {
+        "type": "window",
+        "wall": 0,
+        "horizontal_offset": 36,
+        "bottom": 36,
+        "width": 48,
+        "height": 48
+      }
+    ]
+  },
+  "cabinet": {
+    "width": 120,
+    "height": 96,
+    "depth": 24,
+    "sections": [
+      {"width": 34, "shelves": 4},
+      {"width": "fill", "height_mode": "lower", "shelves": 2},
+      {"width": 34, "shelves": 4}
+    ]
+  }
+}
