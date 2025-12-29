@@ -1,0 +1,127 @@
+{
+  "schema_version": "1.3",
+  "room": {
+    "name": "Living Room Corner Built-in",
+    "walls": [
+      {
+        "length": 96.0,
+        "height": 84.0,
+        "angle": 0,
+        "name": "left_wall",
+        "depth": 16.0
+      },
+      {
+        "length": 72.0,
+        "height": 84.0,
+        "angle": 90,
+        "name": "right_wall",
+        "depth": 16.0
+      }
+    ],
+    "is_closed": false
+  },
+  "cabinet": {
+    "width": 96.0,
+    "height": 84.0,
+    "depth": 16.0,
+    "material": {
+      "type": "plywood",
+      "thickness": 0.75
+    },
+    "back_material": {
+      "type": "plywood",
+      "thickness": 0.25
+    },
+    "sections": [
+      {
+        "width": 24.0,
+        "wall": "left_wall",
+        "rows": [
+          {
+            "height": 28.0,
+            "section_type": "doored",
+            "shelves": 1,
+            "component_config": {"hinge_side": "left"}
+          },
+          {
+            "height": 28.0,
+            "section_type": "doored",
+            "shelves": 1,
+            "component_config": {"hinge_side": "left"}
+          },
+          {
+            "height": "fill",
+            "section_type": "open",
+            "shelves": 2
+          }
+        ]
+      },
+      {
+        "width": 24.0,
+        "wall": "left_wall",
+        "section_type": "drawers",
+        "shelves": 0,
+        "component_config": {
+          "count": 8
+        }
+      },
+      {
+        "width": 24.0,
+        "wall": "left_wall",
+        "section_type": "open",
+        "shelves": 5
+      },
+      {
+        "width": "fill",
+        "wall": "left_wall",
+        "section_type": "open",
+        "shelves": 5
+      },
+      {
+        "width": 24.0,
+        "wall": "right_wall",
+        "section_type": "open",
+        "shelves": 5
+      },
+      {
+        "width": 24.0,
+        "wall": "right_wall",
+        "section_type": "doored",
+        "shelves": 3,
+        "component_config": {
+          "count": 2
+        }
+      },
+      {
+        "width": "fill",
+        "wall": "right_wall",
+        "rows": [
+          {
+            "height": 42.0,
+            "section_type": "drawers",
+            "component_config": {
+              "count": 4
+            }
+          },
+          {
+            "height": "fill",
+            "section_type": "open",
+            "shelves": 4
+          },
+          {
+            "height": 12.0,
+            "section_type": "cubby",
+            "component_config": {
+              "rows": 1,
+              "columns": 2
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "output": {
+    "format": "all",
+    "stl_file": "corner-builtin.stl"
+  }
+}

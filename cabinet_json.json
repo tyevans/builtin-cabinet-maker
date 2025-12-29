@@ -1,0 +1,700 @@
+{
+  "schema_version": "1.0",
+  "config": {
+    "type": "single_cabinet",
+    "dimensions": {
+      "width": 48.0,
+      "height": 84.0,
+      "depth": 12.0
+    },
+    "material": {
+      "type": "plywood",
+      "thickness": 0.75
+    },
+    "back_material": {
+      "type": "plywood",
+      "thickness": 0.25
+    },
+    "section_count": 1,
+    "default_shelf_count": 0
+  },
+  "cabinet": {
+    "dimensions": {
+      "width": 48.0,
+      "height": 84.0,
+      "depth": 12.0
+    },
+    "interior_dimensions": {
+      "width": 46.5,
+      "height": 82.5,
+      "depth": 11.75
+    },
+    "sections": [
+      {
+        "width": 46.5,
+        "height": 82.5,
+        "depth": 11.75,
+        "position": {
+          "x": 0.75,
+          "y": 0.75
+        },
+        "shelf_count": 3,
+        "panel_count": 0,
+        "section_type": "open"
+      }
+    ]
+  },
+  "pieces": [
+    {
+      "id": "TO-1",
+      "label": "Top",
+      "dimensions": {
+        "width": 48.0,
+        "height": 11.75,
+        "thickness": 0.75
+      },
+      "panel_type": "top",
+      "material": {
+        "type": "plywood",
+        "thickness": 0.75
+      },
+      "position_3d": {
+        "x": 0,
+        "y": 0.25,
+        "z": 83.25,
+        "width": 48.0,
+        "depth": 11.75,
+        "height": 0.75
+      },
+      "joinery": [
+        {
+          "connection_to": "back",
+          "role": "receives",
+          "joint_type": "rabbet",
+          "depth": 0.375,
+          "width": 0.25,
+          "location": "Back panel rabbet in Top"
+        },
+        {
+          "connection_to": "left_side",
+          "role": "fits_into",
+          "joint_type": "dado",
+          "depth": 0.25,
+          "width": null,
+          "location": "Top panel dado in left side"
+        },
+        {
+          "connection_to": "right_side",
+          "role": "fits_into",
+          "joint_type": "dado",
+          "depth": 0.25,
+          "width": null,
+          "location": "Top panel dado in right side"
+        }
+      ]
+    },
+    {
+      "id": "BO-1",
+      "label": "Bottom",
+      "dimensions": {
+        "width": 48.0,
+        "height": 11.75,
+        "thickness": 0.75
+      },
+      "panel_type": "bottom",
+      "material": {
+        "type": "plywood",
+        "thickness": 0.75
+      },
+      "position_3d": {
+        "x": 0,
+        "y": 0.25,
+        "z": 0,
+        "width": 48.0,
+        "depth": 11.75,
+        "height": 0.75
+      },
+      "joinery": [
+        {
+          "connection_to": "back",
+          "role": "receives",
+          "joint_type": "rabbet",
+          "depth": 0.375,
+          "width": 0.25,
+          "location": "Back panel rabbet in Bottom"
+        },
+        {
+          "connection_to": "left_side",
+          "role": "fits_into",
+          "joint_type": "dado",
+          "depth": 0.25,
+          "width": null,
+          "location": "Bottom panel dado in left side"
+        },
+        {
+          "connection_to": "right_side",
+          "role": "fits_into",
+          "joint_type": "dado",
+          "depth": 0.25,
+          "width": null,
+          "location": "Bottom panel dado in right side"
+        }
+      ]
+    },
+    {
+      "id": "LE-1",
+      "label": "Left Side",
+      "dimensions": {
+        "width": 11.75,
+        "height": 82.5,
+        "thickness": 0.75
+      },
+      "panel_type": "left_side",
+      "material": {
+        "type": "plywood",
+        "thickness": 0.75
+      },
+      "position_3d": {
+        "x": 0,
+        "y": 0.25,
+        "z": 0.75,
+        "width": 0.75,
+        "depth": 11.75,
+        "height": 82.5
+      },
+      "joinery": [
+        {
+          "connection_to": "shelf",
+          "role": "receives",
+          "joint_type": "dado",
+          "depth": 0.25,
+          "width": null,
+          "location": "Shelf at 21.4\" height"
+        },
+        {
+          "connection_to": "shelf",
+          "role": "receives",
+          "joint_type": "dado",
+          "depth": 0.25,
+          "width": null,
+          "location": "Shelf at 42.0\" height"
+        },
+        {
+          "connection_to": "shelf",
+          "role": "receives",
+          "joint_type": "dado",
+          "depth": 0.25,
+          "width": null,
+          "location": "Shelf at 62.6\" height"
+        },
+        {
+          "connection_to": "back",
+          "role": "receives",
+          "joint_type": "rabbet",
+          "depth": 0.375,
+          "width": 0.25,
+          "location": "Back panel rabbet in Left side"
+        },
+        {
+          "connection_to": "top",
+          "role": "receives",
+          "joint_type": "dado",
+          "depth": 0.25,
+          "width": null,
+          "location": "Top panel dado in left side"
+        },
+        {
+          "connection_to": "bottom",
+          "role": "receives",
+          "joint_type": "dado",
+          "depth": 0.25,
+          "width": null,
+          "location": "Bottom panel dado in left side"
+        }
+      ]
+    },
+    {
+      "id": "RI-1",
+      "label": "Right Side",
+      "dimensions": {
+        "width": 11.75,
+        "height": 82.5,
+        "thickness": 0.75
+      },
+      "panel_type": "right_side",
+      "material": {
+        "type": "plywood",
+        "thickness": 0.75
+      },
+      "position_3d": {
+        "x": 47.25,
+        "y": 0.25,
+        "z": 0.75,
+        "width": 0.75,
+        "depth": 11.75,
+        "height": 82.5
+      },
+      "joinery": [
+        {
+          "connection_to": "shelf",
+          "role": "receives",
+          "joint_type": "dado",
+          "depth": 0.25,
+          "width": null,
+          "location": "Shelf at 21.4\" height"
+        },
+        {
+          "connection_to": "shelf",
+          "role": "receives",
+          "joint_type": "dado",
+          "depth": 0.25,
+          "width": null,
+          "location": "Shelf at 42.0\" height"
+        },
+        {
+          "connection_to": "shelf",
+          "role": "receives",
+          "joint_type": "dado",
+          "depth": 0.25,
+          "width": null,
+          "location": "Shelf at 62.6\" height"
+        },
+        {
+          "connection_to": "back",
+          "role": "receives",
+          "joint_type": "rabbet",
+          "depth": 0.375,
+          "width": 0.25,
+          "location": "Back panel rabbet in Right side"
+        },
+        {
+          "connection_to": "top",
+          "role": "receives",
+          "joint_type": "dado",
+          "depth": 0.25,
+          "width": null,
+          "location": "Top panel dado in right side"
+        },
+        {
+          "connection_to": "bottom",
+          "role": "receives",
+          "joint_type": "dado",
+          "depth": 0.25,
+          "width": null,
+          "location": "Bottom panel dado in right side"
+        }
+      ]
+    },
+    {
+      "id": "BA-1",
+      "label": "Back",
+      "dimensions": {
+        "width": 48.0,
+        "height": 84.0,
+        "thickness": 0.25
+      },
+      "panel_type": "back",
+      "material": {
+        "type": "plywood",
+        "thickness": 0.25
+      },
+      "position_3d": {
+        "x": 0,
+        "y": 0,
+        "z": 0,
+        "width": 48.0,
+        "depth": 0.25,
+        "height": 84.0
+      },
+      "joinery": [
+        {
+          "connection_to": "left_side",
+          "role": "fits_into",
+          "joint_type": "rabbet",
+          "depth": 0.375,
+          "width": 0.25,
+          "location": "Back panel rabbet in Left side"
+        },
+        {
+          "connection_to": "right_side",
+          "role": "fits_into",
+          "joint_type": "rabbet",
+          "depth": 0.375,
+          "width": 0.25,
+          "location": "Back panel rabbet in Right side"
+        },
+        {
+          "connection_to": "top",
+          "role": "fits_into",
+          "joint_type": "rabbet",
+          "depth": 0.375,
+          "width": 0.25,
+          "location": "Back panel rabbet in Top"
+        },
+        {
+          "connection_to": "bottom",
+          "role": "fits_into",
+          "joint_type": "rabbet",
+          "depth": 0.375,
+          "width": 0.25,
+          "location": "Back panel rabbet in Bottom"
+        }
+      ]
+    },
+    {
+      "id": "SH-1",
+      "label": "Shelf",
+      "dimensions": {
+        "width": 46.5,
+        "height": 11.75,
+        "thickness": 0.75
+      },
+      "panel_type": "shelf",
+      "material": {
+        "type": "plywood",
+        "thickness": 0.75
+      },
+      "position_3d": {
+        "x": 0.75,
+        "y": 0.25,
+        "z": 21.375,
+        "width": 46.5,
+        "depth": 11.75,
+        "height": 0.75
+      },
+      "joinery": [
+        {
+          "connection_to": "left_side",
+          "role": "fits_into",
+          "joint_type": "dado",
+          "depth": 0.25,
+          "width": null,
+          "location": "Shelf at 21.4\" height"
+        },
+        {
+          "connection_to": "right_side",
+          "role": "fits_into",
+          "joint_type": "dado",
+          "depth": 0.25,
+          "width": null,
+          "location": "Shelf at 21.4\" height"
+        },
+        {
+          "connection_to": "left_side",
+          "role": "fits_into",
+          "joint_type": "dado",
+          "depth": 0.25,
+          "width": null,
+          "location": "Shelf at 42.0\" height"
+        },
+        {
+          "connection_to": "right_side",
+          "role": "fits_into",
+          "joint_type": "dado",
+          "depth": 0.25,
+          "width": null,
+          "location": "Shelf at 42.0\" height"
+        },
+        {
+          "connection_to": "left_side",
+          "role": "fits_into",
+          "joint_type": "dado",
+          "depth": 0.25,
+          "width": null,
+          "location": "Shelf at 62.6\" height"
+        },
+        {
+          "connection_to": "right_side",
+          "role": "fits_into",
+          "joint_type": "dado",
+          "depth": 0.25,
+          "width": null,
+          "location": "Shelf at 62.6\" height"
+        }
+      ]
+    },
+    {
+      "id": "SH-2",
+      "label": "Shelf",
+      "dimensions": {
+        "width": 46.5,
+        "height": 11.75,
+        "thickness": 0.75
+      },
+      "panel_type": "shelf",
+      "material": {
+        "type": "plywood",
+        "thickness": 0.75
+      },
+      "position_3d": {
+        "x": 0.75,
+        "y": 0.25,
+        "z": 42.0,
+        "width": 46.5,
+        "depth": 11.75,
+        "height": 0.75
+      },
+      "joinery": [
+        {
+          "connection_to": "left_side",
+          "role": "fits_into",
+          "joint_type": "dado",
+          "depth": 0.25,
+          "width": null,
+          "location": "Shelf at 21.4\" height"
+        },
+        {
+          "connection_to": "right_side",
+          "role": "fits_into",
+          "joint_type": "dado",
+          "depth": 0.25,
+          "width": null,
+          "location": "Shelf at 21.4\" height"
+        },
+        {
+          "connection_to": "left_side",
+          "role": "fits_into",
+          "joint_type": "dado",
+          "depth": 0.25,
+          "width": null,
+          "location": "Shelf at 42.0\" height"
+        },
+        {
+          "connection_to": "right_side",
+          "role": "fits_into",
+          "joint_type": "dado",
+          "depth": 0.25,
+          "width": null,
+          "location": "Shelf at 42.0\" height"
+        },
+        {
+          "connection_to": "left_side",
+          "role": "fits_into",
+          "joint_type": "dado",
+          "depth": 0.25,
+          "width": null,
+          "location": "Shelf at 62.6\" height"
+        },
+        {
+          "connection_to": "right_side",
+          "role": "fits_into",
+          "joint_type": "dado",
+          "depth": 0.25,
+          "width": null,
+          "location": "Shelf at 62.6\" height"
+        }
+      ]
+    },
+    {
+      "id": "SH-3",
+      "label": "Shelf",
+      "dimensions": {
+        "width": 46.5,
+        "height": 11.75,
+        "thickness": 0.75
+      },
+      "panel_type": "shelf",
+      "material": {
+        "type": "plywood",
+        "thickness": 0.75
+      },
+      "position_3d": {
+        "x": 0.75,
+        "y": 0.25,
+        "z": 62.625,
+        "width": 46.5,
+        "depth": 11.75,
+        "height": 0.75
+      },
+      "joinery": [
+        {
+          "connection_to": "left_side",
+          "role": "fits_into",
+          "joint_type": "dado",
+          "depth": 0.25,
+          "width": null,
+          "location": "Shelf at 21.4\" height"
+        },
+        {
+          "connection_to": "right_side",
+          "role": "fits_into",
+          "joint_type": "dado",
+          "depth": 0.25,
+          "width": null,
+          "location": "Shelf at 21.4\" height"
+        },
+        {
+          "connection_to": "left_side",
+          "role": "fits_into",
+          "joint_type": "dado",
+          "depth": 0.25,
+          "width": null,
+          "location": "Shelf at 42.0\" height"
+        },
+        {
+          "connection_to": "right_side",
+          "role": "fits_into",
+          "joint_type": "dado",
+          "depth": 0.25,
+          "width": null,
+          "location": "Shelf at 42.0\" height"
+        },
+        {
+          "connection_to": "left_side",
+          "role": "fits_into",
+          "joint_type": "dado",
+          "depth": 0.25,
+          "width": null,
+          "location": "Shelf at 62.6\" height"
+        },
+        {
+          "connection_to": "right_side",
+          "role": "fits_into",
+          "joint_type": "dado",
+          "depth": 0.25,
+          "width": null,
+          "location": "Shelf at 62.6\" height"
+        }
+      ]
+    }
+  ],
+  "cut_list": [
+    {
+      "label": "Back",
+      "panel_type": "back",
+      "dimensions": {
+        "width": 48.0,
+        "height": 84.0,
+        "thickness": 0.25
+      },
+      "quantity": 1,
+      "area_sq_in": 4032.0,
+      "area_sq_ft": 28.0,
+      "material": {
+        "type": "plywood",
+        "thickness": 0.25
+      }
+    },
+    {
+      "label": "Shelf",
+      "panel_type": "shelf",
+      "dimensions": {
+        "width": 46.5,
+        "height": 11.75,
+        "thickness": 0.75
+      },
+      "quantity": 3,
+      "area_sq_in": 1639.125,
+      "area_sq_ft": 11.3828125,
+      "material": {
+        "type": "plywood",
+        "thickness": 0.75
+      }
+    },
+    {
+      "label": "Left Side",
+      "panel_type": "left_side",
+      "dimensions": {
+        "width": 11.75,
+        "height": 82.5,
+        "thickness": 0.75
+      },
+      "quantity": 1,
+      "area_sq_in": 969.375,
+      "area_sq_ft": 6.731770833333333,
+      "material": {
+        "type": "plywood",
+        "thickness": 0.75
+      }
+    },
+    {
+      "label": "Right Side",
+      "panel_type": "right_side",
+      "dimensions": {
+        "width": 11.75,
+        "height": 82.5,
+        "thickness": 0.75
+      },
+      "quantity": 1,
+      "area_sq_in": 969.375,
+      "area_sq_ft": 6.731770833333333,
+      "material": {
+        "type": "plywood",
+        "thickness": 0.75
+      }
+    },
+    {
+      "label": "Top",
+      "panel_type": "top",
+      "dimensions": {
+        "width": 48.0,
+        "height": 11.75,
+        "thickness": 0.75
+      },
+      "quantity": 1,
+      "area_sq_in": 564.0,
+      "area_sq_ft": 3.9166666666666665,
+      "material": {
+        "type": "plywood",
+        "thickness": 0.75
+      }
+    },
+    {
+      "label": "Bottom",
+      "panel_type": "bottom",
+      "dimensions": {
+        "width": 48.0,
+        "height": 11.75,
+        "thickness": 0.75
+      },
+      "quantity": 1,
+      "area_sq_in": 564.0,
+      "area_sq_ft": 3.9166666666666665,
+      "material": {
+        "type": "plywood",
+        "thickness": 0.75
+      }
+    }
+  ],
+  "bom": {
+    "sheet_goods": [
+      {
+        "material": "plywood",
+        "thickness": 0.25,
+        "total_area_sqft": 28.0,
+        "sheet_count_4x8": 2,
+        "waste_percentage": 0.15
+      },
+      {
+        "material": "plywood",
+        "thickness": 0.75,
+        "total_area_sqft": 32.6796875,
+        "sheet_count_4x8": 2,
+        "waste_percentage": 0.15
+      }
+    ],
+    "hardware": [],
+    "edge_banding": [
+      {
+        "thickness": 0.75,
+        "length_inches": 400.5,
+        "length_feet": 33.375,
+        "length_with_waste": 36.712500000000006
+      }
+    ],
+    "totals": {
+      "total_area_sqft": 60.6796875,
+      "total_sheets_4x8": 3
+    }
+  },
+  "warnings": [
+    {
+      "type": "advisory",
+      "message": "Shelf spanning 46.5\" may benefit from center support or cleats for heavy loads"
+    },
+    {
+      "type": "advisory",
+      "message": "Tall cabinet with shallow depth - consider wall anchoring for stability"
+    }
+  ]
+}

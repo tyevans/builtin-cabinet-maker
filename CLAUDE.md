@@ -52,7 +52,7 @@ The project follows Clean Architecture with distinct layers:
 
 - Cabinet dimensions use inches as the standard unit
 - Sections can have fixed widths or `"fill"` to auto-calculate remaining space
-- Material thickness defaults: 3/4" for panels, 1/2" for back panel
+- Material thickness defaults: 3/4" for panels, 1/4" for back panel
 - The `Panel3DMapper` converts 2D panel representations to 3D bounding boxes for STL export
 - Configuration files use Pydantic v2 schemas with version validation (schema_version: "1.0")
 

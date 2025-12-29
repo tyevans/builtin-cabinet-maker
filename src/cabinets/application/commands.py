@@ -1,5 +1,9 @@
 """Application commands (use cases) for cabinet generation."""
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 from cabinets.domain import (
     CutListGenerator,
     LayoutCalculator,
@@ -10,11 +14,15 @@ from cabinets.domain import (
     Wall,
     validate_section_specs,
 )
+from cabinets.domain.section_resolver import RowSpec, SectionSpec, validate_row_specs
 from cabinets.domain.entities import Room, WallSegment
 from cabinets.domain.services import RoomLayoutService
 from cabinets.domain.value_objects import FitError, GeometryError, SectionTransform
 
 from .dtos import LayoutOutput, LayoutParametersInput, RoomLayoutOutput, WallInput
+
+if TYPE_CHECKING:
+    from cabinets.domain.services.installation import InstallationConfig
 
 
 class GenerateLayoutCommand:
@@ -41,6 +49,10 @@ class GenerateLayoutCommand:
         wall_input: WallInput,
         params_input: LayoutParametersInput,
         section_specs: list[SectionSpec] | None = None,
+        row_specs: list[RowSpec] | None = None,
+        zone_configs: dict[str, dict | None] | None = None,
+        installation_config: "InstallationConfig | None" = None,
+        left_edge_position: float = 0.0,
     ) -> LayoutOutput:
         """Execute the layout generation command.
 
@@ -50,12 +62,30 @@ class GenerateLayoutCommand:
             section_specs: Optional list of section specifications. If provided,
                 uses the new specs-based generation with per-section widths and
                 shelf counts. If None, uses the legacy uniform sections approach.
+            row_specs: Optional list of row specifications for multi-row cabinets.
+                When provided, creates vertically stacked rows of sections.
+                Cannot be used together with section_specs.
+            zone_configs: Optional dict with zone configurations for decorative elements:
+                - base_zone: Toe kick zone config
+                - crown_molding: Crown molding zone config
+                - light_rail: Light rail zone config
+            installation_config: Optional installation configuration for mounting hardware,
+                French cleat generation, and installation instructions.
+            left_edge_position: Position of cabinet left edge from wall start (for stud
+                alignment analysis). Default 0.0 inches.
 
         Returns:
             LayoutOutput with the generated cabinet, cut list, and material estimates.
         """
         # Validate inputs
         errors = wall_input.validate() + params_input.validate()
+
+        # Validate that only one of section_specs or row_specs is provided
+        if section_specs is not None and row_specs is not None:
+            errors.append(
+                "Cannot specify both section_specs and row_specs. "
+                "Use section_specs for single-row layout or row_specs for multi-row layout."
+            )
 
         # Validate section specs if provided
         if section_specs is not None:
@@ -65,6 +95,15 @@ class GenerateLayoutCommand:
                 params_input.material_thickness,
             )
             errors.extend(spec_errors)
+
+        # Validate row specs if provided
+        if row_specs is not None:
+            row_errors = validate_row_specs(
+                row_specs,
+                wall_input.height,
+                params_input.material_thickness,
+            )
+            errors.extend(row_errors)
 
         if errors:
             # Return empty output with errors
@@ -89,13 +128,21 @@ class GenerateLayoutCommand:
             back_material=params_input.to_back_material_spec(),
         )
 
-        # Generate layout - use specs-based method if section_specs provided
+        # Generate layout based on what was provided
+        hardware: list = []
         try:
-            if section_specs is not None:
-                cabinet = self.layout_calculator.generate_cabinet_from_specs(
-                    wall, layout_params, section_specs
+            if row_specs is not None:
+                # Multi-row layout
+                cabinet, hardware = self.layout_calculator.generate_cabinet_from_row_specs(
+                    wall, layout_params, row_specs, zone_configs=zone_configs
+                )
+            elif section_specs is not None:
+                # Single-row layout with explicit section specs
+                cabinet, hardware = self.layout_calculator.generate_cabinet_from_specs(
+                    wall, layout_params, section_specs, zone_configs=zone_configs
                 )
             else:
+                # Legacy uniform sections approach
                 cabinet = self.layout_calculator.generate_cabinet(wall, layout_params)
         except SectionWidthError as e:
             return LayoutOutput(
@@ -108,6 +155,36 @@ class GenerateLayoutCommand:
 
         # Generate cut list
         cut_list = self.cut_list_generator.generate(cabinet)
+
+        # Installation support
+        installation_hardware = None
+        installation_instructions = None
+        installation_warnings = None
+        stud_analysis = None
+
+        if installation_config:
+            from cabinets.domain.services.installation import InstallationService
+
+            installation_service = InstallationService(installation_config)
+            installation_plan = installation_service.generate_plan(
+                cabinet, left_edge_position=left_edge_position
+            )
+
+            # Add cleat cut pieces to main cut list
+            cut_list = list(cut_list) + list(installation_plan.cleat_cut_pieces)
+
+            installation_hardware = list(installation_plan.mounting_hardware)
+            installation_instructions = installation_plan.instructions
+            installation_warnings = list(installation_plan.warnings)
+            stud_analysis = {
+                "cabinet_left_edge": installation_plan.stud_analysis.cabinet_left_edge,
+                "cabinet_width": installation_plan.stud_analysis.cabinet_width,
+                "stud_positions": list(installation_plan.stud_analysis.stud_positions),
+                "non_stud_positions": list(installation_plan.stud_analysis.non_stud_positions),
+                "stud_hit_count": installation_plan.stud_analysis.stud_hit_count,
+                "recommendation": installation_plan.stud_analysis.recommendation,
+            }
+
         cut_list = self.cut_list_generator.sort_by_size(cut_list)
 
         # Estimate materials
@@ -119,6 +196,11 @@ class GenerateLayoutCommand:
             cut_list=cut_list,
             material_estimates=material_estimates,
             total_estimate=total_estimate,
+            hardware=hardware,
+            installation_hardware=installation_hardware,
+            installation_instructions=installation_instructions,
+            installation_warnings=installation_warnings,
+            stud_analysis=stud_analysis,
         )
 
     def execute_room_layout(
@@ -213,9 +295,21 @@ class GenerateLayoutCommand:
                 back_material=params_input.to_back_material_spec(),
             )
 
-            # Generate cabinet for this section
+            # Generate cabinet for this section using section specs for component support
             try:
-                cabinet = self.layout_calculator.generate_cabinet(wall, section_params)
+                # Create a single-section spec list for this cabinet
+                # Use "fill" width since this is a single-section cabinet that should fill the space
+                # Preserve row_specs if the section has nested rows for vertical stacking
+                single_section_spec = [SectionSpec(
+                    width="fill",
+                    shelves=section_spec.shelves,
+                    section_type=section_spec.section_type,
+                    component_config=section_spec.component_config,
+                    row_specs=section_spec.row_specs,  # Preserve nested rows
+                )]
+                cabinet, _hardware = self.layout_calculator.generate_cabinet_from_specs(
+                    wall, section_params, single_section_spec
+                )
                 cabinets.append(cabinet)
 
                 # Generate cut list for this cabinet

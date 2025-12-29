@@ -1,6 +1,9 @@
 """Data Transfer Objects for the application layer."""
 
+from __future__ import annotations
+
 from dataclasses import dataclass, field
+from typing import TYPE_CHECKING
 
 from cabinets.domain import (
     Cabinet,
@@ -9,8 +12,12 @@ from cabinets.domain import (
     MaterialSpec,
     MaterialType,
 )
+from cabinets.domain.components.results import HardwareItem
 from cabinets.domain.entities import Room
 from cabinets.domain.value_objects import SectionTransform
+
+if TYPE_CHECKING:
+    from cabinets.infrastructure.bin_packing import PackingResult
 
 
 @dataclass
@@ -47,7 +54,7 @@ class LayoutParametersInput:
     shelves_per_section: int = 3
     material_thickness: float = 0.75
     material_type: str = "plywood"
-    back_thickness: float = 0.5
+    back_thickness: float = 0.25
 
     def validate(self) -> list[str]:
         """Validate input and return list of error messages."""
@@ -86,13 +93,33 @@ class LayoutParametersInput:
 
 @dataclass
 class LayoutOutput:
-    """Output DTO containing the generated layout results."""
+    """Output DTO containing the generated layout results.
+
+    Attributes:
+        cabinet: Generated cabinet entity with sections, panels, and shelves.
+        cut_list: List of cut pieces required to build the cabinet.
+        material_estimates: Material estimates grouped by material type.
+        total_estimate: Total material estimate across all materials.
+        hardware: List of hardware items required.
+        errors: List of error messages if generation failed.
+        packing_result: Result from bin packing optimization, if enabled.
+        installation_hardware: List of installation hardware items.
+        installation_instructions: Installation instructions in markdown format.
+        installation_warnings: List of installation-related warnings.
+        stud_analysis: Stud alignment analysis results as a dictionary.
+    """
 
     cabinet: Cabinet
     cut_list: list[CutPiece]
     material_estimates: dict[MaterialSpec, MaterialEstimate]
     total_estimate: MaterialEstimate
+    hardware: list[HardwareItem] = field(default_factory=list)
     errors: list[str] = field(default_factory=list)
+    packing_result: PackingResult | None = None
+    installation_hardware: list[HardwareItem] | None = None
+    installation_instructions: str | None = None
+    installation_warnings: list[str] | None = None
+    stud_analysis: dict | None = None
 
     @property
     def is_valid(self) -> bool:
@@ -115,6 +142,11 @@ class RoomLayoutOutput:
         material_estimates: Material estimates grouped by material type.
         total_estimate: Total material estimate across all cabinets.
         errors: List of error messages if generation failed.
+        packing_result: Result from bin packing optimization, if enabled.
+        installation_hardware: List of installation hardware items.
+        installation_instructions: Installation instructions in markdown format.
+        installation_warnings: List of installation-related warnings.
+        stud_analysis: Stud alignment analysis results as a dictionary.
     """
 
     room: Room
@@ -124,6 +156,11 @@ class RoomLayoutOutput:
     material_estimates: dict[MaterialSpec, MaterialEstimate]
     total_estimate: MaterialEstimate
     errors: list[str] = field(default_factory=list)
+    packing_result: "PackingResult | None" = None
+    installation_hardware: list[HardwareItem] | None = None
+    installation_instructions: str | None = None
+    installation_warnings: list[str] | None = None
+    stud_analysis: dict | None = None
 
     @property
     def is_valid(self) -> bool:

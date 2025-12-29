@@ -27,3 +27,7 @@ htmlcov/
 
 # Project-specific outputs
 *.stl
+
+# Documentation working directories
+docs/futures/
+docs/tasks/

@@ -58,10 +58,18 @@ def merge_config_with_cli(
     output_data = _build_output_data(config, output_format, stl_file)
 
     # Create new configuration with merged values
+    # Preserve room, obstacle_defaults, bin_packing, woodworking, infrastructure,
+    # and installation from original config
     return CabinetConfiguration(
         schema_version=config.schema_version,
         cabinet=CabinetConfig.model_validate(cabinet_data),
         output=OutputConfig.model_validate(output_data),
+        room=config.room,
+        obstacle_defaults=config.obstacle_defaults,
+        bin_packing=config.bin_packing,
+        woodworking=config.woodworking,
+        infrastructure=config.infrastructure,
+        installation=config.installation,
     )
 
 
@@ -94,6 +102,10 @@ def _build_cabinet_data(
         "sections": [section.model_dump() for section in cabinet.sections],
     }
 
+    # Preserve rows if present (for multi-row cabinets)
+    if cabinet.rows is not None:
+        cabinet_data["rows"] = [row.model_dump() for row in cabinet.rows]
+
     # Handle material configuration
     material_data: dict[str, Any] = {
         "type": cabinet.material.type,
@@ -108,6 +120,20 @@ def _build_cabinet_data(
     # Handle back material if present
     if cabinet.back_material is not None:
         cabinet_data["back_material"] = cabinet.back_material.model_dump()
+
+    # Preserve decorative zone configurations (FRD-12)
+    if cabinet.face_frame is not None:
+        cabinet_data["face_frame"] = cabinet.face_frame.model_dump()
+    if cabinet.crown_molding is not None:
+        cabinet_data["crown_molding"] = cabinet.crown_molding.model_dump()
+    if cabinet.base_zone is not None:
+        cabinet_data["base_zone"] = cabinet.base_zone.model_dump()
+    if cabinet.light_rail is not None:
+        cabinet_data["light_rail"] = cabinet.light_rail.model_dump()
+
+    # Preserve default_shelves if set
+    if cabinet.default_shelves > 0:
+        cabinet_data["default_shelves"] = cabinet.default_shelves
 
     return cabinet_data
 

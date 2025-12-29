@@ -203,11 +203,12 @@ class TestRoomLayoutGeneration:
         assert len(wall_0_transforms) == 2
         assert len(wall_1_transforms) == 1
 
-        # Wall 0 should have rotation 0, wall 1 should have rotation 270
+        # Wall 0 should have rotation 0, wall 1 should have rotation 90
+        # (negated from wall direction 270 to face into the room)
         for t in wall_0_transforms:
             assert t.rotation_z == pytest.approx(0.0)
         for t in wall_1_transforms:
-            assert t.rotation_z == pytest.approx(270.0)
+            assert t.rotation_z == pytest.approx(90.0)
 
     def test_generate_u_shaped_room_layout(self) -> None:
         """Test generating layout for a U-shaped room."""

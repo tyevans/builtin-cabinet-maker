@@ -2,6 +2,7 @@
 
 import math
 from dataclasses import dataclass, field
+from typing import Any
 
 from .value_objects import (
     Clearance,
@@ -14,19 +15,38 @@ from .value_objects import (
     PanelType,
     Point2D,
     Position,
+    SectionType,
     WallPosition,
 )
 
 
 @dataclass
 class Panel:
-    """A single panel in the cabinet (side, top, bottom, shelf, etc.)."""
+    """A single panel in the cabinet (side, top, bottom, shelf, etc.).
+
+    Attributes:
+        panel_type: The type/role of this panel in the cabinet.
+        width: Width of the panel in inches.
+        height: Height of the panel in inches.
+        material: Material specification for this panel.
+        position: Position within the cabinet coordinate system.
+        metadata: Optional additional data about the panel (e.g., angle cuts,
+            machining specs). Common keys include:
+            - "is_angled": bool - Panel requires angle cuts
+            - "angle": int/float - Angle of cuts in degrees
+            - "shelf_index": int - Index of shelf for ordering
+            - "shelf_shape": str - Shape descriptor for special shelves
+        cut_metadata: Optional structured cut metadata for non-rectangular panels.
+            Contains angle cuts, tapers, and notches for advanced cutting.
+    """
 
     panel_type: PanelType
     width: float
     height: float
     material: MaterialSpec
     position: Position = field(default_factory=lambda: Position(0, 0))
+    metadata: dict[str, Any] = field(default_factory=dict)
+    cut_metadata: dict[str, Any] | None = None
 
     def to_cut_piece(self, quantity: int = 1) -> CutPiece:
         """Convert panel to a cut piece for the cut list."""
@@ -37,6 +57,7 @@ class Panel:
             label=self.panel_type.value.replace("_", " ").title(),
             panel_type=self.panel_type,
             material=self.material,
+            cut_metadata=self.cut_metadata,
         )
 
 
@@ -62,22 +83,60 @@ class Shelf:
 
 @dataclass
 class Section:
-    """A vertical section within a cabinet, containing shelves."""
+    """A vertical section within a cabinet, containing shelves and other panels.
+
+    Attributes:
+        width: Width of the section in inches.
+        height: Height of the section in inches.
+        depth: Depth of the section in inches.
+        position: Position of the section within the cabinet.
+        shelves: List of shelves within this section.
+        panels: List of additional panels (doors, drawer fronts, etc.).
+        section_type: Type of section (open, doored, drawers, cubby).
+                      Defaults to OPEN for backward compatibility.
+    """
 
     width: float
     height: float
     depth: float
     position: Position
     shelves: list[Shelf] = field(default_factory=list)
+    panels: list[Panel] = field(default_factory=list)
+    section_type: SectionType = SectionType.OPEN
 
     def add_shelf(self, shelf: Shelf) -> None:
         """Add a shelf to this section."""
         self.shelves.append(shelf)
 
+    def add_panel(self, panel: Panel) -> None:
+        """Add a panel (door, drawer front, etc.) to this section."""
+        self.panels.append(panel)
+
 
 @dataclass
 class Cabinet:
-    """A complete cabinet with panels and sections."""
+    """A complete cabinet with panels and sections.
+
+    Attributes:
+        width: Overall cabinet width in inches.
+        height: Overall cabinet height in inches.
+        depth: Overall cabinet depth in inches.
+        material: Material specification for main panels.
+        back_material: Material specification for back panel (defaults to 1/4" plywood).
+        sections: List of sections within the cabinet.
+        default_shelf_count: Default number of shelves for sections that don't specify.
+                             When a section spec has shelves=0 and this is > 0, this value
+                             is used instead. Defaults to 0 (no default shelves).
+        row_heights: List of resolved row heights for multi-row cabinets.
+                     Empty list means single-row cabinet (legacy behavior).
+                     When populated, horizontal dividers are generated between rows.
+        base_zone: Base/toe kick zone configuration (optional).
+                   Dict with keys: height (float), setback (float), zone_type (str).
+        crown_molding: Crown molding zone configuration (optional).
+                       Dict with keys: height (float), setback (float), nailer_width (float).
+        light_rail: Light rail zone configuration (optional).
+                    Dict with keys: height (float), setback (float).
+    """
 
     width: float
     height: float
@@ -85,10 +144,17 @@ class Cabinet:
     material: MaterialSpec
     back_material: MaterialSpec | None = None
     sections: list[Section] = field(default_factory=list)
+    default_shelf_count: int = 0
+    row_heights: list[float] = field(default_factory=list)
+    base_zone: dict[str, Any] | None = None
+    crown_molding: dict[str, Any] | None = None
+    light_rail: dict[str, Any] | None = None
 
     def __post_init__(self) -> None:
         if self.back_material is None:
-            self.back_material = MaterialSpec.standard_1_2()
+            self.back_material = MaterialSpec.standard_1_4()
+        if self.default_shelf_count < 0:
+            raise ValueError("default_shelf_count cannot be negative")
 
     @property
     def interior_width(self) -> float:
@@ -121,12 +187,17 @@ class Cabinet:
             )
         )
 
-        # Bottom panel - same as top
+        # Bottom panel - shortened if there's a toe kick zone
+        # With a toe kick, the bottom stops at the setback, leaving room for the toe kick panel
+        bottom_depth = self.interior_depth
+        if self.base_zone and self.base_zone.get("zone_type") == "toe_kick":
+            toe_kick_setback = self.base_zone.get("setback", 3.0)
+            bottom_depth = self.interior_depth - toe_kick_setback
         panels.append(
             Panel(
                 panel_type=PanelType.BOTTOM,
                 width=self.width,
-                height=self.interior_depth,
+                height=bottom_depth,
                 material=self.material,
                 position=Position(0, 0),
             )
@@ -168,27 +239,120 @@ class Cabinet:
             )
         )
 
-        # Dividers between sections
+        # Vertical dividers between sections (within each row)
+        # For multi-row cabinets, dividers only span the row height, not full cabinet
         for i in range(len(self.sections) - 1):
             section = self.sections[i]
-            panels.append(
-                Panel(
-                    panel_type=PanelType.DIVIDER,
-                    width=self.interior_depth,
-                    height=self.interior_height,
-                    material=self.material,
-                    position=Position(
-                        section.position.x + section.width, self.material.thickness
-                    ),
+            next_section = self.sections[i + 1]
+            # Only add divider if adjacent sections are in the same row
+            # (they would have the same y position)
+            if abs(section.position.y - next_section.position.y) < 0.001:
+                panels.append(
+                    Panel(
+                        panel_type=PanelType.DIVIDER,
+                        width=self.interior_depth,
+                        height=section.height,  # Use section height, not interior_height
+                        material=self.material,
+                        position=Position(
+                            section.position.x + section.width, section.position.y
+                        ),
+                    )
                 )
-            )
+
+        # Horizontal dividers between rows (for multi-row cabinets)
+        if self.row_heights:
+            current_y = self.material.thickness  # Start at top of bottom panel
+            for i, row_height in enumerate(self.row_heights[:-1]):  # Skip last row
+                current_y += row_height  # Move to top of current row
+                panels.append(
+                    Panel(
+                        panel_type=PanelType.HORIZONTAL_DIVIDER,
+                        width=self.interior_width,
+                        height=self.interior_depth,
+                        material=self.material,
+                        position=Position(self.material.thickness, current_y),
+                    )
+                )
+                current_y += self.material.thickness  # Account for divider thickness
 
         # Shelves from all sections
         for section in self.sections:
             for shelf in section.shelves:
                 panels.append(shelf.to_panel())
 
+        # Additional panels from sections (doors, drawer fronts, etc.)
+        for section in self.sections:
+            for panel in section.panels:
+                panels.append(panel)
+
+        # Zone panels (toe kick, crown nailer, light rail)
+        panels.extend(self._get_zone_panels())
+
         return panels
+
+    def _get_zone_panels(self) -> list[Panel]:
+        """Generate panels for decorative zones (toe kick, crown, light rail)."""
+        zone_panels: list[Panel] = []
+
+        # Toe kick panel - recessed panel at bottom front
+        if self.base_zone and self.base_zone.get("zone_type") == "toe_kick":
+            toe_kick_height = self.base_zone.get("height", 3.5)
+            toe_kick_setback = self.base_zone.get("setback", 3.0)
+            # Toe kick is positioned at the front, recessed by setback
+            zone_panels.append(
+                Panel(
+                    panel_type=PanelType.TOE_KICK,
+                    width=self.width,
+                    height=toe_kick_height,
+                    material=self.material,
+                    position=Position(0, 0),
+                    metadata={
+                        "zone_type": "toe_kick",
+                        "setback": toe_kick_setback,
+                        "location": "bottom_front_recessed",
+                    },
+                )
+            )
+
+        # Crown molding nailer - strip at top back for mounting crown molding
+        if self.crown_molding:
+            crown_height = self.crown_molding.get("height", 3.0)
+            nailer_width = self.crown_molding.get("nailer_width", 2.0)
+            zone_panels.append(
+                Panel(
+                    panel_type=PanelType.NAILER,
+                    width=self.width,
+                    height=nailer_width,  # Nailer depth
+                    material=self.material,
+                    position=Position(0, self.height - nailer_width),
+                    metadata={
+                        "zone_type": "crown_molding",
+                        "zone_height": crown_height,
+                        "setback": self.crown_molding.get("setback", 0.75),
+                        "location": "top_back",
+                    },
+                )
+            )
+
+        # Light rail strip - at bottom front for concealing under-cabinet lights
+        if self.light_rail:
+            rail_height = self.light_rail.get("height", 1.5)
+            zone_panels.append(
+                Panel(
+                    panel_type=PanelType.LIGHT_RAIL,
+                    width=self.width,
+                    height=rail_height,
+                    material=self.material,
+                    position=Position(0, 0),
+                    metadata={
+                        "zone_type": "light_rail",
+                        "setback": self.light_rail.get("setback", 0.25),
+                        "location": "bottom_front",
+                    },
+                )
+            )
+
+        return zone_panels
 
     def get_cut_list(self) -> list[CutPiece]:
         """Generate a consolidated cut list for this cabinet."""
@@ -267,8 +431,8 @@ class WallSegment:
             raise ValueError("Wall dimensions must be positive")
         if self.depth <= 0:
             raise ValueError("Depth must be positive")
-        if self.angle not in (-90, 0, 90):
-            raise ValueError("Angle must be -90, 0, or 90 degrees")
+        if not -135 <= self.angle <= 135:
+            raise ValueError("Angle must be between -135 and 135 degrees")
 
 
 @dataclass

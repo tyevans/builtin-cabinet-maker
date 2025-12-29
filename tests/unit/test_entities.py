@@ -11,8 +11,15 @@ import math
 
 import pytest
 
-from cabinets.domain.entities import Room, Wall, WallConstraints, WallSegment
-from cabinets.domain.value_objects import GeometryError, Point2D, WallPosition
+from cabinets.domain.entities import Cabinet, Room, Section, Wall, WallConstraints, WallSegment
+from cabinets.domain.value_objects import (
+    GeometryError,
+    MaterialSpec,
+    Point2D,
+    Position,
+    SectionType,
+    WallPosition,
+)
 
 
 class TestWall:
@@ -102,8 +109,8 @@ class TestWallSegment:
         assert segment.depth == 18.0
 
     def test_valid_angles(self) -> None:
-        """Wall segment should accept valid angles (-90, 0, 90)."""
-        for angle in (-90, 0, 90):
+        """Wall segment should accept valid angles in range -135 to 135."""
+        for angle in (-135, -90, -45, 0, 45, 90, 120, 135):
             segment = WallSegment(length=100.0, height=96.0, angle=angle)
             assert segment.angle == angle
 
@@ -148,29 +155,29 @@ class TestWallSegment:
             WallSegment(length=120.0, height=96.0, depth=-5.0)
         assert "Depth must be positive" in str(exc_info.value)
 
-    def test_rejects_invalid_angle_45(self) -> None:
-        """Wall segment should reject 45 degree angle."""
+    def test_rejects_angle_above_135(self) -> None:
+        """Wall segment should reject angles above 135 degrees."""
         with pytest.raises(ValueError) as exc_info:
-            WallSegment(length=120.0, height=96.0, angle=45)
-        assert "Angle must be -90, 0, or 90 degrees" in str(exc_info.value)
+            WallSegment(length=120.0, height=96.0, angle=150)
+        assert "Angle must be between -135 and 135 degrees" in str(exc_info.value)
 
-    def test_rejects_invalid_angle_180(self) -> None:
+    def test_rejects_angle_180(self) -> None:
         """Wall segment should reject 180 degree angle."""
         with pytest.raises(ValueError) as exc_info:
             WallSegment(length=120.0, height=96.0, angle=180)
-        assert "Angle must be -90, 0, or 90 degrees" in str(exc_info.value)
+        assert "Angle must be between -135 and 135 degrees" in str(exc_info.value)
 
-    def test_rejects_invalid_angle_negative_45(self) -> None:
-        """Wall segment should reject -45 degree angle."""
+    def test_rejects_angle_below_negative_135(self) -> None:
+        """Wall segment should reject angles below -135 degrees."""
         with pytest.raises(ValueError) as exc_info:
-            WallSegment(length=120.0, height=96.0, angle=-45)
-        assert "Angle must be -90, 0, or 90 degrees" in str(exc_info.value)
+            WallSegment(length=120.0, height=96.0, angle=-150)
+        assert "Angle must be between -135 and 135 degrees" in str(exc_info.value)
 
-    def test_rejects_arbitrary_angle(self) -> None:
-        """Wall segment should reject arbitrary angles."""
+    def test_rejects_angle_negative_180(self) -> None:
+        """Wall segment should reject -180 degree angle."""
         with pytest.raises(ValueError) as exc_info:
-            WallSegment(length=120.0, height=96.0, angle=30)
-        assert "Angle must be -90, 0, or 90 degrees" in str(exc_info.value)
+            WallSegment(length=120.0, height=96.0, angle=-180)
+        assert "Angle must be between -135 and 135 degrees" in str(exc_info.value)
 
     def test_wall_segment_is_mutable(self) -> None:
         """Wall segment should be mutable (not frozen)."""
@@ -553,3 +560,269 @@ class TestRoom:
         assert width == pytest.approx(36.0)
         assert depth == pytest.approx(24.0)
         assert len(room.validate_geometry()) == 0
+
+
+class TestSectionSectionType:
+    """Tests for Section section_type field (FRD-04)."""
+
+    def test_section_type_defaults_to_open(self) -> None:
+        """Section should default section_type to OPEN."""
+        section = Section(
+            width=24.0,
+            height=84.0,
+            depth=12.0,
+            position=Position(x=0, y=0),
+        )
+        assert section.section_type == SectionType.OPEN
+
+    def test_section_type_open(self) -> None:
+        """Section should accept OPEN section type."""
+        section = Section(
+            width=24.0,
+            height=84.0,
+            depth=12.0,
+            position=Position(x=0, y=0),
+            section_type=SectionType.OPEN,
+        )
+        assert section.section_type == SectionType.OPEN
+
+    def test_section_type_doored(self) -> None:
+        """Section should accept DOORED section type."""
+        section = Section(
+            width=24.0,
+            height=84.0,
+            depth=12.0,
+            position=Position(x=0, y=0),
+            section_type=SectionType.DOORED,
+        )
+        assert section.section_type == SectionType.DOORED
+
+    def test_section_type_drawers(self) -> None:
+        """Section should accept DRAWERS section type."""
+        section = Section(
+            width=24.0,
+            height=84.0,
+            depth=12.0,
+            position=Position(x=0, y=0),
+            section_type=SectionType.DRAWERS,
+        )
+        assert section.section_type == SectionType.DRAWERS
+
+    def test_section_type_cubby(self) -> None:
+        """Section should accept CUBBY section type."""
+        section = Section(
+            width=12.0,
+            height=12.0,
+            depth=12.0,
+            position=Position(x=0, y=0),
+            section_type=SectionType.CUBBY,
+        )
+        assert section.section_type == SectionType.CUBBY
+
+    def test_section_type_is_mutable(self) -> None:
+        """Section section_type should be mutable (Section is not frozen)."""
+        section = Section(
+            width=24.0,
+            height=84.0,
+            depth=12.0,
+            position=Position(x=0, y=0),
+            section_type=SectionType.OPEN,
+        )
+        section.section_type = SectionType.DOORED
+        assert section.section_type == SectionType.DOORED
+
+
+class TestCabinetDefaultShelfCount:
+    """Tests for Cabinet default_shelf_count field (FRD-04)."""
+
+    def test_default_shelf_count_defaults_to_zero(self) -> None:
+        """Cabinet default_shelf_count should default to 0."""
+        cabinet = Cabinet(
+            width=48.0,
+            height=84.0,
+            depth=12.0,
+            material=MaterialSpec.standard_3_4(),
+        )
+        assert cabinet.default_shelf_count == 0
+
+    def test_default_shelf_count_with_valid_value(self) -> None:
+        """Cabinet should accept valid default_shelf_count."""
+        cabinet = Cabinet(
+            width=48.0,
+            height=84.0,
+            depth=12.0,
+            material=MaterialSpec.standard_3_4(),
+            default_shelf_count=3,
+        )
+        assert cabinet.default_shelf_count == 3
+
+    def test_default_shelf_count_zero_valid(self) -> None:
+        """Cabinet should accept default_shelf_count of 0."""
+        cabinet = Cabinet(
+            width=48.0,
+            height=84.0,
+            depth=12.0,
+            material=MaterialSpec.standard_3_4(),
+            default_shelf_count=0,
+        )
+        assert cabinet.default_shelf_count == 0
+
+    def test_default_shelf_count_high_value(self) -> None:
+        """Cabinet should accept high default_shelf_count values."""
+        cabinet = Cabinet(
+            width=48.0,
+            height=120.0,
+            depth=12.0,
+            material=MaterialSpec.standard_3_4(),
+            default_shelf_count=20,
+        )
+        assert cabinet.default_shelf_count == 20
+
+    def test_default_shelf_count_negative_raises_error(self) -> None:
+        """Cabinet should reject negative default_shelf_count."""
+        with pytest.raises(ValueError, match="default_shelf_count cannot be negative"):
+            Cabinet(
+                width=48.0,
+                height=84.0,
+                depth=12.0,
+                material=MaterialSpec.standard_3_4(),
+                default_shelf_count=-1,
+            )
+
+    def test_default_shelf_count_with_sections(self) -> None:
+        """Cabinet with sections should maintain default_shelf_count."""
+        section = Section(
+            width=24.0,
+            height=84.0,
+            depth=12.0,
+            position=Position(x=0, y=0),
+        )
+        cabinet = Cabinet(
+            width=48.0,
+            height=84.0,
+            depth=12.0,
+            material=MaterialSpec.standard_3_4(),
+            sections=[section],
+            default_shelf_count=5,
+        )
+        assert cabinet.default_shelf_count == 5
+        assert len(cabinet.sections) == 1
+
+    def test_default_shelf_count_with_back_material(self) -> None:
+        """Cabinet should work with both default_shelf_count and back_material."""
+        cabinet = Cabinet(
+            width=48.0,
+            height=84.0,
+            depth=12.0,
+            material=MaterialSpec.standard_3_4(),
+            back_material=MaterialSpec.standard_1_2(),
+            default_shelf_count=4,
+        )
+        assert cabinet.default_shelf_count == 4
+        assert cabinet.back_material is not None
+        assert cabinet.back_material.thickness == 0.5
+
+
+class TestSectionTypeEnum:
+    """Tests for SectionType enum values (FRD-04)."""
+
+    def test_section_type_values(self) -> None:
+        """SectionType should have all expected values."""
+        assert SectionType.OPEN.value == "open"
+        assert SectionType.DOORED.value == "doored"
+        assert SectionType.DRAWERS.value == "drawers"
+        assert SectionType.CUBBY.value == "cubby"
+
+    def test_section_type_count(self) -> None:
+        """SectionType should have exactly 4 values."""
+        assert len(SectionType) == 4
+
+    def test_section_type_from_value(self) -> None:
+        """SectionType should be creatable from string values."""
+        assert SectionType("open") == SectionType.OPEN
+        assert SectionType("doored") == SectionType.DOORED
+        assert SectionType("drawers") == SectionType.DRAWERS
+        assert SectionType("cubby") == SectionType.CUBBY
+
+
+class TestPanelCutMetadataField:
+    """Tests for Panel cut_metadata field (FRD-11)."""
+
+    def test_panel_default_no_cut_metadata(self) -> None:
+        """Panel should default cut_metadata to None."""
+        from cabinets.domain.entities import Panel
+        from cabinets.domain.value_objects import PanelType
+
+        panel = Panel(
+            panel_type=PanelType.SHELF,
+            width=24.0,
+            height=12.0,
+            material=MaterialSpec.standard_3_4(),
+        )
+        assert panel.cut_metadata is None
+
+    def test_panel_with_cut_metadata(self) -> None:
+        """Panel should accept cut_metadata dict."""
+        from cabinets.domain.entities import Panel
+        from cabinets.domain.value_objects import PanelType
+
+        metadata = {
+            "angle_cuts": [{"edge": "left", "angle": 45.0}],
+            "taper": {"start_height": 96.0, "end_height": 72.0},
+        }
+        panel = Panel(
+            panel_type=PanelType.LEFT_SIDE,
+            width=12.0,
+            height=84.0,
+            material=MaterialSpec.standard_3_4(),
+            cut_metadata=metadata,
+        )
+        assert panel.cut_metadata == metadata
+        assert panel.cut_metadata["taper"]["start_height"] == 96.0
+
+    def test_panel_to_cut_piece_passes_metadata(self) -> None:
+        """Panel.to_cut_piece() should pass cut_metadata to CutPiece."""
+        from cabinets.domain.entities import Panel
+        from cabinets.domain.value_objects import PanelType
+
+        metadata = {"notches": [{"x_offset": 12.0, "width": 24.0, "depth": 6.0}]}
+        panel = Panel(
+            panel_type=PanelType.TOP,
+            width=48.0,
+            height=12.0,
+            material=MaterialSpec.standard_3_4(),
+            cut_metadata=metadata,
+        )
+        cut_piece = panel.to_cut_piece()
+        assert cut_piece.cut_metadata == metadata
+
+    def test_panel_to_cut_piece_none_metadata(self) -> None:
+        """Panel.to_cut_piece() should pass None when no cut_metadata."""
+        from cabinets.domain.entities import Panel
+        from cabinets.domain.value_objects import PanelType
+
+        panel = Panel(
+            panel_type=PanelType.SHELF,
+            width=24.0,
+            height=12.0,
+            material=MaterialSpec.standard_3_4(),
+        )
+        cut_piece = panel.to_cut_piece()
+        assert cut_piece.cut_metadata is None
+
+    def test_panel_cut_metadata_with_quantity(self) -> None:
+        """Panel.to_cut_piece() should preserve metadata with quantity."""
+        from cabinets.domain.entities import Panel
+        from cabinets.domain.value_objects import PanelType
+
+        metadata = {"angle_cuts": [{"edge": "top", "angle": 30.0, "bevel": True}]}
+        panel = Panel(
+            panel_type=PanelType.DIVIDER,
+            width=12.0,
+            height=82.5,
+            material=MaterialSpec.standard_3_4(),
+            cut_metadata=metadata,
+        )
+        cut_piece = panel.to_cut_piece(quantity=3)
+        assert cut_piece.quantity == 3
+        assert cut_piece.cut_metadata == metadata

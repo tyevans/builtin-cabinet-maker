@@ -1,0 +1,169 @@
+{
+  "schema_version": "1.2",
+  "cabinet": {
+    "width": 96.0,
+    "height": 84.0,
+    "depth": 14.0,
+    "material": {
+      "type": "plywood",
+      "thickness": 0.75
+    },
+    "back_material": {
+      "type": "plywood",
+      "thickness": 0.5
+    },
+    "rows": [
+      {
+        "height": 28.0,
+        "sections": [
+          {
+            "width": "fill",
+            "section_type": "doored",
+            "shelves": 2,
+            "component_config": {
+              "component": "door.hinged.overlay",
+              "hinge_side": "left",
+              "reveal": 0.125,
+              "overlay": 0.5
+            }
+          },
+          {
+            "width": "fill",
+            "section_type": "doored",
+            "shelves": 2,
+            "component_config": {
+              "component": "door.hinged.overlay",
+              "hinge_side": "right",
+              "reveal": 0.125,
+              "overlay": 0.5
+            }
+          },
+          {
+            "width": "fill",
+            "section_type": "doored",
+            "shelves": 2,
+            "component_config": {
+              "component": "door.hinged.overlay",
+              "hinge_side": "left",
+              "reveal": 0.125,
+              "overlay": 0.5
+            }
+          },
+          {
+            "width": "fill",
+            "section_type": "doored",
+            "shelves": 2,
+            "component_config": {
+              "component": "door.hinged.overlay",
+              "hinge_side": "right",
+              "reveal": 0.125,
+              "overlay": 0.5
+            }
+          }
+        ]
+      },
+      {
+        "height": 8.0,
+        "sections": [
+          {
+            "width": "fill",
+            "section_type": "drawers",
+            "component_config": {
+              "component": "drawer.standard",
+              "slide_type": "undermount",
+              "soft_close": true
+            }
+          },
+          {
+            "width": "fill",
+            "section_type": "drawers",
+            "component_config": {
+              "component": "drawer.standard",
+              "slide_type": "undermount",
+              "soft_close": true
+            }
+          },
+          {
+            "width": "fill",
+            "section_type": "drawers",
+            "component_config": {
+              "component": "drawer.standard",
+              "slide_type": "side_mount"
+            }
+          },
+          {
+            "width": "fill",
+            "section_type": "drawers",
+            "component_config": {
+              "component": "drawer.standard",
+              "slide_type": "side_mount"
+            }
+          }
+        ]
+      },
+      {
+        "height": "fill",
+        "sections": [
+          {
+            "width": "fill",
+            "section_type": "open",
+            "shelves": 4,
+            "component_config": {
+              "component": "shelf.adjustable",
+              "shelf_pin_spacing": 1.25,
+              "front_edge": "banded"
+            }
+          },
+          {
+            "width": "fill",
+            "section_type": "open",
+            "shelves": 4,
+            "component_config": {
+              "component": "shelf.adjustable",
+              "shelf_pin_spacing": 1.25,
+              "front_edge": "banded"
+            }
+          },
+          {
+            "width": "fill",
+            "section_type": "open",
+            "shelves": 5,
+            "component_config": {
+              "component": "shelf.adjustable",
+              "shelf_pin_spacing": 1.25,
+              "front_edge": "bullnose"
+            }
+          },
+          {
+            "width": "fill",
+            "section_type": "open",
+            "shelves": 5,
+            "component_config": {
+              "component": "shelf.adjustable",
+              "shelf_pin_spacing": 1.25
+            }
+          }
+        ]
+      },
+      {
+        "height": 10.0,
+        "sections": [
+          {
+            "width": "fill",
+            "section_type": "cubby",
+            "component_config": {
+              "component": "cubby.uniform",
+              "rows": 1,
+              "columns": 6,
+              "joinery": "dado"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "output": {
+    "format": "all",
+    "stl_file": "builtin-cabinet.stl"
+  }
+}

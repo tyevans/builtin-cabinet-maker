@@ -1,0 +1,180 @@
+{
+  "schema_version": "1.3",
+  "cabinet": {
+    "width": 55.0,
+    "height": 95.0,
+    "depth": 14.0,
+    "material": {
+      "type": "plywood",
+      "thickness": 0.75
+    },
+    "back_material": {
+      "type": "plywood",
+      "thickness": 0.5
+    },
+    "face_frame": {
+      "stile_width": 1.5,
+      "rail_width": 2.0,
+      "joinery": "mortise_tenon",
+      "material_thickness": 0.75
+    },
+    "crown_molding": {
+      "height": 4.5,
+      "setback": 0.5,
+      "nailer_width": 2.5
+    },
+    "base_zone": {
+      "height": 4.0,
+      "setback": 3.0,
+      "zone_type": "toe_kick"
+    },
+    "light_rail": {
+      "height": 1.5,
+      "setback": 0.25
+    },
+    "rows": [
+      {
+        "height": 30.0,
+        "sections": [
+          {
+            "width": "fill",
+            "section_type": "doored",
+            "shelves": 2,
+            "component_config": {
+              "component": "door.hinged.overlay",
+              "hinge_side": "left",
+              "reveal": 0.125,
+              "overlay": 0.5
+            },
+            "edge_profile": {
+              "profile_type": "ogee",
+              "size": 0.375,
+              "edges": ["front"]
+            }
+          },
+          {
+            "width": "fill",
+            "section_type": "doored",
+            "shelves": 2,
+            "component_config": {
+              "component": "door.hinged.overlay",
+              "hinge_side": "right",
+              "reveal": 0.125,
+              "overlay": 0.5
+            },
+            "edge_profile": {
+              "profile_type": "ogee",
+              "size": 0.375,
+              "edges": ["front"]
+            }
+          }
+        ]
+      },
+      {
+        "height": 6.0,
+        "sections": [
+          {
+            "width": "fill",
+            "section_type": "drawers",
+            "component_config": {
+              "component": "drawer.standard",
+              "slide_type": "side_mount",
+	      "front_height": 6.0
+            }
+          },
+          {
+            "width": "fill",
+            "section_type": "drawers",
+            "component_config": {
+              "component": "drawer.standard",
+              "slide_type": "side_mount",
+	      "front_height": 6.0
+            }
+          },
+          {
+            "width": "fill",
+            "section_type": "drawers",
+            "component_config": {
+              "component": "drawer.standard",
+              "slide_type": "side_mount",
+	      "front_height": 6.0
+            }
+          },
+          {
+            "width": "fill",
+            "section_type": "drawers",
+            "component_config": {
+              "component": "drawer.standard",
+              "slide_type": "side_mount",
+	      "front_height": 6.0
+            }
+          }
+        ]
+      },
+      {
+        "height": "fill",
+        "sections": [
+          {
+            "width": "fill",
+            "section_type": "open",
+            "shelves": 2,
+            "arch_top": {
+              "arch_type": "segmental",
+              "radius": 20.0,
+              "spring_height": 6.0
+            },
+            "component_config": {
+              "component": "shelf.adjustable"
+            },
+            "edge_profile": {
+              "profile_type": "roundover",
+              "size": 0.25,
+              "edges": ["front"]
+            }
+          },
+          {
+            "width": "fill",
+            "section_type": "open",
+            "shelves": 2,
+            "arch_top": {
+              "arch_type": "segmental",
+              "radius": 20.0,
+              "spring_height": 6.0
+            },
+            "component_config": {
+              "component": "shelf.adjustable"
+            },
+            "edge_profile": {
+              "profile_type": "roundover",
+              "size": 0.25,
+              "edges": ["front"]
+            }
+          }
+        ]
+      },
+      {
+        "height": 12.0,
+        "sections": [
+          {
+            "width": "fill",
+            "section_type": "cubby",
+            "component_config": {
+              "component": "cubby.uniform",
+              "rows": 1,
+              "columns": 4,
+              "joinery": "half_lap"
+            },
+            "scallop": {
+              "depth": 0.5,
+              "width": 3.0,
+              "count": "auto"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "output": {
+    "format": "all"
+  }
+}

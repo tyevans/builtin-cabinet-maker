@@ -1,0 +1,36 @@
+============================================================
+BILL OF MATERIALS
+============================================================
+
+SHEET GOODS
+----------------------------------------
+  Plywood 0.5" - 3 sheet(s)
+    Size: 48" x 96"
+    Area: 41.2 sq ft
+  Plywood 0.75" - 4 sheet(s)
+    Size: 48" x 96"
+    Area: 93.3 sq ft
+  Plywood 0.25" - 1 sheet(s)
+    Size: 48" x 96"
+    Area: 3.4 sq ft
+
+HARDWARE
+----------------------------------------
+  [Fasteners]
+    Mounting Screw #8x5/8" (#8x5/8"): 32
+  [Hardware]
+    Handle/Knob (): 2
+    Handle/Pull (): 4
+  [Hinges]
+    Soft-Close European Hinge (): 4
+  [Other]
+    Edge Banding (): 7
+    Edge Banding (): 4
+  [Shelf Supports]
+    Shelf Pin (): 16
+  [Slides]
+    Soft-Close Drawer Slide (12") (12"): 8
+
+EDGE BANDING
+----------------------------------------
+  Plywood 3/4 inch (Natural): 87.6 linear ft

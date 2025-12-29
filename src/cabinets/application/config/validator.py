@@ -2,7 +2,7 @@
 
 This module provides validation result structures and domain-specific
 validation logic for cabinet configurations, including woodworking
-best practice advisories and obstacle validation.
+best practice advisories, obstacle validation, and infrastructure validation.
 """
 
 from dataclasses import dataclass, field
@@ -10,9 +10,22 @@ from typing import Any
 
 from cabinets.application.config.schema import (
     CabinetConfiguration,
+    GrommetConfigSchema,
+    InfrastructureConfigSchema,
+    LightingConfigSchema,
     ObstacleConfig,
+    OutletConfigSchema,
+    VentilationConfigSchema,
     WallSegmentConfig,
 )
+from cabinets.domain.services.woodworking import get_max_span
+
+
+# Standard grommet sizes in inches
+STANDARD_GROMMET_SIZES: frozenset[float] = frozenset({2.0, 2.5, 3.0})
+
+# Minimum edge distance for cutouts in inches
+MIN_CUTOUT_EDGE_DISTANCE: float = 1.0
 
 
 @dataclass
@@ -116,7 +129,7 @@ class ValidationResult:
 
 
 # Woodworking Advisory Constants
-MAX_SHELF_SPAN_3_4_PLYWOOD = 36.0  # inches
+# Note: SPAN_LIMITS and get_max_span are imported from woodworking.py for material-specific limits
 MIN_RECOMMENDED_THICKNESS = 0.5  # inches
 MAX_ASPECT_RATIO = 4.0  # height:depth ratio for stability
 
@@ -142,6 +155,7 @@ def check_woodworking_advisories(config: CabinetConfiguration) -> ValidationResu
     result = ValidationResult()
 
     material_thickness = config.cabinet.material.thickness
+    material_type = config.cabinet.material.type
 
     # Check each section for shelf span concerns
     for i, section in enumerate(config.cabinet.sections):
@@ -156,17 +170,15 @@ def check_woodworking_advisories(config: CabinetConfiguration) -> ValidationResu
             # This is approximate - actual calculation happens in domain layer
             section_width = _estimate_fill_section_width(config, i)
 
-        # Check shelf span for 3/4" material
+        # Check shelf span using material-specific limits from SPAN_LIMITS
         if section_width is not None and section.shelves > 0:
-            if (
-                material_thickness <= 0.75
-                and section_width > MAX_SHELF_SPAN_3_4_PLYWOOD
-            ):
+            max_span = get_max_span(material_type, material_thickness)
+            if section_width > max_span:
                 result.add_warning(
                     path=section_path,
                     message=(
                         f"Shelf span of {section_width:.0f}\" exceeds recommended "
-                        f"{MAX_SHELF_SPAN_3_4_PLYWOOD:.0f}\" for {material_thickness}\" material"
+                        f"{max_span:.0f}\" for {material_type.value} at {material_thickness}\" thickness"
                     ),
                     suggestion=(
                         "Consider adding a center support divider or using "
@@ -406,12 +418,462 @@ def _wall_mostly_blocked(
     return blocked_width / wall.length > threshold
 
 
+# =============================================================================
+# Infrastructure Validation Functions (FRD-15)
+# =============================================================================
+
+
+def _get_panel_dimensions(
+    config: CabinetConfiguration, panel: str
+) -> tuple[float, float]:
+    """Get width and height of a panel based on cabinet dimensions.
+
+    Returns the panel dimensions based on cabinet geometry:
+    - back panel: width x height
+    - left_side/right_side: depth x height
+    - top/bottom: width x depth
+
+    Args:
+        config: The cabinet configuration
+        panel: Panel name (back, left_side, right_side, top, bottom)
+
+    Returns:
+        Tuple of (width, height) in inches
+    """
+    cab = config.cabinet
+    if panel == "back":
+        return (cab.width, cab.height)
+    elif panel in ("left_side", "right_side"):
+        return (cab.depth, cab.height)
+    elif panel == "top":
+        return (cab.width, cab.depth)
+    elif panel == "bottom":
+        return (cab.width, cab.depth)
+    else:
+        # For unknown panels, return cabinet width x height as default
+        return (cab.width, cab.height)
+
+
+def _cutouts_overlap(
+    c1_pos: tuple[float, float],
+    c1_dims: tuple[float, float],
+    c2_pos: tuple[float, float],
+    c2_dims: tuple[float, float],
+) -> bool:
+    """Check if two rectangular cutouts overlap.
+
+    Uses axis-aligned bounding box collision detection.
+
+    Args:
+        c1_pos: (x, y) position of first cutout
+        c1_dims: (width, height) of first cutout
+        c2_pos: (x, y) position of second cutout
+        c2_dims: (width, height) of second cutout
+
+    Returns:
+        True if the cutouts overlap, False otherwise
+    """
+    # Calculate bounding box corners
+    c1_left = c1_pos[0]
+    c1_right = c1_pos[0] + c1_dims[0]
+    c1_bottom = c1_pos[1]
+    c1_top = c1_pos[1] + c1_dims[1]
+
+    c2_left = c2_pos[0]
+    c2_right = c2_pos[0] + c2_dims[0]
+    c2_bottom = c2_pos[1]
+    c2_top = c2_pos[1] + c2_dims[1]
+
+    # Check for non-overlapping conditions
+    if c1_right <= c2_left or c2_right <= c1_left:
+        return False
+    if c1_top <= c2_bottom or c2_top <= c1_bottom:
+        return False
+
+    return True
+
+
+def _get_cutout_info(
+    element: OutletConfigSchema | GrommetConfigSchema | VentilationConfigSchema,
+    element_type: str,
+    index: int,
+) -> tuple[str, tuple[float, float], tuple[float, float], str]:
+    """Extract cutout information from an infrastructure element.
+
+    Args:
+        element: The infrastructure element configuration
+        element_type: Type of element (outlet, grommet, ventilation)
+        index: Index of the element in its list
+
+    Returns:
+        Tuple of (path, position, dimensions, panel)
+    """
+    path = f"infrastructure.{element_type}s[{index}]"
+
+    if isinstance(element, OutletConfigSchema):
+        # Standard outlet cutout dimensions
+        if element.type.value == "single":
+            dims = (2.75, 4.5)  # Standard single outlet box
+        elif element.type.value == "gfi":
+            dims = (2.75, 5.5)  # GFI outlets are taller
+        else:  # double
+            dims = (4.5, 4.5)  # Double outlet box
+        return (path, (element.position.x, element.position.y), dims, element.panel)
+    elif isinstance(element, GrommetConfigSchema):
+        # Grommets are circular, use diameter for both dimensions
+        dims = (element.size, element.size)
+        return (path, (element.position.x, element.position.y), dims, element.panel)
+    elif isinstance(element, VentilationConfigSchema):
+        dims = (element.width, element.height)
+        return (path, (element.position.x, element.position.y), dims, element.panel)
+
+    # Default fallback
+    return (path, (0, 0), (0, 0), "")
+
+
+def _get_section_count(config: CabinetConfiguration) -> int:
+    """Get the total number of sections in the cabinet.
+
+    Handles both single-row (sections) and multi-row (rows) layouts.
+
+    Args:
+        config: The cabinet configuration
+
+    Returns:
+        Total number of sections
+    """
+    if config.cabinet.rows:
+        # Multi-row layout: count sections in all rows
+        return sum(len(row.sections) for row in config.cabinet.rows)
+    else:
+        # Single-row layout
+        return len(config.cabinet.sections) if config.cabinet.sections else 1
+
+
+def check_infrastructure_advisories(
+    config: CabinetConfiguration,
+) -> list[ValidationError | ValidationWarning]:
+    """Check infrastructure configuration for potential issues.
+
+    Validates infrastructure elements against the following rules:
+    - V-01: Cutout within panel bounds
+    - V-02: Cutout edge distance (min 1")
+    - V-03: Cutout overlap detection
+    - V-04: Outlet accessibility (behind fixed shelf warning)
+    - V-05: Grommet size validation (standard sizes: 2, 2.5, or 3)
+    - V-06: Section index validation
+    - V-07: Ventilation adequacy warning
+
+    Args:
+        config: A validated CabinetConfiguration instance
+
+    Returns:
+        List of validation errors and warnings for infrastructure-related issues
+    """
+    results: list[ValidationError | ValidationWarning] = []
+
+    if not config.infrastructure:
+        return results
+
+    infra = config.infrastructure
+    section_count = _get_section_count(config)
+
+    # Collect all cutouts for overlap detection, organized by panel
+    panel_cutouts: dict[str, list[tuple[str, tuple[float, float], tuple[float, float]]]] = {}
+
+    # V-06: Section index validation for lighting
+    for i, lighting in enumerate(infra.lighting):
+        path = f"infrastructure.lighting[{i}]"
+        for section_idx in lighting.section_indices:
+            if section_idx >= section_count:
+                results.append(
+                    ValidationError(
+                        path=f"{path}.section_indices",
+                        message=f"Section index {section_idx} out of range (cabinet has {section_count} sections)",
+                        value=section_idx,
+                    )
+                )
+
+    # Process outlets
+    for i, outlet in enumerate(infra.outlets):
+        path = f"infrastructure.outlets[{i}]"
+
+        # V-06: Section index validation
+        if outlet.section_index >= section_count:
+            results.append(
+                ValidationError(
+                    path=f"{path}.section_index",
+                    message=f"Section index {outlet.section_index} out of range (cabinet has {section_count} sections)",
+                    value=outlet.section_index,
+                )
+            )
+
+        # Get panel dimensions and cutout info
+        panel_dims = _get_panel_dimensions(config, outlet.panel)
+        cutout_path, cutout_pos, cutout_dims, panel = _get_cutout_info(outlet, "outlet", i)
+
+        # V-01: Cutout within panel bounds
+        if cutout_pos[0] + cutout_dims[0] > panel_dims[0]:
+            results.append(
+                ValidationError(
+                    path=path,
+                    message=f"Cutout at ({cutout_pos[0]}, {cutout_pos[1]}) exceeds panel dimensions (panel width: {panel_dims[0]})",
+                )
+            )
+        if cutout_pos[1] + cutout_dims[1] > panel_dims[1]:
+            results.append(
+                ValidationError(
+                    path=path,
+                    message=f"Cutout at ({cutout_pos[0]}, {cutout_pos[1]}) exceeds panel dimensions (panel height: {panel_dims[1]})",
+                )
+            )
+        if cutout_pos[0] < 0 or cutout_pos[1] < 0:
+            results.append(
+                ValidationError(
+                    path=path,
+                    message=f"Cutout at ({cutout_pos[0]}, {cutout_pos[1]}) has negative position",
+                )
+            )
+
+        # V-02: Cutout edge distance
+        if cutout_pos[0] < MIN_CUTOUT_EDGE_DISTANCE:
+            results.append(
+                ValidationError(
+                    path=path,
+                    message=f'Cutout too close to edge (min {MIN_CUTOUT_EDGE_DISTANCE}")',
+                )
+            )
+        if cutout_pos[1] < MIN_CUTOUT_EDGE_DISTANCE:
+            results.append(
+                ValidationError(
+                    path=path,
+                    message=f'Cutout too close to edge (min {MIN_CUTOUT_EDGE_DISTANCE}")',
+                )
+            )
+        if panel_dims[0] - (cutout_pos[0] + cutout_dims[0]) < MIN_CUTOUT_EDGE_DISTANCE:
+            results.append(
+                ValidationError(
+                    path=path,
+                    message=f'Cutout too close to edge (min {MIN_CUTOUT_EDGE_DISTANCE}")',
+                )
+            )
+        if panel_dims[1] - (cutout_pos[1] + cutout_dims[1]) < MIN_CUTOUT_EDGE_DISTANCE:
+            results.append(
+                ValidationError(
+                    path=path,
+                    message=f'Cutout too close to edge (min {MIN_CUTOUT_EDGE_DISTANCE}")',
+                )
+            )
+
+        # V-04: Outlet accessibility - check if outlet is behind a shelf position
+        # This is a simplified check; in reality, it would need to compare against
+        # actual shelf heights within the specified section
+        if outlet.panel == "back" and config.cabinet.sections:
+            if outlet.section_index < len(config.cabinet.sections):
+                section = config.cabinet.sections[outlet.section_index]
+                if section.shelves > 0:
+                    results.append(
+                        ValidationWarning(
+                            path=path,
+                            message=f"Outlet behind fixed shelf at section {outlet.section_index}",
+                            suggestion="Consider adjusting shelf positions or outlet location for accessibility",
+                        )
+                    )
+
+        # Collect for overlap detection
+        if panel not in panel_cutouts:
+            panel_cutouts[panel] = []
+        panel_cutouts[panel].append((cutout_path, cutout_pos, cutout_dims))
+
+    # Process grommets
+    for i, grommet in enumerate(infra.grommets):
+        path = f"infrastructure.grommets[{i}]"
+
+        # V-05: Grommet size validation
+        if grommet.size not in STANDARD_GROMMET_SIZES:
+            results.append(
+                ValidationError(
+                    path=f"{path}.size",
+                    message=f"Invalid grommet size: {grommet.size} (use 2, 2.5, or 3)",
+                    value=grommet.size,
+                )
+            )
+
+        # V-06: Section index validation (if specified)
+        if grommet.section_index is not None and grommet.section_index >= section_count:
+            results.append(
+                ValidationError(
+                    path=f"{path}.section_index",
+                    message=f"Section index {grommet.section_index} out of range (cabinet has {section_count} sections)",
+                    value=grommet.section_index,
+                )
+            )
+
+        # Get panel dimensions and cutout info
+        panel_dims = _get_panel_dimensions(config, grommet.panel)
+        cutout_path, cutout_pos, cutout_dims, panel = _get_cutout_info(grommet, "grommet", i)
+
+        # V-01: Cutout within panel bounds
+        if cutout_pos[0] + cutout_dims[0] > panel_dims[0]:
+            results.append(
+                ValidationError(
+                    path=path,
+                    message=f"Cutout at ({cutout_pos[0]}, {cutout_pos[1]}) exceeds panel dimensions (panel width: {panel_dims[0]})",
+                )
+            )
+        if cutout_pos[1] + cutout_dims[1] > panel_dims[1]:
+            results.append(
+                ValidationError(
+                    path=path,
+                    message=f"Cutout at ({cutout_pos[0]}, {cutout_pos[1]}) exceeds panel dimensions (panel height: {panel_dims[1]})",
+                )
+            )
+        if cutout_pos[0] < 0 or cutout_pos[1] < 0:
+            results.append(
+                ValidationError(
+                    path=path,
+                    message=f"Cutout at ({cutout_pos[0]}, {cutout_pos[1]}) has negative position",
+                )
+            )
+
+        # V-02: Cutout edge distance
+        if cutout_pos[0] < MIN_CUTOUT_EDGE_DISTANCE:
+            results.append(
+                ValidationError(
+                    path=path,
+                    message=f'Cutout too close to edge (min {MIN_CUTOUT_EDGE_DISTANCE}")',
+                )
+            )
+        if cutout_pos[1] < MIN_CUTOUT_EDGE_DISTANCE:
+            results.append(
+                ValidationError(
+                    path=path,
+                    message=f'Cutout too close to edge (min {MIN_CUTOUT_EDGE_DISTANCE}")',
+                )
+            )
+        if panel_dims[0] - (cutout_pos[0] + cutout_dims[0]) < MIN_CUTOUT_EDGE_DISTANCE:
+            results.append(
+                ValidationError(
+                    path=path,
+                    message=f'Cutout too close to edge (min {MIN_CUTOUT_EDGE_DISTANCE}")',
+                )
+            )
+        if panel_dims[1] - (cutout_pos[1] + cutout_dims[1]) < MIN_CUTOUT_EDGE_DISTANCE:
+            results.append(
+                ValidationError(
+                    path=path,
+                    message=f'Cutout too close to edge (min {MIN_CUTOUT_EDGE_DISTANCE}")',
+                )
+            )
+
+        # Collect for overlap detection
+        if panel not in panel_cutouts:
+            panel_cutouts[panel] = []
+        panel_cutouts[panel].append((cutout_path, cutout_pos, cutout_dims))
+
+    # Process ventilation areas
+    for i, vent in enumerate(infra.ventilation):
+        path = f"infrastructure.ventilation[{i}]"
+
+        # Get panel dimensions and cutout info
+        panel_dims = _get_panel_dimensions(config, vent.panel)
+        cutout_path, cutout_pos, cutout_dims, panel = _get_cutout_info(vent, "ventilation", i)
+
+        # V-01: Cutout within panel bounds
+        if cutout_pos[0] + cutout_dims[0] > panel_dims[0]:
+            results.append(
+                ValidationError(
+                    path=path,
+                    message=f"Cutout at ({cutout_pos[0]}, {cutout_pos[1]}) exceeds panel dimensions (panel width: {panel_dims[0]})",
+                )
+            )
+        if cutout_pos[1] + cutout_dims[1] > panel_dims[1]:
+            results.append(
+                ValidationError(
+                    path=path,
+                    message=f"Cutout at ({cutout_pos[0]}, {cutout_pos[1]}) exceeds panel dimensions (panel height: {panel_dims[1]})",
+                )
+            )
+        if cutout_pos[0] < 0 or cutout_pos[1] < 0:
+            results.append(
+                ValidationError(
+                    path=path,
+                    message=f"Cutout at ({cutout_pos[0]}, {cutout_pos[1]}) has negative position",
+                )
+            )
+
+        # V-02: Cutout edge distance
+        if cutout_pos[0] < MIN_CUTOUT_EDGE_DISTANCE:
+            results.append(
+                ValidationError(
+                    path=path,
+                    message=f'Cutout too close to edge (min {MIN_CUTOUT_EDGE_DISTANCE}")',
+                )
+            )
+        if cutout_pos[1] < MIN_CUTOUT_EDGE_DISTANCE:
+            results.append(
+                ValidationError(
+                    path=path,
+                    message=f'Cutout too close to edge (min {MIN_CUTOUT_EDGE_DISTANCE}")',
+                )
+            )
+        if panel_dims[0] - (cutout_pos[0] + cutout_dims[0]) < MIN_CUTOUT_EDGE_DISTANCE:
+            results.append(
+                ValidationError(
+                    path=path,
+                    message=f'Cutout too close to edge (min {MIN_CUTOUT_EDGE_DISTANCE}")',
+                )
+            )
+        if panel_dims[1] - (cutout_pos[1] + cutout_dims[1]) < MIN_CUTOUT_EDGE_DISTANCE:
+            results.append(
+                ValidationError(
+                    path=path,
+                    message=f'Cutout too close to edge (min {MIN_CUTOUT_EDGE_DISTANCE}")',
+                )
+            )
+
+        # Collect for overlap detection
+        if panel not in panel_cutouts:
+            panel_cutouts[panel] = []
+        panel_cutouts[panel].append((cutout_path, cutout_pos, cutout_dims))
+
+    # V-03: Cutout overlap detection
+    for panel, cutouts in panel_cutouts.items():
+        for i, (path1, pos1, dims1) in enumerate(cutouts):
+            for j, (path2, pos2, dims2) in enumerate(cutouts[i + 1 :], start=i + 1):
+                if _cutouts_overlap(pos1, dims1, pos2, dims2):
+                    results.append(
+                        ValidationError(
+                            path=path1,
+                            message=f"Cutouts overlap at ({pos1[0]}, {pos1[1]})",
+                        )
+                    )
+
+    # V-07: Ventilation adequacy warning
+    # Check if there are electronics-related keywords in notes or configuration
+    # but no ventilation is configured
+    has_ventilation = len(infra.ventilation) > 0
+    has_outlets = len(infra.outlets) > 0
+
+    # If we have outlets but no ventilation, suggest ventilation for electronics
+    if has_outlets and not has_ventilation:
+        results.append(
+            ValidationWarning(
+                path="infrastructure",
+                message="Electronics enclosure may need additional ventilation",
+                suggestion="Consider adding ventilation cutouts for heat dissipation",
+            )
+        )
+
+    return results
+
+
 def validate_config(config: CabinetConfiguration) -> ValidationResult:
     """Perform full validation of a cabinet configuration.
 
     This function performs both structural validation (which should already
-    be handled by Pydantic) and advisory checks for woodworking best practices
-    and obstacle validation.
+    be handled by Pydantic) and advisory checks for woodworking best practices,
+    obstacle validation, and infrastructure validation.
 
     Args:
         config: A CabinetConfiguration instance (already validated by Pydantic)
@@ -431,6 +893,15 @@ def validate_config(config: CabinetConfiguration) -> ValidationResult:
             result.add_error(r.path, r.message, r.value)
         else:
             result.add_warning(r.path, r.message, r.suggestion)
+
+    # Add infrastructure validation (FRD-15)
+    if config.infrastructure is not None:
+        infra_results = check_infrastructure_advisories(config)
+        for r in infra_results:
+            if isinstance(r, ValidationError):
+                result.add_error(r.path, r.message, r.value)
+            else:
+                result.add_warning(r.path, r.message, r.suggestion)
 
     # Validate total fixed section width doesn't exceed cabinet width
     total_fixed_width = 0.0
@@ -455,5 +926,32 @@ def validate_config(config: CabinetConfiguration) -> ValidationResult:
             ),
             value=total_fixed_width,
         )
+
+    # FR-06.3: Validate section depth overrides don't exceed cabinet depth
+    cabinet_depth = config.cabinet.depth
+    for i, section in enumerate(config.cabinet.sections):
+        if section.depth is not None and section.depth > cabinet_depth:
+            result.add_error(
+                path=f"cabinet.sections[{i}].depth",
+                message=(
+                    f"Section depth ({section.depth}\") exceeds "
+                    f"cabinet depth ({cabinet_depth}\")"
+                ),
+                value=section.depth,
+            )
+
+    # Also validate section depths in multi-row layouts
+    if config.cabinet.rows:
+        for row_idx, row in enumerate(config.cabinet.rows):
+            for section_idx, section in enumerate(row.sections):
+                if section.depth is not None and section.depth > cabinet_depth:
+                    result.add_error(
+                        path=f"cabinet.rows[{row_idx}].sections[{section_idx}].depth",
+                        message=(
+                            f"Section depth ({section.depth}\") exceeds "
+                            f"cabinet depth ({cabinet_depth}\")"
+                        ),
+                        value=section.depth,
+                    )
 
     return result

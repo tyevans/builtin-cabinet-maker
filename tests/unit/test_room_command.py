@@ -31,7 +31,7 @@ def params_input() -> LayoutParametersInput:
         shelves_per_section=3,
         material_thickness=0.75,
         material_type="plywood",
-        back_thickness=0.5,
+        back_thickness=0.25,
     )
 
 
@@ -149,9 +149,9 @@ class TestExecuteRoomLayout:
         assert result.transforms[0].wall_index == 0
         assert result.transforms[0].rotation_z == pytest.approx(0.0)
 
-        # Second transform on west wall (direction 270)
+        # Second transform on west wall (direction 270, rotation negated to 90)
         assert result.transforms[1].wall_index == 1
-        assert result.transforms[1].rotation_z == pytest.approx(270.0)
+        assert result.transforms[1].rotation_z == pytest.approx(90.0)
 
     def test_combined_cut_list(
         self,

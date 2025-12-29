@@ -8,6 +8,7 @@ dependencies = [
     "numpy-stl>=3.2.0",
     "typer>=0.21.0",
     "pydantic>=2.0",
+    "ezdxf>=1.0.0",
 ]
 
 [project.optional-dependencies]
@@ -27,3 +28,14 @@ where = ["src"]
 [build-system]
 requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
+
+[dependency-groups]
+dev = [
+    "pytest-cov>=7.0.0",
+]
+
+[tool.pytest.ini_options]
+filterwarnings = [
+    "ignore::DeprecationWarning:ezdxf.*:",
+    "ignore::DeprecationWarning:pyparsing.*:",
+]

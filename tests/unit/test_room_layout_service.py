@@ -299,8 +299,8 @@ class TestComputeSectionTransforms:
 
         assert len(transforms) == 1
         assert transforms[0].wall_index == 1
-        # Second wall has direction 270 (turned right 90 degrees)
-        assert transforms[0].rotation_z == pytest.approx(270.0)
+        # Second wall has direction 270, negated to 90 for cabinet facing
+        assert transforms[0].rotation_z == pytest.approx(90.0)
 
     def test_multiple_sections_transforms(
         self, room_layout_service: RoomLayoutService, l_shaped_room: Room
@@ -323,7 +323,7 @@ class TestComputeSectionTransforms:
         assert transforms[0].section_index == 0
         assert transforms[0].rotation_z == pytest.approx(0.0)
         assert transforms[1].section_index == 1
-        assert transforms[1].rotation_z == pytest.approx(270.0)
+        assert transforms[1].rotation_z == pytest.approx(90.0)
 
 
 class TestValidateFit:
@@ -577,10 +577,10 @@ class TestIntegrationScenarios:
         assert len(south_transforms) == 3
         assert all(t.rotation_z == pytest.approx(0.0) for t in south_transforms)
 
-        # Verify west wall cabinet
+        # Verify west wall cabinet (direction 270, negated to 90)
         west_transforms = [t for t in transforms if t.wall_index == 1]
         assert len(west_transforms) == 1
-        assert west_transforms[0].rotation_z == pytest.approx(270.0)
+        assert west_transforms[0].rotation_z == pytest.approx(90.0)
 
     def test_closet_built_in(
         self, room_layout_service: RoomLayoutService
