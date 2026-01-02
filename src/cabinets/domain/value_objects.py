@@ -4,14 +4,14 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from enum import Enum
-from math import radians, tan
+from math import atan2, degrees, radians, sqrt, tan
 from typing import TYPE_CHECKING, Any, Literal
 
 if TYPE_CHECKING:
     from .entities import Obstacle
 
 
-class MaterialType(Enum):
+class MaterialType(str, Enum):
     """Types of materials used in cabinet construction."""
 
     PLYWOOD = "plywood"
@@ -20,9 +20,27 @@ class MaterialType(Enum):
     SOLID_WOOD = "solid_wood"
 
 
-class ObstacleType(Enum):
-    """Types of obstacles that cabinets must avoid."""
+class ObstacleType(str, Enum):
+    """Types of obstacles that cabinets must avoid.
 
+    Defines physical obstructions and infrastructure elements that
+    require clearance or special handling during cabinet placement.
+
+    Attributes:
+        WINDOW: Window opening in wall.
+        DOOR: Door or door frame.
+        OUTLET: Electrical outlet/receptacle.
+        SWITCH: Light switch or other wall switch.
+        VENT: HVAC vent or register.
+        SKYLIGHT: Skylight projection into cabinet space.
+        CUSTOM: User-defined obstacle type.
+        ELECTRICAL_PANEL: Electrical service panel (requires 36" clearance).
+        COOKTOP: Cooking surface (requires 30" vertical clearance).
+        HEAT_SOURCE: Heat-generating appliance or element.
+        CLOSET_LIGHT: Closet lighting fixture (NEC clearance required).
+    """
+
+    # Existing values
     WINDOW = "window"
     DOOR = "door"
     OUTLET = "outlet"
@@ -31,8 +49,14 @@ class ObstacleType(Enum):
     SKYLIGHT = "skylight"
     CUSTOM = "custom"
 
+    # New safety-related obstacles (FRD-21)
+    ELECTRICAL_PANEL = "electrical_panel"
+    COOKTOP = "cooktop"
+    HEAT_SOURCE = "heat_source"
+    CLOSET_LIGHT = "closet_light"
 
-class PanelType(Enum):
+
+class PanelType(str, Enum):
     """Types of panels in a cabinet."""
 
     # Structural panels
@@ -72,8 +96,18 @@ class PanelType(Enum):
     # Cable routing (shared FRD-18/FRD-19)
     CABLE_CHASE = "cable_chase"
 
+    # Countertop and zone panels (FRD-22)
+    COUNTERTOP = "countertop"
+    SUPPORT_BRACKET = "support_bracket"
+    STEPPED_SIDE = "stepped_side"
 
-class SectionType(Enum):
+    # Bay alcove panels (FRD-23)
+    SEAT_SURFACE = "seat_surface"
+    MULLION_FILLER = "mullion_filler"
+    APEX_INFILL = "apex_infill"
+
+
+class SectionType(str, Enum):
     """Types of cabinet sections.
 
     Defines the different types of cabinet sections that can be created,
@@ -130,6 +164,139 @@ class JointType(str, Enum):
     DOWEL = "dowel"
     BISCUIT = "biscuit"
     BUTT = "butt"
+
+
+# --- FRD-21 Safety Compliance Value Objects ---
+
+
+class SafetyCheckStatus(str, Enum):
+    """Result status for safety checks.
+
+    Indicates the outcome of a safety validation check.
+
+    Attributes:
+        PASS: Check passed successfully - no safety concerns.
+        WARNING: Check identified a potential concern that should be reviewed.
+        ERROR: Check identified a violation that must be addressed.
+        NOT_APPLICABLE: Check was skipped - not relevant to this configuration.
+    """
+
+    PASS = "pass"
+    WARNING = "warning"
+    ERROR = "error"
+    NOT_APPLICABLE = "not_applicable"
+
+
+class SafetyCategory(str, Enum):
+    """Categories of safety checks.
+
+    Groups safety checks by their domain for organized reporting
+    and selective enabling/disabling of check categories.
+
+    Attributes:
+        STRUCTURAL: Weight capacity, deflection, span limits.
+        STABILITY: Anti-tip requirements, center of gravity analysis.
+        ACCESSIBILITY: ADA reach ranges, accessible storage percentage.
+        CLEARANCE: Building code clearances (electrical, heat, egress).
+        MATERIAL: Formaldehyde emissions, VOC compliance.
+        CHILD_SAFETY: Entrapment hazards, sharp edges, soft-close hardware.
+        SEISMIC: Earthquake zone anchoring requirements.
+    """
+
+    STRUCTURAL = "structural"
+    STABILITY = "stability"
+    ACCESSIBILITY = "accessibility"
+    CLEARANCE = "clearance"
+    MATERIAL = "material"
+    CHILD_SAFETY = "child_safety"
+    SEISMIC = "seismic"
+
+
+class SeismicZone(str, Enum):
+    """IBC Seismic Design Categories.
+
+    Defines seismic risk zones per International Building Code.
+    Higher letters indicate greater seismic risk and stricter
+    anchoring requirements.
+
+    Attributes:
+        A: Low seismic risk - minimal anchoring.
+        B: Low-moderate seismic risk.
+        C: Moderate seismic risk.
+        D: High seismic risk - enhanced anchoring required.
+        E: Very high seismic risk - enhanced anchoring required.
+        F: Very high seismic risk near major faults.
+
+    Note:
+        Zones D, E, F require seismic-rated anchoring hardware
+        and may require structural engineering review.
+    """
+
+    A = "A"
+    B = "B"
+    C = "C"
+    D = "D"
+    E = "E"
+    F = "F"
+
+
+class MaterialCertification(str, Enum):
+    """Material certification levels for formaldehyde emissions.
+
+    Tracks compliance with CARB ATCM 93120 and EPA TSCA Title VI
+    requirements for composite wood products.
+
+    Attributes:
+        CARB_PHASE2: CARB Phase 2 compliant (TSCA Title VI equivalent).
+        NAF: No Added Formaldehyde - exempt resin systems.
+        ULEF: Ultra-Low Emitting Formaldehyde - below Phase 2 limits.
+        NONE: Known non-compliant or no certification.
+        UNKNOWN: Certification status not specified.
+
+    Note:
+        NAF and ULEF certifications exceed Phase 2 requirements and
+        are considered best practice for indoor air quality.
+    """
+
+    CARB_PHASE2 = "carb_phase2"
+    NAF = "naf"
+    ULEF = "ulef"
+    NONE = "none"
+    UNKNOWN = "unknown"
+
+
+class VOCCategory(str, Enum):
+    """VOC content categories for finishes and coatings.
+
+    Categorizes finishes by volatile organic compound content
+    per SCAQMD Rule 1113 guidelines.
+
+    Attributes:
+        SUPER_COMPLIANT: Less than 10 g/L VOC content.
+        COMPLIANT: Less than 50 g/L VOC content.
+        STANDARD: Standard VOC content (may exceed 50 g/L).
+        UNKNOWN: VOC category not specified.
+    """
+
+    SUPER_COMPLIANT = "super_compliant"
+    COMPLIANT = "compliant"
+    STANDARD = "standard"
+    UNKNOWN = "unknown"
+
+
+class ADAStandard(str, Enum):
+    """ADA accessibility standard versions.
+
+    Specifies which accessibility standard to use for compliance
+    checking. Different standards may have different requirements.
+
+    Attributes:
+        ADA_2010: 2010 ADA Standards for Accessible Design (federal).
+        ANSI_A117_1: ANSI A117.1 Accessible and Usable Buildings standard.
+    """
+
+    ADA_2010 = "ADA_2010"
+    ANSI_A117_1 = "ANSI_A117.1"
 
 
 # --- FRD-15 Infrastructure Integration Value Objects ---
@@ -773,6 +940,7 @@ class ValidRegion:
 
 # Default clearances for each obstacle type
 DEFAULT_CLEARANCES: dict[ObstacleType, Clearance] = {
+    # Existing obstacle clearances
     ObstacleType.WINDOW: Clearance(top=2.0, bottom=2.0, left=2.0, right=2.0),
     ObstacleType.DOOR: Clearance(top=0.0, bottom=0.0, left=2.0, right=2.0),
     ObstacleType.OUTLET: Clearance(top=0.0, bottom=0.0, left=0.0, right=0.0),
@@ -780,6 +948,16 @@ DEFAULT_CLEARANCES: dict[ObstacleType, Clearance] = {
     ObstacleType.VENT: Clearance(top=4.0, bottom=4.0, left=4.0, right=4.0),
     ObstacleType.SKYLIGHT: Clearance(top=2.0, bottom=2.0, left=2.0, right=2.0),
     ObstacleType.CUSTOM: Clearance(top=0.0, bottom=0.0, left=0.0, right=0.0),
+    # New safety-related clearances (FRD-21)
+    # Note: Electrical panel 36" frontal clearance is checked separately by SafetyService
+    ObstacleType.ELECTRICAL_PANEL: Clearance(
+        top=0.0, bottom=0.0, left=15.0, right=15.0
+    ),
+    # Cooktop 30" top clearance per range hood/microwave clearance requirements
+    ObstacleType.COOKTOP: Clearance(top=30.0, bottom=0.0, left=0.0, right=0.0),
+    ObstacleType.HEAT_SOURCE: Clearance(top=30.0, bottom=0.0, left=15.0, right=15.0),
+    # Closet light 12" bottom clearance per NEC 410.16 for incandescent fixtures
+    ObstacleType.CLOSET_LIGHT: Clearance(top=0.0, bottom=12.0, left=6.0, right=6.0),
 }
 
 
@@ -846,7 +1024,7 @@ class SkippedArea:
     reason: str
 
 
-@dataclass
+@dataclass(frozen=True)
 class LayoutResult:
     """Result of obstacle-aware layout calculation.
 
@@ -855,24 +1033,39 @@ class LayoutResult:
     areas that were skipped.
 
     Attributes:
-        placed_sections: List of sections that were successfully placed.
-        warnings: List of warnings generated during layout.
-        skipped_areas: List of areas where sections couldn't be placed.
+        placed_sections: Tuple of sections that were successfully placed.
+        warnings: Tuple of warnings generated during layout.
+        skipped_areas: Tuple of areas where sections couldn't be placed.
     """
 
-    placed_sections: list[PlacedSection]
-    warnings: list[LayoutWarning]
-    skipped_areas: list[SkippedArea]
+    placed_sections: tuple[PlacedSection, ...] = ()
+    warnings: tuple[LayoutWarning, ...] = ()
+    skipped_areas: tuple[SkippedArea, ...] = ()
 
-    def __init__(
-        self,
+    @classmethod
+    def create(
+        cls,
         placed_sections: list[PlacedSection] | None = None,
         warnings: list[LayoutWarning] | None = None,
         skipped_areas: list[SkippedArea] | None = None,
-    ) -> None:
-        self.placed_sections = placed_sections if placed_sections is not None else []
-        self.warnings = warnings if warnings is not None else []
-        self.skipped_areas = skipped_areas if skipped_areas is not None else []
+    ) -> "LayoutResult":
+        """Factory method for creating LayoutResult with defaults.
+
+        Accepts lists for convenience and converts them to tuples internally.
+
+        Args:
+            placed_sections: List of sections that were successfully placed.
+            warnings: List of warnings generated during layout.
+            skipped_areas: List of areas where sections couldn't be placed.
+
+        Returns:
+            A new immutable LayoutResult instance.
+        """
+        return cls(
+            placed_sections=tuple(placed_sections or []),
+            warnings=tuple(warnings or []),
+            skipped_areas=tuple(skipped_areas or []),
+        )
 
     @property
     def has_warnings(self) -> bool:
@@ -895,7 +1088,7 @@ class LayoutResult:
         return len(self.placed_sections)
 
 
-class CornerType(Enum):
+class CornerType(str, Enum):
     """Types of corner cabinets.
 
     Each corner type has different footprint characteristics on the two
@@ -1043,6 +1236,112 @@ class EdgeTreatment(str, Enum):
     EASED = "eased"
 
 
+# --- FRD-22 Countertops and Vertical Zones Value Objects ---
+
+
+class ZoneType(str, Enum):
+    """Types of vertical zones in cabinet configurations.
+
+    Defines the different types of vertical zones that can be stacked
+    to create multi-zone cabinet configurations like kitchen base/upper
+    or mudroom bench/open shelving.
+
+    Attributes:
+        BASE: Floor-standing base cabinet zone.
+        UPPER: Wall-mounted upper cabinet zone.
+        GAP: Empty gap zone (for backsplash, mirror, hooks, etc.).
+        BENCH: Bench/seat zone, typically lower height.
+        OPEN: Open shelving zone without doors.
+    """
+
+    BASE = "base"
+    UPPER = "upper"
+    GAP = "gap"
+    BENCH = "bench"
+    OPEN = "open"
+
+
+class ZoneMounting(str, Enum):
+    """Mounting methods for cabinet zones.
+
+    Defines how a zone is attached/supported in the overall configuration.
+
+    Attributes:
+        FLOOR: Zone rests on the floor (base cabinets, benches).
+        WALL: Zone is mounted to the wall (upper cabinets).
+        SUSPENDED: Zone is suspended from ceiling or structure.
+        ON_BASE: Zone rests on top of a base zone (hutch uppers).
+    """
+
+    FLOOR = "floor"
+    WALL = "wall"
+    SUSPENDED = "suspended"
+    ON_BASE = "on_base"
+
+
+class GapPurpose(str, Enum):
+    """Purpose designation for gap zones.
+
+    Defines the intended use of a gap zone, which affects
+    recommendations for wall treatment and accessories.
+
+    Attributes:
+        BACKSPLASH: Kitchen backsplash area (typically tile/stone).
+        MIRROR: Bathroom mirror area.
+        HOOKS: Coat hooks or hanging storage area.
+        WORKSPACE: Workspace area between base and upper cabinets.
+        DISPLAY: Display or decorative area.
+    """
+
+    BACKSPLASH = "backsplash"
+    MIRROR = "mirror"
+    HOOKS = "hooks"
+    WORKSPACE = "workspace"
+    DISPLAY = "display"
+
+
+class ZonePreset(str, Enum):
+    """Preset vertical zone configurations.
+
+    Provides standard zone stack configurations for common use cases.
+    Each preset defines a complete vertical arrangement of zones.
+
+    Attributes:
+        KITCHEN: Standard kitchen with base, countertop, backsplash, and uppers.
+        MUDROOM: Mudroom with bench, hooks area, and open upper storage.
+        VANITY: Bathroom vanity with base, counter, mirror area, and small uppers.
+        HUTCH: Desk hutch with base desk, workspace gap, and upper storage.
+        CUSTOM: User-defined custom zone configuration.
+    """
+
+    KITCHEN = "kitchen"
+    MUDROOM = "mudroom"
+    VANITY = "vanity"
+    HUTCH = "hutch"
+    CUSTOM = "custom"
+
+
+class CountertopEdgeType(str, Enum):
+    """Edge treatment types for countertops.
+
+    Defines the different edge finishing options for countertop surfaces.
+    Affects both aesthetics and cut list generation.
+
+    Attributes:
+        SQUARE: Standard square edge (most common, easiest to fabricate).
+        EASED: Slightly rounded/softened edge (removes sharp corner).
+        BULLNOSE: Fully rounded edge profile.
+        BEVELED: Angled edge cut (typically 45 degrees).
+        WATERFALL: Edge continues down as vertical panel.
+    """
+
+    SQUARE = "square"
+    EASED = "eased"
+    BULLNOSE = "bullnose"
+    BEVELED = "beveled"
+    WATERFALL = "waterfall"
+
+
 class PedestalType(str, Enum):
     """Types of desk pedestals.
 
@@ -1092,9 +1391,7 @@ class DeskDimensions:
         if self.standing_desk_min_height <= 0:
             raise ValueError("Standing desk min height must be positive")
         if self.standing_desk_max_height <= self.standing_desk_min_height:
-            raise ValueError(
-                "Standing desk max height must be greater than min height"
-            )
+            raise ValueError("Standing desk max height must be greater than min height")
         if self.min_knee_clearance_height <= 0:
             raise ValueError("Minimum knee clearance height must be positive")
         if self.min_knee_clearance_width <= 0:
@@ -1429,3 +1726,334 @@ class PanelCutout:
 
             return math.pi * (self.diameter / 2) ** 2
         return self.width * self.height
+
+
+# --- FRD-23 Bay Window Alcove Value Objects ---
+
+
+class BayType(str, Enum):
+    """Preset bay window configurations.
+
+    Defines the different bay window configurations that can be used
+    for alcove built-ins. Each type has different wall angles and
+    facet arrangements.
+
+    Attributes:
+        THREE_WALL: Classic 3-wall bay with 45-degree angles.
+        FIVE_WALL: 5-wall angled bay with 22.5-degree angles.
+        BOX_BAY: 3-wall at 90-degree angles (rectangular projection).
+        BOW: Curved bay approximated by multiple segments.
+        CUSTOM: User-defined angles and wall configuration.
+    """
+
+    THREE_WALL = "three_wall"
+    FIVE_WALL = "five_wall"
+    BOX_BAY = "box_bay"
+    BOW = "bow"
+    CUSTOM = "custom"
+
+
+class FillerTreatment(str, Enum):
+    """Treatment options for mullion/narrow wall zones.
+
+    Defines how to handle the narrow zones between bay window walls,
+    such as the areas around mullions or narrow wall segments.
+
+    Attributes:
+        PANEL: Solid panel filler to close the gap.
+        TRIM: Decorative trim piece to cover the gap.
+        NONE: Leave the gap open/exposed.
+    """
+
+    PANEL = "panel"
+    TRIM = "trim"
+    NONE = "none"
+
+
+@dataclass(frozen=True)
+class ApexPoint:
+    """Apex point for pyramidal/conical ceiling.
+
+    Represents the highest point of a radial ceiling where all
+    ceiling facets converge. Coordinates are relative to the
+    bay alcove origin (typically center of bay at floor level).
+
+    Attributes:
+        x: X coordinate relative to bay origin (inches).
+        y: Y coordinate relative to bay origin (inches).
+        z: Height from floor (inches).
+    """
+
+    x: float
+    y: float
+    z: float
+
+    def __post_init__(self) -> None:
+        if self.z <= 0:
+            raise ValueError("Apex height must be positive")
+
+    def distance_to(self, point_x: float, point_y: float) -> float:
+        """Calculate horizontal distance from apex to a point.
+
+        Args:
+            point_x: X coordinate of the target point.
+            point_y: Y coordinate of the target point.
+
+        Returns:
+            Horizontal distance in inches.
+        """
+        return sqrt((self.x - point_x) ** 2 + (self.y - point_y) ** 2)
+
+
+@dataclass(frozen=True)
+class CeilingFacet:
+    """A triangular ceiling facet in a radial ceiling.
+
+    Each facet connects the apex point to a wall segment's top edge,
+    forming one triangular face of the pyramidal/conical ceiling.
+
+    Attributes:
+        wall_index: Index of the wall this facet is above.
+        edge_start: Point2D for left edge where facet meets wall.
+        edge_end: Point2D for right edge where facet meets wall.
+        edge_height: Height of wall top edge (where facet starts).
+        apex: Reference to the apex point.
+    """
+
+    wall_index: int
+    edge_start: Point2D
+    edge_end: Point2D
+    edge_height: float
+    apex: ApexPoint
+
+    def __post_init__(self) -> None:
+        if self.wall_index < 0:
+            raise ValueError("Wall index must be non-negative")
+        if self.edge_height <= 0:
+            raise ValueError("Edge height must be positive")
+        if self.edge_height >= self.apex.z:
+            raise ValueError("Edge height must be less than apex height")
+
+    @property
+    def slope_angle(self) -> float:
+        """Calculate slope angle of this facet in degrees.
+
+        The slope angle is measured from horizontal, representing
+        how steeply the ceiling facet rises from the wall edge
+        to the apex point.
+
+        Returns:
+            Slope angle in degrees (0-90).
+        """
+        # Calculate center of wall edge
+        edge_center_x = (self.edge_start.x + self.edge_end.x) / 2
+        edge_center_y = (self.edge_start.y + self.edge_end.y) / 2
+
+        # Horizontal distance from edge center to apex
+        horizontal_dist = self.apex.distance_to(edge_center_x, edge_center_y)
+
+        # Vertical rise from edge to apex
+        vertical_rise = self.apex.z - self.edge_height
+
+        # Calculate angle from horizontal
+        if horizontal_dist == 0:
+            return 90.0
+        return degrees(atan2(vertical_rise, horizontal_dist))
+
+    def height_at_point(self, x: float, y: float) -> float:
+        """Calculate ceiling height at a point under this facet.
+
+        Uses linear interpolation based on radial distance from the apex.
+        Points closer to the apex are higher, points closer to the wall
+        edge are at the edge height.
+
+        Args:
+            x: X coordinate of the point.
+            y: Y coordinate of the point.
+
+        Returns:
+            Ceiling height at the specified point in inches.
+        """
+        # Calculate center of wall edge
+        edge_center_x = (self.edge_start.x + self.edge_end.x) / 2
+        edge_center_y = (self.edge_start.y + self.edge_end.y) / 2
+
+        # Distance from apex to edge center (full run of the facet)
+        edge_dist = self.apex.distance_to(edge_center_x, edge_center_y)
+
+        # Distance from apex to the query point
+        point_dist = self.apex.distance_to(x, y)
+
+        if edge_dist == 0:
+            # Degenerate case: apex directly above edge center
+            return self.apex.z
+
+        # Linear interpolation: t=0 at apex (full height), t=1 at edge (edge height)
+        t = min(1.0, point_dist / edge_dist)
+        return self.apex.z - t * (self.apex.z - self.edge_height)
+
+
+@dataclass(frozen=True)
+class RadialCeilingGeometry:
+    """Radial/pyramidal ceiling geometry for bay alcoves.
+
+    Models a ceiling where multiple triangular facets converge
+    to a central apex point, typical of bay window alcoves with
+    pyramidal or conical ceiling treatments.
+
+    Attributes:
+        apex: The apex point where all facets meet.
+        facets: Tuple of ceiling facets (one per wall segment).
+        edge_height: Default wall top height where facets begin.
+    """
+
+    apex: ApexPoint
+    facets: tuple[CeilingFacet, ...]
+    edge_height: float
+
+    def __post_init__(self) -> None:
+        if self.edge_height <= 0:
+            raise ValueError("Edge height must be positive")
+        if len(self.facets) < 3:
+            raise ValueError("Radial ceiling requires at least 3 facets")
+        for facet in self.facets:
+            if facet.apex != self.apex:
+                raise ValueError("All facets must share the same apex point")
+
+    def height_at_point(self, x: float, y: float) -> float | None:
+        """Calculate ceiling height at any point.
+
+        Determines which facet contains the point and returns the
+        interpolated ceiling height at that location.
+
+        Args:
+            x: X coordinate of the point.
+            y: Y coordinate of the point.
+
+        Returns:
+            Ceiling height at the specified point in inches,
+            or None if the point is outside all facets.
+        """
+        # Find the facet that contains this point using a simple
+        # closest-facet approach based on distance to wall edge center
+        best_facet = None
+        best_distance = float("inf")
+
+        for facet in self.facets:
+            # Calculate center of wall edge
+            edge_center_x = (facet.edge_start.x + facet.edge_end.x) / 2
+            edge_center_y = (facet.edge_start.y + facet.edge_end.y) / 2
+
+            # Distance from point to edge center
+            dist = sqrt((x - edge_center_x) ** 2 + (y - edge_center_y) ** 2)
+
+            if dist < best_distance:
+                best_distance = dist
+                best_facet = facet
+
+        if best_facet is None:
+            return None
+
+        return best_facet.height_at_point(x, y)
+
+    @property
+    def average_slope_angle(self) -> float:
+        """Calculate the average slope angle across all facets.
+
+        Returns:
+            Average slope angle in degrees.
+        """
+        if not self.facets:
+            return 0.0
+        total = sum(facet.slope_angle for facet in self.facets)
+        return total / len(self.facets)
+
+
+class BayAlcoveConfig:
+    """Domain configuration for bay window alcove built-ins.
+
+    This is a lightweight domain representation of the bay alcove configuration
+    that can be used by layout calculators and services. It holds the essential
+    configuration data in a form suitable for domain logic.
+
+    Attributes:
+        bay_type: Type of bay configuration.
+        walls: Tuple of wall configuration dictionaries.
+        opening_width: Width of bay opening.
+        bay_depth: Depth from main wall to furthest point.
+        arc_angle: Arc angle for bow windows.
+        segment_count: Segment count for bow windows.
+        apex: ApexPoint for radial ceiling, or None.
+        apex_mode: "auto" or "explicit" for apex calculation.
+        edge_height: Height where ceiling meets walls.
+        min_cabinet_width: Minimum width for cabinet zones.
+        filler_treatment: Treatment for narrow zones.
+        sill_clearance: Clearance below window sill.
+        head_clearance: Clearance above window head.
+        seat_surface_style: Seat surface construction style.
+        flank_integration: Flanking cabinet connection style.
+        top_style: Global top panel style.
+        shelf_alignment: Global shelf alignment strategy.
+    """
+
+    def __init__(
+        self,
+        bay_type: str,
+        walls: tuple,
+        opening_width: float | None,
+        bay_depth: float | None,
+        arc_angle: float | None,
+        segment_count: int | None,
+        apex: "ApexPoint | None",
+        apex_mode: str,
+        edge_height: float,
+        min_cabinet_width: float,
+        filler_treatment: str,
+        sill_clearance: float,
+        head_clearance: float,
+        seat_surface_style: str,
+        flank_integration: str,
+        top_style: str | None,
+        shelf_alignment: str,
+    ) -> None:
+        self.bay_type = bay_type
+        self.walls = walls
+        self.opening_width = opening_width
+        self.bay_depth = bay_depth
+        self.arc_angle = arc_angle
+        self.segment_count = segment_count
+        self.apex = apex
+        self.apex_mode = apex_mode
+        self.edge_height = edge_height
+        self.min_cabinet_width = min_cabinet_width
+        self.filler_treatment = filler_treatment
+        self.sill_clearance = sill_clearance
+        self.head_clearance = head_clearance
+        self.seat_surface_style = seat_surface_style
+        self.flank_integration = flank_integration
+        self.top_style = top_style
+        self.shelf_alignment = shelf_alignment
+
+    @property
+    def is_bow(self) -> bool:
+        """Check if this is a bow window configuration."""
+        return self.bay_type == "bow"
+
+    @property
+    def wall_count(self) -> int:
+        """Get the number of wall segments."""
+        return len(self.walls)
+
+    def get_wall(self, index: int) -> dict:
+        """Get wall configuration by index.
+
+        Args:
+            index: Wall index (0-based).
+
+        Returns:
+            Wall configuration dictionary.
+
+        Raises:
+            IndexError: If index is out of range.
+        """
+        return self.walls[index]

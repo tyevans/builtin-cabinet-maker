@@ -291,7 +291,9 @@ class TestSkylight:
                 projection_depth=6.0,
                 projection_angle=0.0,
             )
-        assert "Projection angle must be between 0 and 180 degrees" in str(exc_info.value)
+        assert "Projection angle must be between 0 and 180 degrees" in str(
+            exc_info.value
+        )
 
     def test_rejects_projection_angle_above_180(self) -> None:
         """Skylight should reject projection angle above 180 degrees."""
@@ -302,7 +304,9 @@ class TestSkylight:
                 projection_depth=6.0,
                 projection_angle=200.0,
             )
-        assert "Projection angle must be between 0 and 180 degrees" in str(exc_info.value)
+        assert "Projection angle must be between 0 and 180 degrees" in str(
+            exc_info.value
+        )
 
     def test_void_at_depth_vertical_projection(self) -> None:
         """Void at depth should equal original dimensions for 90 degree angle."""

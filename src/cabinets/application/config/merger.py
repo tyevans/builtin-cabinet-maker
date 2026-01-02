@@ -9,7 +9,7 @@ Only non-None CLI arguments override configuration values.
 from pathlib import Path
 from typing import Any
 
-from cabinets.application.config.schema import (
+from cabinets.application.config.schemas import (
     CabinetConfig,
     CabinetConfiguration,
     OutputConfig,
@@ -131,6 +131,10 @@ def _build_cabinet_data(
     if cabinet.light_rail is not None:
         cabinet_data["light_rail"] = cabinet.light_rail.model_dump()
 
+    # Preserve zone stack configuration (FRD-22)
+    if cabinet.zone_stack is not None:
+        cabinet_data["zone_stack"] = cabinet.zone_stack.model_dump()
+
     # Preserve default_shelves if set
     if cabinet.default_shelves > 0:
         cabinet_data["default_shelves"] = cabinet.default_shelves
@@ -161,7 +165,9 @@ def _build_output_data(
 
     # Handle stl_file - convert Path to string if needed
     if stl_file is not None:
-        output_data["stl_file"] = str(stl_file) if isinstance(stl_file, Path) else stl_file
+        output_data["stl_file"] = (
+            str(stl_file) if isinstance(stl_file, Path) else stl_file
+        )
     elif output.stl_file is not None:
         output_data["stl_file"] = output.stl_file
 

@@ -10,9 +10,16 @@ This module provides components for cabinet decorative elements including:
 
 from __future__ import annotations
 
+import math
 from dataclasses import dataclass
 from enum import Enum
-from typing import Literal
+from typing import Any, Literal
+
+from ..entities import Panel
+from ..value_objects import MaterialSpec, PanelType, Position
+from .context import ComponentContext
+from .registry import component_registry
+from .results import GenerationResult, HardwareItem, ValidationResult
 
 
 # --- Enums ---
@@ -402,15 +409,6 @@ ROUTER_BIT_RECOMMENDATIONS: dict[EdgeProfileType, str] = {
 
 # --- Edge Profile Helper Functions ---
 
-import math
-from typing import Any
-
-from ..entities import Panel
-from ..value_objects import MaterialSpec, PanelType, Position
-from .context import ComponentContext
-from .registry import component_registry
-from .results import GenerationResult, HardwareItem, ValidationResult
-
 
 # --- Arch Service ---
 
@@ -704,9 +702,7 @@ class ScallopService:
         points: list[tuple[float, float]] = []
 
         for i in range(metadata.scallop_count):
-            center_x = (
-                metadata.scallop_width / 2 + i * metadata.scallop_width
-            )
+            center_x = metadata.scallop_width / 2 + i * metadata.scallop_width
             radius = metadata.scallop_width / 2
 
             # Generate points for this scallop (semicircle going down)
@@ -755,21 +751,20 @@ class ScallopService:
         # Check depth doesn't exceed height
         if config.depth >= piece_height:
             errors.append(
-                f"Scallop depth {config.depth}\" exceeds piece height "
-                f"{piece_height}\""
+                f'Scallop depth {config.depth}" exceeds piece height {piece_height}"'
             )
         elif config.depth > piece_height * 0.5:
             warnings.append(
-                f"Scallop depth {config.depth}\" is more than half the "
-                f"piece height ({piece_height}\")"
+                f'Scallop depth {config.depth}" is more than half the '
+                f'piece height ({piece_height}")'
             )
 
         # Check at least one scallop fits
         count = config.calculate_count(piece_width)
         if count < 1:
             errors.append(
-                f"Scallop width {config.width}\" is too large for piece "
-                f"width {piece_width}\""
+                f'Scallop width {config.width}" is too large for piece '
+                f'width {piece_width}"'
             )
 
         # Check for reasonable scallop count
@@ -826,14 +821,14 @@ def validate_edge_profile(
     max_safe_size = material_thickness / 2
     if config.size > max_safe_size:
         warnings.append(
-            f"Profile size {config.size}\" exceeds half material thickness "
-            f"({max_safe_size:.3f}\"). May weaken edge."
+            f'Profile size {config.size}" exceeds half material thickness '
+            f'({max_safe_size:.3f}"). May weaken edge.'
         )
 
     if config.size > material_thickness:
         errors.append(
-            f"Profile size {config.size}\" exceeds material thickness "
-            f"({material_thickness}\"). Cannot apply profile."
+            f'Profile size {config.size}" exceeds material thickness '
+            f'({material_thickness}"). Cannot apply profile.'
         )
 
     return errors, warnings
@@ -998,8 +993,8 @@ class FaceFrameComponent:
             errors.append("stile_width must be positive")
         elif stile_width > context.width / 4:
             errors.append(
-                f"stile_width {stile_width}\" too large for "
-                f"{context.width}\" cabinet width"
+                f'stile_width {stile_width}" too large for '
+                f'{context.width}" cabinet width'
             )
 
         # Validate rail width
@@ -1007,8 +1002,8 @@ class FaceFrameComponent:
             errors.append("rail_width must be positive")
         elif rail_width > context.height / 4:
             errors.append(
-                f"rail_width {rail_width}\" too large for "
-                f"{context.height}\" cabinet height"
+                f'rail_width {rail_width}" too large for '
+                f'{context.height}" cabinet height'
             )
 
         # Check for minimum opening (only if dimensions are valid)
@@ -1018,11 +1013,11 @@ class FaceFrameComponent:
 
             if opening_width < 6.0:
                 errors.append(
-                    f"Opening width {opening_width:.1f}\" is less than 6\" minimum"
+                    f'Opening width {opening_width:.1f}" is less than 6" minimum'
                 )
             if opening_height < 6.0:
                 errors.append(
-                    f"Opening height {opening_height:.1f}\" is less than 6\" minimum"
+                    f'Opening height {opening_height:.1f}" is less than 6" minimum'
                 )
 
         return ValidationResult(tuple(errors), tuple(warnings))
@@ -1405,7 +1400,7 @@ class ArchComponent:
                 expected_radius = opening_width / 2
                 if parsed.radius > expected_radius:
                     errors.append(
-                        f"Full round arch radius {parsed.radius}\" exceeds half opening "
+                        f'Full round arch radius {parsed.radius}" exceeds half opening '
                         f"width ({expected_radius}\"). Use 'auto' or a smaller radius."
                     )
 
@@ -1414,8 +1409,8 @@ class ArchComponent:
             min_radius = opening_width / 2
             if radius < min_radius:
                 errors.append(
-                    f"Segmental arch radius {radius}\" must be >= half opening "
-                    f"width ({min_radius}\")"
+                    f'Segmental arch radius {radius}" must be >= half opening '
+                    f'width ({min_radius}")'
                 )
 
         # Check header height doesn't exceed section height
@@ -1424,8 +1419,8 @@ class ArchComponent:
         )
         if header_height > context.height:
             errors.append(
-                f"Arch header height {header_height:.1f}\" exceeds section "
-                f"height {context.height}\""
+                f'Arch header height {header_height:.1f}" exceeds section '
+                f'height {context.height}"'
             )
 
         # Warning for very tall arches
@@ -1622,8 +1617,8 @@ class ScallopComponent:
         if parsed.depth >= context.material.thickness:
             return ValidationResult.fail(
                 [
-                    f"Scallop depth {parsed.depth}\" must be less than "
-                    f"material thickness {context.material.thickness}\""
+                    f'Scallop depth {parsed.depth}" must be less than '
+                    f'material thickness {context.material.thickness}"'
                 ]
             )
 
@@ -1946,19 +1941,19 @@ class MoldingZoneService:
         errors: list[str] = []
         warnings: list[str] = []
 
-        total_zone_height = 0
+        total_zone_height = 0.0
 
         # Validate crown zone
         if crown:
             total_zone_height += crown.height
             if crown.setback >= cabinet_depth:
                 errors.append(
-                    f"Crown setback {crown.setback}\" exceeds cabinet depth "
-                    f"{cabinet_depth}\""
+                    f'Crown setback {crown.setback}" exceeds cabinet depth '
+                    f'{cabinet_depth}"'
                 )
             if crown.height > cabinet_height * 0.2:
                 warnings.append(
-                    f"Crown zone height {crown.height}\" is more than 20% "
+                    f'Crown zone height {crown.height}" is more than 20% '
                     "of cabinet height"
                 )
 
@@ -1968,33 +1963,33 @@ class MoldingZoneService:
             if base.zone_type == "toe_kick":
                 if base.height < 3.0:
                     warnings.append(
-                        f"Toe kick height {base.height}\" is less than "
-                        "recommended 3\" minimum (FR-06)"
+                        f'Toe kick height {base.height}" is less than '
+                        'recommended 3" minimum (FR-06)'
                     )
                 if base.setback < 2.0:
                     warnings.append(
-                        f"Toe kick setback {base.setback}\" is less than "
-                        "recommended 2\" minimum"
+                        f'Toe kick setback {base.setback}" is less than '
+                        'recommended 2" minimum'
                     )
 
         # Validate light rail zone
         if light_rail:
             if light_rail.height > 3.0:
                 warnings.append(
-                    f"Light rail height {light_rail.height}\" may be too tall"
+                    f'Light rail height {light_rail.height}" may be too tall'
                 )
 
         # Check total zone height
         if total_zone_height > cabinet_height * 0.3:
             warnings.append(
-                f"Total zone height {total_zone_height}\" is more than 30% "
+                f'Total zone height {total_zone_height}" is more than 30% '
                 "of cabinet height"
             )
 
         if total_zone_height >= cabinet_height:
             errors.append(
-                f"Total zone height {total_zone_height}\" exceeds cabinet "
-                f"height {cabinet_height}\""
+                f'Total zone height {total_zone_height}" exceeds cabinet '
+                f'height {cabinet_height}"'
             )
 
         return errors, warnings
@@ -2030,12 +2025,19 @@ class MoldingZoneService:
         if crown:
             panels.append(
                 self.generate_crown_nailer(
-                    crown, cabinet_width, cabinet_height, cabinet_depth, material, position
+                    crown,
+                    cabinet_width,
+                    cabinet_height,
+                    cabinet_depth,
+                    material,
+                    position,
                 )
             )
 
         if base and base.zone_type == "toe_kick":
-            toe_kick = self.generate_toe_kick_panel(base, cabinet_width, material, position)
+            toe_kick = self.generate_toe_kick_panel(
+                base, cabinet_width, material, position
+            )
             if toe_kick:
                 panels.append(toe_kick)
 

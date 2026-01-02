@@ -14,8 +14,8 @@ from pathlib import Path
 import pytest
 from typer.testing import CliRunner
 
-from cabinets.application.commands import GenerateLayoutCommand
 from cabinets.application.dtos import LayoutParametersInput, WallInput
+from cabinets.application.factory import get_factory
 from cabinets.domain.services.installation import InstallationConfig
 from cabinets.domain.value_objects import LoadCategory, MountingSystem, WallType
 from cabinets.infrastructure import InstallationFormatter
@@ -26,7 +26,7 @@ class TestInstallationCommandIntegration:
 
     def test_execute_with_installation_config_adds_hardware(self) -> None:
         """Test that installation config adds hardware to output."""
-        command = GenerateLayoutCommand()
+        command = get_factory().create_generate_command()
         wall_input = WallInput(width=48.0, height=84.0, depth=12.0)
         params_input = LayoutParametersInput(
             num_sections=2,
@@ -53,7 +53,7 @@ class TestInstallationCommandIntegration:
 
     def test_execute_with_french_cleat_adds_cleat_cut_pieces(self) -> None:
         """Test that French cleat mounting adds cleat cut pieces."""
-        command = GenerateLayoutCommand()
+        command = get_factory().create_generate_command()
         wall_input = WallInput(width=48.0, height=84.0, depth=12.0)
         params_input = LayoutParametersInput(
             num_sections=2,
@@ -81,7 +81,7 @@ class TestInstallationCommandIntegration:
 
     def test_execute_without_installation_config_has_none_fields(self) -> None:
         """Test that without installation config, fields are None."""
-        command = GenerateLayoutCommand()
+        command = get_factory().create_generate_command()
         wall_input = WallInput(width=48.0, height=84.0, depth=12.0)
         params_input = LayoutParametersInput(
             num_sections=1,
@@ -99,7 +99,7 @@ class TestInstallationCommandIntegration:
 
     def test_stud_analysis_structure(self) -> None:
         """Test that stud analysis has the expected structure."""
-        command = GenerateLayoutCommand()
+        command = get_factory().create_generate_command()
         wall_input = WallInput(width=48.0, height=84.0, depth=12.0)
         params_input = LayoutParametersInput(
             num_sections=2,
@@ -129,7 +129,7 @@ class TestInstallationCommandIntegration:
 
     def test_left_edge_position_affects_stud_analysis(self) -> None:
         """Test that left_edge_position changes stud analysis."""
-        command = GenerateLayoutCommand()
+        command = get_factory().create_generate_command()
         wall_input = WallInput(width=48.0, height=84.0, depth=12.0)
         params_input = LayoutParametersInput(
             num_sections=1,
@@ -169,7 +169,7 @@ class TestInstallationFormatterIntegration:
 
     def test_format_complete_output(self) -> None:
         """Test formatting complete installation output."""
-        command = GenerateLayoutCommand()
+        command = get_factory().create_generate_command()
         wall_input = WallInput(width=48.0, height=84.0, depth=12.0)
         params_input = LayoutParametersInput(
             num_sections=2,
@@ -196,7 +196,7 @@ class TestInstallationFormatterIntegration:
 
     def test_format_hardware_summary(self) -> None:
         """Test formatting hardware summary."""
-        command = GenerateLayoutCommand()
+        command = get_factory().create_generate_command()
         wall_input = WallInput(width=48.0, height=84.0, depth=12.0)
         params_input = LayoutParametersInput(
             num_sections=1,
@@ -222,7 +222,7 @@ class TestInstallationFormatterIntegration:
 
     def test_format_stud_analysis(self) -> None:
         """Test formatting stud analysis."""
-        command = GenerateLayoutCommand()
+        command = get_factory().create_generate_command()
         wall_input = WallInput(width=48.0, height=84.0, depth=12.0)
         params_input = LayoutParametersInput(
             num_sections=1,
@@ -250,7 +250,7 @@ class TestInstallationFormatterIntegration:
 
     def test_format_empty_output_when_no_installation(self) -> None:
         """Test that format returns empty string when no installation data."""
-        command = GenerateLayoutCommand()
+        command = get_factory().create_generate_command()
         wall_input = WallInput(width=48.0, height=84.0, depth=12.0)
         params_input = LayoutParametersInput(
             num_sections=1,
@@ -282,12 +282,18 @@ class TestInstallationCLIIntegration:
             app,
             [
                 "generate",
-                "--width", "48",
-                "--height", "84",
-                "--depth", "12",
-                "--wall-type", "drywall",
-                "--mounting-system", "french_cleat",
-                "--format", "installation",
+                "--width",
+                "48",
+                "--height",
+                "84",
+                "--depth",
+                "12",
+                "--wall-type",
+                "drywall",
+                "--mounting-system",
+                "french_cleat",
+                "--format",
+                "installation",
             ],
         )
 
@@ -302,11 +308,16 @@ class TestInstallationCLIIntegration:
             app,
             [
                 "generate",
-                "--width", "48",
-                "--height", "84",
-                "--depth", "12",
-                "--mounting-system", "direct_to_stud",
-                "--format", "installation",
+                "--width",
+                "48",
+                "--height",
+                "84",
+                "--depth",
+                "12",
+                "--mounting-system",
+                "direct_to_stud",
+                "--format",
+                "installation",
             ],
         )
 
@@ -320,10 +331,14 @@ class TestInstallationCLIIntegration:
             app,
             [
                 "generate",
-                "--width", "48",
-                "--height", "84",
-                "--depth", "12",
-                "--format", "installation",
+                "--width",
+                "48",
+                "--height",
+                "84",
+                "--depth",
+                "12",
+                "--format",
+                "installation",
             ],
         )
 
@@ -341,11 +356,16 @@ class TestInstallationCLIIntegration:
             app,
             [
                 "generate",
-                "--width", "48",
-                "--height", "84",
-                "--depth", "12",
-                "--mounting-system", "french_cleat",
-                "--format", "all",
+                "--width",
+                "48",
+                "--height",
+                "84",
+                "--depth",
+                "12",
+                "--mounting-system",
+                "french_cleat",
+                "--format",
+                "all",
             ],
         )
 
@@ -386,9 +406,7 @@ class TestInstallationConfigFileIntegration:
             "output": {"format": "installation"},
         }
 
-        with tempfile.NamedTemporaryFile(
-            mode="w", suffix=".json", delete=False
-        ) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
             json.dump(config, f)
             config_path = f.name
 
@@ -397,7 +415,8 @@ class TestInstallationConfigFileIntegration:
                 app,
                 [
                     "generate",
-                    "--config", config_path,
+                    "--config",
+                    config_path,
                 ],
             )
 
@@ -428,9 +447,7 @@ class TestInstallationConfigFileIntegration:
             "output": {"format": "cutlist"},
         }
 
-        with tempfile.NamedTemporaryFile(
-            mode="w", suffix=".json", delete=False
-        ) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
             json.dump(config, f)
             config_path = f.name
 
@@ -439,10 +456,14 @@ class TestInstallationConfigFileIntegration:
                 app,
                 [
                     "generate",
-                    "--config", config_path,
-                    "--mounting-system", "french_cleat",  # Override
-                    "--expected-load", "heavy",  # Override
-                    "--format", "installation",
+                    "--config",
+                    config_path,
+                    "--mounting-system",
+                    "french_cleat",  # Override
+                    "--expected-load",
+                    "heavy",  # Override
+                    "--format",
+                    "installation",
                 ],
             )
 
@@ -457,7 +478,7 @@ class TestFrenchCleatCutPiecesIntegration:
 
     def test_cleat_pieces_have_correct_labels(self) -> None:
         """Test that cleat cut pieces have correct labels."""
-        command = GenerateLayoutCommand()
+        command = get_factory().create_generate_command()
         wall_input = WallInput(width=48.0, height=84.0, depth=12.0)
         params_input = LayoutParametersInput(
             num_sections=1,
@@ -480,13 +501,13 @@ class TestFrenchCleatCutPiecesIntegration:
             cp.label.lower() for cp in result.cut_list if "cleat" in cp.label.lower()
         ]
         assert any("wall" in label for label in cleat_labels), "Missing wall cleat"
-        assert any(
-            "cabinet" in label for label in cleat_labels
-        ), "Missing cabinet cleat"
+        assert any("cabinet" in label for label in cleat_labels), (
+            "Missing cabinet cleat"
+        )
 
     def test_cleat_dimensions_are_reasonable(self) -> None:
         """Test that cleat dimensions are reasonable."""
-        command = GenerateLayoutCommand()
+        command = get_factory().create_generate_command()
         wall_input = WallInput(width=48.0, height=84.0, depth=12.0)
         params_input = LayoutParametersInput(
             num_sections=1,
@@ -505,9 +526,7 @@ class TestFrenchCleatCutPiecesIntegration:
             wall_input, params_input, installation_config=installation_config
         )
 
-        cleat_pieces = [
-            cp for cp in result.cut_list if "cleat" in cp.label.lower()
-        ]
+        cleat_pieces = [cp for cp in result.cut_list if "cleat" in cp.label.lower()]
 
         for cp in cleat_pieces:
             # Cleat width should be approximately 90% of 48" = 43.2"
@@ -524,7 +543,7 @@ class TestInstallationWarningsIntegration:
 
     def test_masonry_wall_generates_warning(self) -> None:
         """Test that masonry walls generate appropriate warnings."""
-        command = GenerateLayoutCommand()
+        command = get_factory().create_generate_command()
         wall_input = WallInput(width=48.0, height=84.0, depth=12.0)
         params_input = LayoutParametersInput(
             num_sections=1,
@@ -544,7 +563,6 @@ class TestInstallationWarningsIntegration:
 
         assert result.installation_warnings is not None
         # Concrete walls should have masonry-specific warnings
-        all_warnings = " ".join(result.installation_warnings).lower()
         # May warn about anchors or masonry-specific requirements
         assert (
             len(result.installation_warnings) > 0

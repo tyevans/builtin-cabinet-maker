@@ -8,8 +8,6 @@ These tests verify the obstacle-related validation rules:
 - V-06: Width below minimum warning (mostly blocked)
 """
 
-import pytest
-
 from cabinets.application.config import (
     CabinetConfig,
     CabinetConfiguration,
@@ -144,7 +142,9 @@ class TestInvalidWallReference:
         )
 
         result = validate_config(config)
-        wall_ref_errors = [e for e in result.errors if "unknown wall index" in e.message]
+        wall_ref_errors = [
+            e for e in result.errors if "unknown wall index" in e.message
+        ]
         assert len(wall_ref_errors) == 0
 
     def test_invalid_wall_reference(self) -> None:
@@ -189,7 +189,9 @@ class TestInvalidWallReference:
         )
 
         result = validate_config(config)
-        wall_ref_errors = [e for e in result.errors if "unknown wall index" in e.message]
+        wall_ref_errors = [
+            e for e in result.errors if "unknown wall index" in e.message
+        ]
         assert len(wall_ref_errors) == 0
 
 
@@ -303,9 +305,7 @@ class TestWallMostlyBlocked:
         )
 
         result = validate_config(config)
-        mostly_blocked_warnings = [
-            w for w in result.warnings if ">80%" in w.message
-        ]
+        mostly_blocked_warnings = [w for w in result.warnings if ">80%" in w.message]
         assert len(mostly_blocked_warnings) == 1
 
     def test_wall_under_threshold_no_warning(self) -> None:
@@ -328,9 +328,7 @@ class TestWallMostlyBlocked:
         )
 
         result = validate_config(config)
-        mostly_blocked_warnings = [
-            w for w in result.warnings if ">80%" in w.message
-        ]
+        mostly_blocked_warnings = [w for w in result.warnings if ">80%" in w.message]
         assert len(mostly_blocked_warnings) == 0
 
 
@@ -480,7 +478,9 @@ class TestMultipleObstaclesMultipleWalls:
 
         result = validate_config(config)
         # Should have exactly one error for obs2
-        extends_errors = [e for e in result.errors if "extends beyond wall" in e.message]
+        extends_errors = [
+            e for e in result.errors if "extends beyond wall" in e.message
+        ]
         assert len(extends_errors) == 1
         assert "room.obstacles[1]" in extends_errors[0].path
 
@@ -504,6 +504,8 @@ class TestMultipleObstaclesMultipleWalls:
         )
 
         result = validate_config(config)
-        extends_errors = [e for e in result.errors if "extends beyond wall" in e.message]
+        extends_errors = [
+            e for e in result.errors if "extends beyond wall" in e.message
+        ]
         # Should have two errors - one for width, one for height
         assert len(extends_errors) == 2

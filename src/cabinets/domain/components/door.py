@@ -259,7 +259,7 @@ class _HingedDoorBase:
             _, door_height = self._calculate_door_size(context, reveal, overlay, count)
             if door_height > 60:
                 warnings.append(
-                    f"Door height {door_height:.1f}\" exceeds 60\" - consider weight"
+                    f'Door height {door_height:.1f}" exceeds 60" - consider weight'
                 )
 
         return ValidationResult(tuple(errors), tuple(warnings))
@@ -446,7 +446,7 @@ class _HingedDoorBase:
             HardwareItem(
                 name="Handle/Knob",
                 quantity=count,
-                notes=f"Position: {handle_position}, 3\" from edge",
+                notes=f'Position: {handle_position}, 3" from edge',
             ),
         ]
 
@@ -507,7 +507,7 @@ class _HingedDoorBase:
             HardwareItem(
                 name="Handle/Knob",
                 quantity=count,
-                notes=f"Position: {handle_position}, 3\" from edge",
+                notes=f'Position: {handle_position}, 3" from edge',
             ),
         ]
 

@@ -14,24 +14,17 @@ import json
 import pytest
 from pydantic import ValidationError
 
-from cabinets.application.commands import GenerateLayoutCommand
-from cabinets.application.config.adapter import config_to_section_specs
-from cabinets.application.config.schema import (
+from cabinets.application.config.schemas import (
     CabinetConfig,
     CabinetConfiguration,
     GrommetConfigSchema,
     InfrastructureConfigSchema,
-    LightingConfigSchema,
     LightingLocationConfig,
     LightingTypeConfig,
-    OutletConfigSchema,
     OutletTypeConfig,
     PositionConfigSchema,
-    SectionConfig,
-    VentilationConfigSchema,
     VentilationPatternConfig,
 )
-from cabinets.application.dtos import LayoutParametersInput, WallInput
 from cabinets.domain.components import ComponentContext, component_registry
 from cabinets.domain.components.infrastructure import (
     CableManagementComponent,
@@ -39,14 +32,11 @@ from cabinets.domain.components.infrastructure import (
     LightingComponent,
     VentilationComponent,
 )
-from cabinets.domain.components.results import HardwareItem
 from cabinets.domain.entities import Cabinet
 from cabinets.domain.services import MaterialEstimate
 from cabinets.domain.value_objects import (
     CutPiece,
-    CutoutShape,
     MaterialSpec,
-    PanelCutout,
     PanelType,
     Point2D,
 )
@@ -66,7 +56,9 @@ def ensure_infrastructure_registered() -> None:
     if "infrastructure.electrical" not in component_registry.list():
         component_registry.register("infrastructure.electrical")(ElectricalComponent)
     if "infrastructure.cable_management" not in component_registry.list():
-        component_registry.register("infrastructure.cable_management")(CableManagementComponent)
+        component_registry.register("infrastructure.cable_management")(
+            CableManagementComponent
+        )
     if "infrastructure.ventilation" not in component_registry.list():
         component_registry.register("infrastructure.ventilation")(VentilationComponent)
 
@@ -220,7 +212,9 @@ class TestMultipleOutletTypes:
 
         cutouts = result.metadata["cutouts"]
         assert len(cutouts) == 1
-        assert cutouts[0]["width"] == pytest.approx(2.25)  # Standard single outlet width
+        assert cutouts[0]["width"] == pytest.approx(
+            2.25
+        )  # Standard single outlet width
         assert cutouts[0]["height"] == pytest.approx(4.0)  # Standard outlet height
 
     def test_double_outlet_dimensions(
@@ -241,9 +235,7 @@ class TestMultipleOutletTypes:
         assert cutouts[0]["width"] == pytest.approx(4.25)  # Double outlet width
         assert cutouts[0]["height"] == pytest.approx(4.0)
 
-    def test_gfi_outlet_dimensions(
-        self, component_context: ComponentContext
-    ) -> None:
+    def test_gfi_outlet_dimensions(self, component_context: ComponentContext) -> None:
         """GFI outlet generates correct cutout dimensions."""
         component = ElectricalComponent()
         config = {
@@ -350,13 +342,15 @@ class TestCableManagementAcrossSections:
         assert "GRM-300-BLK" in hardware_dict
         assert hardware_dict["GRM-300-BLK"].quantity == 1
 
-    def test_grommet_sku_format(
-        self, component_context: ComponentContext
-    ) -> None:
+    def test_grommet_sku_format(self, component_context: ComponentContext) -> None:
         """Verify grommet SKU format (GRM-200-BLK, GRM-250-BLK, GRM-300-BLK)."""
         component = CableManagementComponent()
 
-        for size, expected_sku in [(2.0, "GRM-200-BLK"), (2.5, "GRM-250-BLK"), (3.0, "GRM-300-BLK")]:
+        for size, expected_sku in [
+            (2.0, "GRM-200-BLK"),
+            (2.5, "GRM-250-BLK"),
+            (3.0, "GRM-300-BLK"),
+        ]:
             config = {
                 "grommets": [
                     {"size": size, "panel": "back", "position": {"x": 12.0, "y": 12.0}},
@@ -657,9 +651,7 @@ class TestJsonExportWithCutouts:
         piece = data["cut_list"][0]
         assert "cutouts" in piece
 
-    def test_json_export_cutout_structure(
-        self, cabinet_with_cutouts: Cabinet
-    ) -> None:
+    def test_json_export_cutout_structure(self, cabinet_with_cutouts: Cabinet) -> None:
         """JSON export has correct cutout structure."""
         from cabinets.application.dtos import LayoutOutput
 
@@ -764,7 +756,10 @@ class TestInfrastructureValidationErrors:
         config = {
             "outlet_type": "double",
             "panel": "back",
-            "position": {"x": 22.0, "y": 36.0},  # Too close to right (24" panel, 4.25" outlet)
+            "position": {
+                "x": 22.0,
+                "y": 36.0,
+            },  # Too close to right (24" panel, 4.25" outlet)
         }
 
         result = component.validate(config, component_context)
@@ -1321,9 +1316,7 @@ class TestVentilationPatterns:
         assert spec["pattern"] == "grid"
         assert spec["hole_count"] > 0
 
-    def test_slot_pattern_validates(
-        self, component_context: ComponentContext
-    ) -> None:
+    def test_slot_pattern_validates(self, component_context: ComponentContext) -> None:
         """Slot pattern configuration validates."""
         component = VentilationComponent()
         config = {

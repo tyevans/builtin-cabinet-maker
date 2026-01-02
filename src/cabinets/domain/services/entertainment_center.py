@@ -15,7 +15,7 @@ from typing import TYPE_CHECKING, Literal
 from ..value_objects import Dimensions, Position
 
 if TYPE_CHECKING:
-    from ..entities import Cabinet, Section
+    pass
 
 
 @dataclass(frozen=True)
@@ -254,37 +254,37 @@ class EntertainmentCenterLayoutService:
             # Console height validation
             if dimensions.height < constraints["min_height"]:
                 errors.append(
-                    f"Console height {dimensions.height}\" below minimum "
-                    f"{constraints['min_height']}\""
+                    f'Console height {dimensions.height}" below minimum '
+                    f'{constraints["min_height"]}"'
                 )
             elif dimensions.height > constraints["max_height"]:
                 warnings.append(
-                    f"Console height {dimensions.height}\" exceeds typical "
-                    f"maximum {constraints['max_height']}\""
+                    f'Console height {dimensions.height}" exceeds typical '
+                    f'maximum {constraints["max_height"]}"'
                 )
             # Console depth validation
             if dimensions.depth < constraints["min_depth"]:
                 warnings.append(
-                    f"Console depth {dimensions.depth}\" may be insufficient "
-                    f"for equipment (recommend {constraints['min_depth']}\"+)"
+                    f'Console depth {dimensions.depth}" may be insufficient '
+                    f'for equipment (recommend {constraints["min_depth"]}"+)'
                 )
 
         elif layout_type == "wall_unit":
             # Wall unit height validation
             if dimensions.height < constraints["min_height"]:
                 errors.append(
-                    f"Wall unit height {dimensions.height}\" below minimum "
-                    f"{constraints['min_height']}\""
+                    f'Wall unit height {dimensions.height}" below minimum '
+                    f'{constraints["min_height"]}"'
                 )
             elif dimensions.height > constraints["max_height"]:
                 warnings.append(
-                    f"Wall unit height {dimensions.height}\" exceeds typical "
-                    f"maximum {constraints['max_height']}\""
+                    f'Wall unit height {dimensions.height}" exceeds typical '
+                    f'maximum {constraints["max_height"]}"'
                 )
             # Wall unit depth validation
             if dimensions.depth < constraints["min_depth"]:
                 warnings.append(
-                    f"Wall unit depth {dimensions.depth}\" may be insufficient "
+                    f'Wall unit depth {dimensions.depth}" may be insufficient '
                     f"for equipment"
                 )
 
@@ -292,37 +292,37 @@ class EntertainmentCenterLayoutService:
             # Floating height validation
             if dimensions.height < constraints["min_height"]:
                 errors.append(
-                    f"Floating unit height {dimensions.height}\" below minimum "
-                    f"{constraints['min_height']}\""
+                    f'Floating unit height {dimensions.height}" below minimum '
+                    f'{constraints["min_height"]}"'
                 )
             elif dimensions.height > constraints["max_height"]:
                 warnings.append(
-                    f"Floating unit height {dimensions.height}\" exceeds typical "
-                    f"maximum {constraints['max_height']}\""
+                    f'Floating unit height {dimensions.height}" exceeds typical '
+                    f'maximum {constraints["max_height"]}"'
                 )
             # Floating depth validation
             if dimensions.depth < constraints["min_depth"]:
                 warnings.append(
-                    f"Floating unit depth {dimensions.depth}\" may be insufficient"
+                    f'Floating unit depth {dimensions.depth}" may be insufficient'
                 )
 
         elif layout_type == "tower":
             # Tower width validation
             if dimensions.width < constraints["min_width"]:
                 errors.append(
-                    f"Tower width {dimensions.width}\" too narrow, minimum "
-                    f"{constraints['min_width']}\""
+                    f'Tower width {dimensions.width}" too narrow, minimum '
+                    f'{constraints["min_width"]}"'
                 )
             elif dimensions.width > constraints["max_width"]:
                 warnings.append(
-                    f"Tower width {dimensions.width}\" exceeds typical maximum "
-                    f"{constraints['max_width']}\""
+                    f'Tower width {dimensions.width}" exceeds typical maximum '
+                    f'{constraints["max_width"]}"'
                 )
             # Tower depth validation (critical for equipment)
             if dimensions.depth < constraints["min_depth"]:
                 errors.append(
-                    f"Tower depth {dimensions.depth}\" insufficient for equipment, "
-                    f"minimum {constraints['min_depth']}\""
+                    f'Tower depth {dimensions.depth}" insufficient for equipment, '
+                    f'minimum {constraints["min_depth"]}"'
                 )
 
         return errors, warnings
@@ -349,8 +349,8 @@ class EntertainmentCenterLayoutService:
         # Check if cabinet is wide enough
         if tv_zone_width > cabinet_width:
             raise ValueError(
-                f"Cabinet width {cabinet_width}\" insufficient for TV zone "
-                f"({tv_zone_width}\" required including clearance)"
+                f'Cabinet width {cabinet_width}" insufficient for TV zone '
+                f'({tv_zone_width}" required including clearance)'
             )
 
         # Calculate flanking widths (centered TV)

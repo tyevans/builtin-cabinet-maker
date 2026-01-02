@@ -16,10 +16,9 @@ from pathlib import Path
 import pytest
 from typer.testing import CliRunner
 
-from cabinets.application.commands import GenerateLayoutCommand
+from cabinets.application.factory import get_factory
 from cabinets.application.config import (
     config_to_woodworking,
-    config_to_span_limits,
     load_config,
 )
 from cabinets.application.dtos import LayoutParametersInput, WallInput
@@ -65,7 +64,7 @@ class TestWoodworkingEndToEnd:
             material_thickness=0.75,
         )
 
-        command = GenerateLayoutCommand()
+        command = get_factory().create_generate_command()
         output = command.execute(wall_input, params)
 
         assert output.is_valid
@@ -93,7 +92,7 @@ class TestWoodworkingEndToEnd:
             material_thickness=0.75,
         )
 
-        command = GenerateLayoutCommand()
+        command = get_factory().create_generate_command()
         output = command.execute(wall_input, params)
 
         assert output.is_valid
@@ -118,7 +117,7 @@ class TestWoodworkingEndToEnd:
             material_thickness=0.75,
         )
 
-        command = GenerateLayoutCommand()
+        command = get_factory().create_generate_command()
         output = command.execute(wall_input, params)
 
         assert output.is_valid
@@ -143,7 +142,7 @@ class TestWoodworkingEndToEnd:
             material_thickness=0.75,
         )
 
-        command = GenerateLayoutCommand()
+        command = get_factory().create_generate_command()
         output = command.execute(wall_input, params)
 
         assert output.is_valid
@@ -175,7 +174,7 @@ class TestCutListIntegration:
             material_thickness=0.75,
         )
 
-        command = GenerateLayoutCommand()
+        command = get_factory().create_generate_command()
         output = command.execute(wall_input, params)
 
         assert output.is_valid
@@ -186,7 +185,9 @@ class TestCutListIntegration:
 
         # Check grain direction is in metadata
         pieces_with_grain = [
-            p for p in annotated if p.cut_metadata and "grain_direction" in p.cut_metadata
+            p
+            for p in annotated
+            if p.cut_metadata and "grain_direction" in p.cut_metadata
         ]
         assert len(pieces_with_grain) > 0
 
@@ -199,7 +200,7 @@ class TestCutListIntegration:
             material_thickness=0.75,
         )
 
-        command = GenerateLayoutCommand()
+        command = get_factory().create_generate_command()
         output = command.execute(wall_input, params)
 
         intel = WoodworkingIntelligence()
@@ -220,7 +221,7 @@ class TestCutListIntegration:
             material_thickness=0.75,
         )
 
-        command = GenerateLayoutCommand()
+        command = get_factory().create_generate_command()
         output = command.execute(wall_input, params)
 
         intel = WoodworkingIntelligence()
@@ -266,7 +267,7 @@ class TestHardwareReportIntegration:
             material_thickness=0.75,
         )
 
-        command = GenerateLayoutCommand()
+        command = get_factory().create_generate_command()
         output = command.execute(wall_input, params)
 
         intel = WoodworkingIntelligence()
@@ -289,7 +290,7 @@ class TestHardwareReportIntegration:
             material_thickness=0.75,
         )
 
-        command = GenerateLayoutCommand()
+        command = get_factory().create_generate_command()
         output = command.execute(wall_input, params)
 
         intel = WoodworkingIntelligence()
@@ -330,9 +331,7 @@ class TestConfigurationIntegration:
             },
         }
 
-        with tempfile.NamedTemporaryFile(
-            mode="w", suffix=".json", delete=False
-        ) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
             json.dump(config_content, f)
             f.flush()
             config_path = Path(f.name)
@@ -358,14 +357,10 @@ class TestConfigurationIntegration:
                 "depth": 12.0,
                 "sections": [],
             },
-            "woodworking": {
-                "joinery": {"dado_depth_ratio": 0.4, "dowel_spacing": 5.0}
-            },
+            "woodworking": {"joinery": {"dado_depth_ratio": 0.4, "dowel_spacing": 5.0}},
         }
 
-        with tempfile.NamedTemporaryFile(
-            mode="w", suffix=".json", delete=False
-        ) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
             json.dump(config_content, f)
             f.flush()
             config_path = Path(f.name)
@@ -388,9 +383,7 @@ class TestConfigurationIntegration:
             "cabinet": {"width": 48.0, "height": 84.0, "depth": 12.0},
         }
 
-        with tempfile.NamedTemporaryFile(
-            mode="w", suffix=".json", delete=False
-        ) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
             json.dump(config_content, f)
             f.flush()
             config_path = Path(f.name)
@@ -456,9 +449,7 @@ class TestCLIIntegration:
             "output": {"format": "woodworking"},
         }
 
-        with tempfile.NamedTemporaryFile(
-            mode="w", suffix=".json", delete=False
-        ) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
             json.dump(config_content, f)
             f.flush()
             config_path = f.name
@@ -487,9 +478,7 @@ class TestCLIIntegration:
             },
         }
 
-        with tempfile.NamedTemporaryFile(
-            mode="w", suffix=".json", delete=False
-        ) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
             json.dump(config_content, f)
             f.flush()
             config_path = f.name
@@ -528,7 +517,7 @@ class TestMultiSectionIntegration:
             material_thickness=0.75,
         )
 
-        command = GenerateLayoutCommand()
+        command = get_factory().create_generate_command()
         output = command.execute(wall_input, params)
 
         assert output.is_valid
@@ -549,7 +538,7 @@ class TestMultiSectionIntegration:
             material_thickness=0.75,
         )
 
-        command = GenerateLayoutCommand()
+        command = get_factory().create_generate_command()
         output = command.execute(wall_input, params)
 
         intel = WoodworkingIntelligence()
@@ -689,7 +678,7 @@ class TestJoinerySpecificationIntegration:
             material_thickness=0.75,
         )
 
-        command = GenerateLayoutCommand()
+        command = get_factory().create_generate_command()
         output = command.execute(wall_input, params)
 
         intel = WoodworkingIntelligence()
@@ -714,7 +703,7 @@ class TestJoinerySpecificationIntegration:
             back_thickness=0.25,
         )
 
-        command = GenerateLayoutCommand()
+        command = get_factory().create_generate_command()
         output = command.execute(wall_input, params)
 
         intel = WoodworkingIntelligence()
@@ -747,7 +736,7 @@ class TestGrainDirectionIntegration:
             material_thickness=0.75,
         )
 
-        command = GenerateLayoutCommand()
+        command = get_factory().create_generate_command()
         output = command.execute(wall_input, params)
 
         intel = WoodworkingIntelligence()
@@ -756,9 +745,7 @@ class TestGrainDirectionIntegration:
         # All visible panels should have grain direction
         for label, grain in directions.items():
             # Side panels, top, bottom should have grain recommendations
-            if any(
-                x in label.lower() for x in ["side", "top", "bottom", "shelf"]
-            ):
+            if any(x in label.lower() for x in ["side", "top", "bottom", "shelf"]):
                 assert grain in (GrainDirection.LENGTH, GrainDirection.WIDTH)
 
     def test_mdf_panels_have_no_grain(self):
@@ -802,7 +789,7 @@ class TestCustomWoodworkingConfig:
             material_thickness=0.75,
         )
 
-        command = GenerateLayoutCommand()
+        command = get_factory().create_generate_command()
         output = command.execute(wall_input, params)
 
         joinery = intel.get_joinery(output.cabinet)

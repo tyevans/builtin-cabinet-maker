@@ -15,7 +15,6 @@ from cabinets.domain.components import (
     EdgeProfileMetadata,
     EdgeProfileType,
     GenerationResult,
-    HardwareItem,
     ROUTER_BIT_RECOMMENDATIONS,
     ValidationResult,
     apply_edge_profile_metadata,
@@ -225,7 +224,9 @@ class TestDetectVisibleEdges:
 
     def test_shelf_both_edges_visible_when_at_both_cabinet_edges(self) -> None:
         """Test that shelf has left and right edges visible when at both edges."""
-        edges = detect_visible_edges(PanelType.SHELF, is_left_edge=True, is_right_edge=True)
+        edges = detect_visible_edges(
+            PanelType.SHELF, is_left_edge=True, is_right_edge=True
+        )
 
         assert "front" in edges
         assert "left" in edges
@@ -271,9 +272,7 @@ class TestDetectVisibleEdges:
 class TestApplyEdgeProfileMetadata:
     """Tests for apply_edge_profile_metadata() function."""
 
-    def test_applies_metadata_to_panel(
-        self, sample_shelf_panel: Panel
-    ) -> None:
+    def test_applies_metadata_to_panel(self, sample_shelf_panel: Panel) -> None:
         """Test that edge profile metadata is applied to panel."""
         config = EdgeProfileConfig(
             profile_type=EdgeProfileType.ROUNDOVER,
@@ -284,9 +283,7 @@ class TestApplyEdgeProfileMetadata:
 
         assert "edge_profile" in profiled_panel.metadata
 
-    def test_preserves_panel_dimensions(
-        self, sample_shelf_panel: Panel
-    ) -> None:
+    def test_preserves_panel_dimensions(self, sample_shelf_panel: Panel) -> None:
         """Test that panel dimensions are preserved."""
         config = EdgeProfileConfig(
             profile_type=EdgeProfileType.ROUNDOVER,
@@ -299,9 +296,7 @@ class TestApplyEdgeProfileMetadata:
         assert profiled_panel.height == sample_shelf_panel.height
         assert profiled_panel.panel_type == sample_shelf_panel.panel_type
 
-    def test_metadata_contains_profile_type(
-        self, sample_shelf_panel: Panel
-    ) -> None:
+    def test_metadata_contains_profile_type(self, sample_shelf_panel: Panel) -> None:
         """Test that metadata contains profile type."""
         config = EdgeProfileConfig(
             profile_type=EdgeProfileType.CHAMFER,
@@ -312,9 +307,7 @@ class TestApplyEdgeProfileMetadata:
 
         assert profiled_panel.metadata["edge_profile"]["profile_type"] == "chamfer"
 
-    def test_metadata_contains_size(
-        self, sample_shelf_panel: Panel
-    ) -> None:
+    def test_metadata_contains_size(self, sample_shelf_panel: Panel) -> None:
         """Test that metadata contains profile size."""
         config = EdgeProfileConfig(
             profile_type=EdgeProfileType.ROUNDOVER,
@@ -325,9 +318,7 @@ class TestApplyEdgeProfileMetadata:
 
         assert profiled_panel.metadata["edge_profile"]["size"] == 0.375
 
-    def test_metadata_contains_edges(
-        self, sample_shelf_panel: Panel
-    ) -> None:
+    def test_metadata_contains_edges(self, sample_shelf_panel: Panel) -> None:
         """Test that metadata contains edges list."""
         config = EdgeProfileConfig(
             profile_type=EdgeProfileType.ROUNDOVER,
@@ -339,9 +330,7 @@ class TestApplyEdgeProfileMetadata:
 
         assert profiled_panel.metadata["edge_profile"]["edges"] == ["top", "bottom"]
 
-    def test_metadata_contains_router_bit(
-        self, sample_shelf_panel: Panel
-    ) -> None:
+    def test_metadata_contains_router_bit(self, sample_shelf_panel: Panel) -> None:
         """Test that metadata contains router bit recommendation."""
         config = EdgeProfileConfig(
             profile_type=EdgeProfileType.OGEE,
@@ -352,9 +341,7 @@ class TestApplyEdgeProfileMetadata:
 
         assert profiled_panel.metadata["edge_profile"]["router_bit"] == "Ogee bit"
 
-    def test_auto_edges_uses_visible_edges(
-        self, sample_shelf_panel: Panel
-    ) -> None:
+    def test_auto_edges_uses_visible_edges(self, sample_shelf_panel: Panel) -> None:
         """Test that 'auto' edges uses detected visible edges."""
         config = EdgeProfileConfig(
             profile_type=EdgeProfileType.ROUNDOVER,
@@ -367,9 +354,7 @@ class TestApplyEdgeProfileMetadata:
         # Shelf panel defaults to front edge
         assert "front" in profiled_panel.metadata["edge_profile"]["edges"]
 
-    def test_explicit_visible_edges_override(
-        self, sample_shelf_panel: Panel
-    ) -> None:
+    def test_explicit_visible_edges_override(self, sample_shelf_panel: Panel) -> None:
         """Test that explicit visible_edges parameter overrides auto detection."""
         config = EdgeProfileConfig(
             profile_type=EdgeProfileType.ROUNDOVER,
@@ -385,9 +370,7 @@ class TestApplyEdgeProfileMetadata:
 
         assert profiled_panel.metadata["edge_profile"]["edges"] == ["left", "right"]
 
-    def test_preserves_existing_metadata(
-        self, sample_shelf_panel: Panel
-    ) -> None:
+    def test_preserves_existing_metadata(self, sample_shelf_panel: Panel) -> None:
         """Test that existing panel metadata is preserved."""
         # Create panel with existing metadata
         panel_with_metadata = Panel(
@@ -442,7 +425,9 @@ class TestEdgeProfileComponentValidation:
     """Tests for EdgeProfileComponent.validate()."""
 
     def test_validate_returns_ok_for_empty_config(
-        self, edge_profile_component: EdgeProfileComponent, standard_context: ComponentContext
+        self,
+        edge_profile_component: EdgeProfileComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that validate returns ok when edge_profile config is empty."""
         config: dict = {}
@@ -454,7 +439,9 @@ class TestEdgeProfileComponentValidation:
         assert len(result.warnings) == 0
 
     def test_validate_returns_ok_for_valid_config(
-        self, edge_profile_component: EdgeProfileComponent, standard_context: ComponentContext
+        self,
+        edge_profile_component: EdgeProfileComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that validate returns ok for valid config."""
         config = {
@@ -470,7 +457,9 @@ class TestEdgeProfileComponentValidation:
         assert len(result.errors) == 0
 
     def test_validate_returns_warning_for_large_profile(
-        self, edge_profile_component: EdgeProfileComponent, standard_context: ComponentContext
+        self,
+        edge_profile_component: EdgeProfileComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that validate returns warning for profile > half material thickness."""
         config = {
@@ -487,7 +476,9 @@ class TestEdgeProfileComponentValidation:
         assert "exceeds half material thickness" in result.warnings[0]
 
     def test_validate_returns_error_for_profile_exceeding_material(
-        self, edge_profile_component: EdgeProfileComponent, standard_context: ComponentContext
+        self,
+        edge_profile_component: EdgeProfileComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that validate returns error for profile > material thickness."""
         config = {
@@ -504,7 +495,9 @@ class TestEdgeProfileComponentValidation:
         assert "exceeds material thickness" in result.errors[0]
 
     def test_validate_with_thin_material(
-        self, edge_profile_component: EdgeProfileComponent, thin_material_context: ComponentContext
+        self,
+        edge_profile_component: EdgeProfileComponent,
+        thin_material_context: ComponentContext,
     ) -> None:
         """Test validation with thin material."""
         # With 0.5" material, half is 0.25"
@@ -521,7 +514,9 @@ class TestEdgeProfileComponentValidation:
         assert len(result.warnings) == 1
 
     def test_validate_with_explicit_edges_list(
-        self, edge_profile_component: EdgeProfileComponent, standard_context: ComponentContext
+        self,
+        edge_profile_component: EdgeProfileComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test validation with explicit edges list."""
         config = {
@@ -537,7 +532,9 @@ class TestEdgeProfileComponentValidation:
         assert result.is_valid
 
     def test_validate_with_auto_edges(
-        self, edge_profile_component: EdgeProfileComponent, standard_context: ComponentContext
+        self,
+        edge_profile_component: EdgeProfileComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test validation with 'auto' edges."""
         config = {
@@ -553,7 +550,9 @@ class TestEdgeProfileComponentValidation:
         assert result.is_valid
 
     def test_validate_with_invalid_profile_type(
-        self, edge_profile_component: EdgeProfileComponent, standard_context: ComponentContext
+        self,
+        edge_profile_component: EdgeProfileComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test validation with invalid profile type."""
         config = {
@@ -568,7 +567,9 @@ class TestEdgeProfileComponentValidation:
         assert not result.is_valid
 
     def test_validate_returns_validation_result_type(
-        self, edge_profile_component: EdgeProfileComponent, standard_context: ComponentContext
+        self,
+        edge_profile_component: EdgeProfileComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that validate returns ValidationResult type."""
         config: dict = {}
@@ -578,7 +579,9 @@ class TestEdgeProfileComponentValidation:
         assert isinstance(result, ValidationResult)
 
     def test_validate_all_profile_types(
-        self, edge_profile_component: EdgeProfileComponent, standard_context: ComponentContext
+        self,
+        edge_profile_component: EdgeProfileComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that all profile types validate successfully."""
         for profile_type in EdgeProfileType:
@@ -591,7 +594,9 @@ class TestEdgeProfileComponentValidation:
 
             result = edge_profile_component.validate(config, standard_context)
 
-            assert result.is_valid, f"Profile type {profile_type.value} failed validation"
+            assert result.is_valid, (
+                f"Profile type {profile_type.value} failed validation"
+            )
 
 
 # =============================================================================
@@ -603,7 +608,9 @@ class TestEdgeProfileComponentGeneration:
     """Tests for EdgeProfileComponent.generate()."""
 
     def test_generate_returns_empty_result_for_no_config(
-        self, edge_profile_component: EdgeProfileComponent, standard_context: ComponentContext
+        self,
+        edge_profile_component: EdgeProfileComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that generate returns empty result when no edge_profile config."""
         config: dict = {}
@@ -614,7 +621,9 @@ class TestEdgeProfileComponentGeneration:
         assert len(result.hardware) == 0
 
     def test_generate_returns_no_panels(
-        self, edge_profile_component: EdgeProfileComponent, standard_context: ComponentContext
+        self,
+        edge_profile_component: EdgeProfileComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that generate does not produce any panels."""
         config = {
@@ -629,7 +638,9 @@ class TestEdgeProfileComponentGeneration:
         assert len(result.panels) == 0
 
     def test_generate_returns_metadata_with_config(
-        self, edge_profile_component: EdgeProfileComponent, standard_context: ComponentContext
+        self,
+        edge_profile_component: EdgeProfileComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that generate returns metadata with edge_profile_config."""
         config = {
@@ -646,7 +657,9 @@ class TestEdgeProfileComponentGeneration:
         assert result.metadata["edge_profile_config"]["size"] == 0.25
 
     def test_generate_returns_note_in_metadata(
-        self, edge_profile_component: EdgeProfileComponent, standard_context: ComponentContext
+        self,
+        edge_profile_component: EdgeProfileComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that generate returns explanatory note in metadata."""
         config = {
@@ -662,7 +675,9 @@ class TestEdgeProfileComponentGeneration:
         assert "parent component" in result.metadata["note"]
 
     def test_generate_returns_generation_result_type(
-        self, edge_profile_component: EdgeProfileComponent, standard_context: ComponentContext
+        self,
+        edge_profile_component: EdgeProfileComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that generate returns GenerationResult type."""
         config = {
@@ -686,7 +701,9 @@ class TestEdgeProfileComponentHardware:
     """Tests for EdgeProfileComponent.hardware()."""
 
     def test_hardware_returns_empty_list(
-        self, edge_profile_component: EdgeProfileComponent, standard_context: ComponentContext
+        self,
+        edge_profile_component: EdgeProfileComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that hardware returns empty list."""
         config = {
@@ -701,7 +718,9 @@ class TestEdgeProfileComponentHardware:
         assert hardware == []
 
     def test_hardware_returns_list_type(
-        self, edge_profile_component: EdgeProfileComponent, standard_context: ComponentContext
+        self,
+        edge_profile_component: EdgeProfileComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that hardware returns list type."""
         config: dict = {}
@@ -823,9 +842,7 @@ class TestEdgeProfileMetadata:
 class TestEdgeProfileComponentIntegration:
     """Integration tests for EdgeProfileComponent."""
 
-    def test_full_workflow(
-        self, standard_context: ComponentContext
-    ) -> None:
+    def test_full_workflow(self, standard_context: ComponentContext) -> None:
         """Test complete workflow: get component, validate, generate, hardware."""
         component_class = component_registry.get("decorative.edge_profile")
         component = component_class()
@@ -877,7 +894,9 @@ class TestEdgeProfileComponentIntegration:
         assert "front" in profiled_panel.metadata["edge_profile"]["edges"]
 
     def test_validation_warning_detection(
-        self, edge_profile_component: EdgeProfileComponent, standard_context: ComponentContext
+        self,
+        edge_profile_component: EdgeProfileComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that warnings are properly detected for large profiles."""
         config = {

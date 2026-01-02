@@ -7,8 +7,6 @@ These tests verify:
 - Adapter functions maintain consistency between config and domain models
 """
 
-import pytest
-
 from cabinets.application.config import (
     CabinetConfig,
     CabinetConfiguration,
@@ -27,7 +25,12 @@ from cabinets.application.config import (
     config_to_skylights,
 )
 from cabinets.domain.entities import Room, WallSegment
-from cabinets.domain.value_objects import CeilingSlope, OutsideCornerConfig, SectionType, Skylight
+from cabinets.domain.value_objects import (
+    CeilingSlope,
+    OutsideCornerConfig,
+    SectionType,
+    Skylight,
+)
 
 
 class TestConfigToRoom:
@@ -321,7 +324,9 @@ class TestConfigToSectionSpecsFRD04:
                 width=48.0,
                 height=84.0,
                 depth=12.0,
-                sections=[SectionConfig(width=24.0, section_type=SectionTypeConfig.OPEN)],
+                sections=[
+                    SectionConfig(width=24.0, section_type=SectionTypeConfig.OPEN)
+                ],
             ),
         )
 

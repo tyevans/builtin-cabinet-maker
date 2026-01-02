@@ -1,104 +1,77 @@
 """Domain services for cabinet layout and calculations.
 
-This package provides all domain services for cabinet generation, including:
-- Layout calculation and panel generation
-- Room-aware layout with obstacle handling
-- Woodworking intelligence (joinery, span limits, hardware)
-- Installation support (mounting, cleats, hardware)
+This package provides all domain services for cabinet generation.
+Import from subpackages for specialized functionality:
+- .installation: Installation support (mounting, cleats, hardware)
+- .safety: Safety compliance analysis (FRD-21)
+- .woodworking: Woodworking intelligence (joinery, spans, hardware)
+- .entertainment_center: Entertainment center layout (FRD-19)
+- .bay_alcove_service: Bay alcove layout (FRD-23)
 """
 
-# Re-export everything from legacy services module
-from ._legacy import (
-    CutListGenerator,
-    LayoutCalculator,
-    LayoutParameters,
-    MaterialEstimate,
-    MaterialEstimator,
+# Core layout services
+from .cut_list import CutListGenerator
+from .layout_calculator import LayoutCalculator, LayoutParameters
+from .material_estimator import MaterialEstimate, MaterialEstimator
+from .panel_mapper import Panel3DMapper, RoomPanel3DMapper
+
+# Obstacle handling
+from .obstacle import (
     ObstacleAwareLayoutService,
     ObstacleCollisionService,
+)
+
+# Geometry services (FRD-11)
+from .geometry import (
     OutsideCornerService,
-    Panel3DMapper,
-    RoomLayoutService,
-    RoomPanel3DMapper,
     SkylightVoidService,
     SlopedCeilingService,
 )
 
-# Export installation support module (FRD-17)
-from .installation import (
-    CleatSpec,
-    InstallationConfig,
-    InstallationPlan,
-    InstallationService,
-    StudHitAnalysis,
-    WeightEstimate,
+# Room layout
+from .room_layout import RoomLayoutService
+
+# Zone layout (FRD-22)
+from .zone_layout import ZoneLayoutService, ZoneStackLayoutResult
+
+# Radial ceiling and panel geometry (FRD-23)
+from .radial_ceiling_service import RadialCeilingService, WallSegmentGeometry
+from .panel_geometry_service import (
+    PanelAngleSpec,
+    PanelGeometryService,
+    PanelTaperSpec,
 )
 
-# Export woodworking intelligence module
-from .woodworking import (
-    MATERIAL_MODULUS,
-    MAX_DEFLECTION_RATIO,
-    SAFETY_FACTOR,
-    SPAN_LIMITS,
-    ConnectionJoinery,
-    HardwareList,
-    JointSpec,
-    SpanWarning,
-    WeightCapacity,
-    WoodworkingConfig,
-    WoodworkingIntelligence,
-    get_max_span,
-)
-
-# Export entertainment center layout service (FRD-19)
-from .entertainment_center import (
-    CableChasePosition,
-    EntertainmentCenterLayoutService,
-    TVIntegration,
-    TVZone,
-)
+# Panel generation
+from .panel_generation import PanelGenerationService
 
 __all__ = [
-    # Layout and generation
-    "LayoutParameters",
-    "LayoutCalculator",
+    # Core layout
     "CutListGenerator",
+    "LayoutCalculator",
+    "LayoutParameters",
     "MaterialEstimate",
     "MaterialEstimator",
     "Panel3DMapper",
-    # Room-aware layout
-    "RoomLayoutService",
     "RoomPanel3DMapper",
+    # Room layout
+    "RoomLayoutService",
     # Obstacle handling
-    "ObstacleCollisionService",
     "ObstacleAwareLayoutService",
-    # FRD-11 Advanced geometry
-    "SlopedCeilingService",
-    "SkylightVoidService",
+    "ObstacleCollisionService",
+    # Geometry (FRD-11)
     "OutsideCornerService",
-    # Woodworking intelligence (FRD-14)
-    "ConnectionJoinery",
-    "HardwareList",
-    "JointSpec",
-    "MATERIAL_MODULUS",
-    "MAX_DEFLECTION_RATIO",
-    "SAFETY_FACTOR",
-    "SPAN_LIMITS",
-    "SpanWarning",
-    "WeightCapacity",
-    "WoodworkingConfig",
-    "WoodworkingIntelligence",
-    "get_max_span",
-    # Installation support (FRD-17)
-    "CleatSpec",
-    "InstallationConfig",
-    "InstallationPlan",
-    "InstallationService",
-    "StudHitAnalysis",
-    "WeightEstimate",
-    # Entertainment center layout (FRD-19)
-    "CableChasePosition",
-    "EntertainmentCenterLayoutService",
-    "TVIntegration",
-    "TVZone",
+    "SkylightVoidService",
+    "SlopedCeilingService",
+    # Zone layout (FRD-22)
+    "ZoneLayoutService",
+    "ZoneStackLayoutResult",
+    # Radial/panel geometry (FRD-23)
+    "PanelAngleSpec",
+    "PanelGeometryService",
+    "PanelTaperSpec",
+    "RadialCeilingService",
+    "WallSegmentGeometry",
+    # Panel generation
+    "PanelGenerationService",
 ]

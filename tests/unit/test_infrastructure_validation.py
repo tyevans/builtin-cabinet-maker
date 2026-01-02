@@ -10,8 +10,6 @@ These tests verify the infrastructure-related validation rules (FRD-15):
 - V-07: Ventilation adequacy warning
 """
 
-import pytest
-
 from cabinets.application.config import (
     CabinetConfig,
     CabinetConfiguration,
@@ -30,7 +28,6 @@ from cabinets.application.config import (
     validate_config,
 )
 from cabinets.application.config.validator import (
-    MIN_CUTOUT_EDGE_DISTANCE,
     STANDARD_GROMMET_SIZES,
     ValidationError,
     ValidationWarning,
@@ -104,24 +101,30 @@ class TestCutoutsOverlap:
     def test_non_overlapping_cutouts_horizontally(self) -> None:
         """Cutouts separated horizontally should not overlap."""
         result = _cutouts_overlap(
-            (0, 0), (10, 10),
-            (15, 0), (10, 10),
+            (0, 0),
+            (10, 10),
+            (15, 0),
+            (10, 10),
         )
         assert result is False
 
     def test_non_overlapping_cutouts_vertically(self) -> None:
         """Cutouts separated vertically should not overlap."""
         result = _cutouts_overlap(
-            (0, 0), (10, 10),
-            (0, 15), (10, 10),
+            (0, 0),
+            (10, 10),
+            (0, 15),
+            (10, 10),
         )
         assert result is False
 
     def test_overlapping_cutouts(self) -> None:
         """Cutouts that share area should overlap."""
         result = _cutouts_overlap(
-            (0, 0), (10, 10),
-            (5, 5), (10, 10),
+            (0, 0),
+            (10, 10),
+            (5, 5),
+            (10, 10),
         )
         assert result is True
 
@@ -129,31 +132,39 @@ class TestCutoutsOverlap:
         """Cutouts that only touch edges should not overlap."""
         # Touching on right edge
         result = _cutouts_overlap(
-            (0, 0), (10, 10),
-            (10, 0), (10, 10),
+            (0, 0),
+            (10, 10),
+            (10, 0),
+            (10, 10),
         )
         assert result is False
 
         # Touching on top edge
         result = _cutouts_overlap(
-            (0, 0), (10, 10),
-            (0, 10), (10, 10),
+            (0, 0),
+            (10, 10),
+            (0, 10),
+            (10, 10),
         )
         assert result is False
 
     def test_identical_cutouts_overlap(self) -> None:
         """Identical cutouts should overlap."""
         result = _cutouts_overlap(
-            (5, 5), (10, 10),
-            (5, 5), (10, 10),
+            (5, 5),
+            (10, 10),
+            (5, 5),
+            (10, 10),
         )
         assert result is True
 
     def test_contained_cutout_overlaps(self) -> None:
         """A cutout fully inside another should overlap."""
         result = _cutouts_overlap(
-            (0, 0), (20, 20),
-            (5, 5), (5, 5),
+            (0, 0),
+            (20, 20),
+            (5, 5),
+            (5, 5),
         )
         assert result is True
 
@@ -210,7 +221,9 @@ class TestV01CutoutWithinPanelBounds:
         )
 
         result = validate_config(config)
-        bounds_errors = [e for e in result.errors if "exceeds panel dimensions" in e.message]
+        bounds_errors = [
+            e for e in result.errors if "exceeds panel dimensions" in e.message
+        ]
         assert len(bounds_errors) == 0
 
     def test_outlet_exceeds_panel_width(self) -> None:
@@ -224,7 +237,9 @@ class TestV01CutoutWithinPanelBounds:
                         type=OutletTypeConfig.SINGLE,
                         section_index=0,
                         panel="back",
-                        position=PositionConfigSchema(x=47.0, y=40.0),  # x + outlet_width > 48
+                        position=PositionConfigSchema(
+                            x=47.0, y=40.0
+                        ),  # x + outlet_width > 48
                     )
                 ]
             ),
@@ -232,7 +247,9 @@ class TestV01CutoutWithinPanelBounds:
 
         result = validate_config(config)
         assert not result.is_valid
-        bounds_errors = [e for e in result.errors if "exceeds panel dimensions" in e.message]
+        bounds_errors = [
+            e for e in result.errors if "exceeds panel dimensions" in e.message
+        ]
         assert len(bounds_errors) >= 1
 
     def test_outlet_exceeds_panel_height(self) -> None:
@@ -246,7 +263,9 @@ class TestV01CutoutWithinPanelBounds:
                         type=OutletTypeConfig.SINGLE,
                         section_index=0,
                         panel="back",
-                        position=PositionConfigSchema(x=20.0, y=82.0),  # y + outlet_height > 84
+                        position=PositionConfigSchema(
+                            x=20.0, y=82.0
+                        ),  # y + outlet_height > 84
                     )
                 ]
             ),
@@ -254,7 +273,9 @@ class TestV01CutoutWithinPanelBounds:
 
         result = validate_config(config)
         assert not result.is_valid
-        bounds_errors = [e for e in result.errors if "exceeds panel dimensions" in e.message]
+        bounds_errors = [
+            e for e in result.errors if "exceeds panel dimensions" in e.message
+        ]
         assert len(bounds_errors) >= 1
 
     def test_grommet_within_bounds(self) -> None:
@@ -274,7 +295,9 @@ class TestV01CutoutWithinPanelBounds:
         )
 
         result = validate_config(config)
-        bounds_errors = [e for e in result.errors if "exceeds panel dimensions" in e.message]
+        bounds_errors = [
+            e for e in result.errors if "exceeds panel dimensions" in e.message
+        ]
         assert len(bounds_errors) == 0
 
     def test_grommet_exceeds_panel_bounds(self) -> None:
@@ -295,7 +318,9 @@ class TestV01CutoutWithinPanelBounds:
 
         result = validate_config(config)
         assert not result.is_valid
-        bounds_errors = [e for e in result.errors if "exceeds panel dimensions" in e.message]
+        bounds_errors = [
+            e for e in result.errors if "exceeds panel dimensions" in e.message
+        ]
         assert len(bounds_errors) >= 1
 
     def test_ventilation_within_bounds(self) -> None:
@@ -317,7 +342,9 @@ class TestV01CutoutWithinPanelBounds:
         )
 
         result = validate_config(config)
-        bounds_errors = [e for e in result.errors if "exceeds panel dimensions" in e.message]
+        bounds_errors = [
+            e for e in result.errors if "exceeds panel dimensions" in e.message
+        ]
         assert len(bounds_errors) == 0
 
     def test_ventilation_exceeds_panel_bounds(self) -> None:
@@ -340,7 +367,9 @@ class TestV01CutoutWithinPanelBounds:
 
         result = validate_config(config)
         assert not result.is_valid
-        bounds_errors = [e for e in result.errors if "exceeds panel dimensions" in e.message]
+        bounds_errors = [
+            e for e in result.errors if "exceeds panel dimensions" in e.message
+        ]
         assert len(bounds_errors) >= 1
 
 
@@ -401,7 +430,9 @@ class TestV02CutoutEdgeDistance:
                         type=OutletTypeConfig.SINGLE,
                         section_index=0,
                         panel="back",
-                        position=PositionConfigSchema(x=20.0, y=0.5),  # < 1" from bottom
+                        position=PositionConfigSchema(
+                            x=20.0, y=0.5
+                        ),  # < 1" from bottom
                     )
                 ]
             ),
@@ -478,7 +509,9 @@ class TestV03CutoutOverlapDetection:
                         type=OutletTypeConfig.SINGLE,
                         section_index=0,
                         panel="back",
-                        position=PositionConfigSchema(x=30.0, y=40.0),  # Far from first outlet
+                        position=PositionConfigSchema(
+                            x=30.0, y=40.0
+                        ),  # Far from first outlet
                     ),
                 ]
             ),
@@ -505,7 +538,9 @@ class TestV03CutoutOverlapDetection:
                         type=OutletTypeConfig.SINGLE,
                         section_index=0,
                         panel="back",
-                        position=PositionConfigSchema(x=21.0, y=41.0),  # Overlaps with first
+                        position=PositionConfigSchema(
+                            x=21.0, y=41.0
+                        ),  # Overlaps with first
                     ),
                 ]
             ),
@@ -534,7 +569,9 @@ class TestV03CutoutOverlapDetection:
                     GrommetConfigSchema(
                         size=2.5,
                         panel="back",
-                        position=PositionConfigSchema(x=21.0, y=41.0),  # Overlaps with outlet
+                        position=PositionConfigSchema(
+                            x=21.0, y=41.0
+                        ),  # Overlaps with outlet
                     ),
                 ],
             ),
@@ -603,7 +640,9 @@ class TestV04OutletAccessibility:
         )
 
         result = validate_config(config)
-        shelf_warnings = [w for w in result.warnings if "behind fixed shelf" in w.message]
+        shelf_warnings = [
+            w for w in result.warnings if "behind fixed shelf" in w.message
+        ]
         assert len(shelf_warnings) == 0
 
     def test_outlet_behind_shelf_produces_warning(self) -> None:
@@ -632,7 +671,9 @@ class TestV04OutletAccessibility:
         )
 
         result = validate_config(config)
-        shelf_warnings = [w for w in result.warnings if "behind fixed shelf" in w.message]
+        shelf_warnings = [
+            w for w in result.warnings if "behind fixed shelf" in w.message
+        ]
         assert len(shelf_warnings) >= 1
 
     def test_outlet_on_side_panel_no_shelf_warning(self) -> None:
@@ -661,7 +702,9 @@ class TestV04OutletAccessibility:
         )
 
         result = validate_config(config)
-        shelf_warnings = [w for w in result.warnings if "behind fixed shelf" in w.message]
+        shelf_warnings = [
+            w for w in result.warnings if "behind fixed shelf" in w.message
+        ]
         assert len(shelf_warnings) == 0
 
 
@@ -686,7 +729,9 @@ class TestV05GrommetSizeValidation:
             )
 
             result = validate_config(config)
-            size_errors = [e for e in result.errors if "Invalid grommet size" in e.message]
+            size_errors = [
+                e for e in result.errors if "Invalid grommet size" in e.message
+            ]
             assert len(size_errors) == 0, f"Size {size} should be valid"
 
     def test_non_standard_grommet_size(self) -> None:
@@ -858,7 +903,9 @@ class TestV07VentilationAdequacy:
         )
 
         result = validate_config(config)
-        vent_warnings = [w for w in result.warnings if "ventilation" in w.message.lower()]
+        vent_warnings = [
+            w for w in result.warnings if "ventilation" in w.message.lower()
+        ]
         assert len(vent_warnings) >= 1
 
     def test_outlets_with_ventilation_no_warning(self) -> None:
@@ -888,7 +935,9 @@ class TestV07VentilationAdequacy:
         )
 
         result = validate_config(config)
-        vent_warnings = [w for w in result.warnings if "ventilation" in w.message.lower()]
+        vent_warnings = [
+            w for w in result.warnings if "ventilation" in w.message.lower()
+        ]
         assert len(vent_warnings) == 0
 
     def test_no_outlets_no_ventilation_no_warning(self) -> None:
@@ -908,7 +957,9 @@ class TestV07VentilationAdequacy:
         )
 
         result = validate_config(config)
-        vent_warnings = [w for w in result.warnings if "ventilation" in w.message.lower()]
+        vent_warnings = [
+            w for w in result.warnings if "ventilation" in w.message.lower()
+        ]
         assert len(vent_warnings) == 0
 
 

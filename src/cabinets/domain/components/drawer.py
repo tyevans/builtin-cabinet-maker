@@ -204,7 +204,9 @@ class _DrawerBase:
         slide_length: int = (
             _auto_select_slide_length(context.depth)
             if slide_length_raw == "auto"
-            else int(slide_length_raw) if isinstance(slide_length_raw, str) else slide_length_raw
+            else int(slide_length_raw)
+            if isinstance(slide_length_raw, str)
+            else slide_length_raw
         )
 
         # Validate slide_type
@@ -224,30 +226,30 @@ class _DrawerBase:
         # V-01: Check slide length vs depth
         if slide_length > context.depth - 1:
             errors.append(
-                f"Slide length ({slide_length}\") exceeds section depth "
-                f"({context.depth}\") minus 1\" rear clearance"
+                f'Slide length ({slide_length}") exceeds section depth '
+                f'({context.depth}") minus 1" rear clearance'
             )
 
         # V-02: Check minimum front height
         if front_height < self.MIN_FRONT_HEIGHT:
             errors.append(
-                f"Front height ({front_height}\") below minimum "
-                f"({self.MIN_FRONT_HEIGHT}\")"
+                f'Front height ({front_height}") below minimum '
+                f'({self.MIN_FRONT_HEIGHT}")'
             )
 
         # V-03: Check front height vs section height
         if front_height > context.height:
             errors.append(
-                f"Front height ({front_height}\") exceeds section height "
-                f"({context.height}\")"
+                f'Front height ({front_height}") exceeds section height '
+                f'({context.height}")'
             )
 
         # V-05: Check total drawer height fits in section
         total_height = count * front_height
         if total_height > context.height:
             errors.append(
-                f"Total drawer height ({count} x {front_height}\" = {total_height}\") "
-                f"exceeds section height ({context.height}\")"
+                f'Total drawer height ({count} x {front_height}" = {total_height}") '
+                f'exceeds section height ({context.height}")'
             )
 
         # V-04: Check box width is positive
@@ -256,8 +258,8 @@ class _DrawerBase:
             box_width = context.width - (2 * clearance)
             if box_width <= 0:
                 errors.append(
-                    f"Section too narrow ({context.width}\") for {slide_type} "
-                    f"slides (need >{2 * clearance}\")"
+                    f'Section too narrow ({context.width}") for {slide_type} '
+                    f'slides (need >{2 * clearance}")'
                 )
 
         return ValidationResult(tuple(errors), tuple(warnings))
@@ -310,7 +312,9 @@ class _DrawerBase:
         slide_length: int = (
             _auto_select_slide_length(context.depth)
             if slide_length_raw == "auto"
-            else int(slide_length_raw) if isinstance(slide_length_raw, str) else slide_length_raw
+            else int(slide_length_raw)
+            if isinstance(slide_length_raw, str)
+            else slide_length_raw
         )
 
         # Calculate box dimensions
@@ -376,7 +380,9 @@ class _DrawerBase:
                         material_type=context.material.material_type,
                     ),
                     position=Position(
-                        x=context.position.x + side_clearance + drawer_spec.side_thickness,
+                        x=context.position.x
+                        + side_clearance
+                        + drawer_spec.side_thickness,
                         y=position_y + 0.625,  # above reveal + slide clearance
                     ),
                     metadata=drawer_metadata.copy(),
@@ -465,7 +471,9 @@ class _DrawerBase:
         slide_qty = (1 if slide_type == "center_mount" else 2) * count
         screw_qty = 4 * slide_qty
 
-        slide_desc = f"{'Soft-Close ' if soft_close else ''}Drawer Slide ({slide_length}\")"
+        slide_desc = (
+            f'{"Soft-Close " if soft_close else ""}Drawer Slide ({slide_length}")'
+        )
         hardware.append(
             HardwareItem(
                 name=slide_desc,
@@ -496,7 +504,9 @@ class _DrawerBase:
         )
 
         # Edge banding for drawer fronts (all drawers)
-        edge_banding_per_drawer = 2 * (drawer_spec.front_width + drawer_spec.front_height)
+        edge_banding_per_drawer = 2 * (
+            drawer_spec.front_width + drawer_spec.front_height
+        )
         total_edge_banding = edge_banding_per_drawer * count
         hardware.append(
             HardwareItem(
@@ -658,8 +668,8 @@ class FileDrawerComponent(_DrawerBase):
             min_height = self.MIN_FILE_HEIGHT[file_type]
             if box_height < min_height:
                 errors.append(
-                    f"File drawer box height ({box_height:.2f}\") is below minimum "
-                    f"for {file_type} files ({min_height}\")"
+                    f'File drawer box height ({box_height:.2f}") is below minimum '
+                    f'for {file_type} files ({min_height}")'
                 )
 
         # V-06: Warn about center mount with file drawers

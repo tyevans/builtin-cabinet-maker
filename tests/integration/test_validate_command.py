@@ -112,9 +112,7 @@ class TestValidateCommand:
 class TestValidateCommandWithTempFiles:
     """Tests that create temporary files for validation."""
 
-    def test_missing_required_field(
-        self, runner: CliRunner, tmp_path: Path
-    ) -> None:
+    def test_missing_required_field(self, runner: CliRunner, tmp_path: Path) -> None:
         """Missing required field should cause validation error."""
         config_content = """{
   "schema_version": "1.0",
@@ -132,9 +130,7 @@ class TestValidateCommandWithTempFiles:
         assert "Errors:" in result.output
         assert "depth" in result.output.lower()
 
-    def test_invalid_dimension_value(
-        self, runner: CliRunner, tmp_path: Path
-    ) -> None:
+    def test_invalid_dimension_value(self, runner: CliRunner, tmp_path: Path) -> None:
         """Invalid dimension value should cause validation error."""
         config_content = """{
   "schema_version": "1.0",
@@ -175,9 +171,7 @@ class TestValidateCommandWithTempFiles:
         # Error message should mention version
         assert "version" in result.output.lower() or "schema" in result.output.lower()
 
-    def test_thin_material_warning(
-        self, runner: CliRunner, tmp_path: Path
-    ) -> None:
+    def test_thin_material_warning(self, runner: CliRunner, tmp_path: Path) -> None:
         """Very thin material should trigger warning."""
         config_content = """{
   "schema_version": "1.0",
@@ -200,7 +194,9 @@ class TestValidateCommandWithTempFiles:
         assert result.exit_code in [0, 2]
         if result.exit_code == 2:
             assert "Warnings:" in result.output
-            assert "thickness" in result.output.lower() or "thin" in result.output.lower()
+            assert (
+                "thickness" in result.output.lower() or "thin" in result.output.lower()
+            )
 
     def test_extreme_aspect_ratio_warning(
         self, runner: CliRunner, tmp_path: Path
@@ -269,9 +265,7 @@ class TestGenerateWithConfigFlag:
 
     def test_generate_config_file_not_found(self, runner: CliRunner) -> None:
         """Non-existent config file should fail."""
-        result = runner.invoke(
-            app, ["generate", "--config", "nonexistent.json"]
-        )
+        result = runner.invoke(app, ["generate", "--config", "nonexistent.json"])
 
         assert result.exit_code == 1
         assert "not found" in result.output.lower() or "Error" in result.output

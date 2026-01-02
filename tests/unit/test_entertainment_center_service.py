@@ -183,7 +183,9 @@ class TestTVZone:
 
     def test_tv_zone_negative_flanking_raises_error(self) -> None:
         """Test that negative flanking width raises ValueError."""
-        with pytest.raises(ValueError, match="Flanking left width must be non-negative"):
+        with pytest.raises(
+            ValueError, match="Flanking left width must be non-negative"
+        ):
             TVZone(
                 tv_zone_start=0.0,
                 tv_zone_width=60.0,
@@ -746,9 +748,7 @@ class TestLayoutConstraints:
         assert constraints["default_height"] == 18.0
         assert constraints["max_weight_lbs"] == 150.0
 
-    def test_tower_constraints(
-        self, service: EntertainmentCenterLayoutService
-    ) -> None:
+    def test_tower_constraints(self, service: EntertainmentCenterLayoutService) -> None:
         """Test tower layout constraints are correct."""
         constraints = service.layout_constraints["tower"]
         assert constraints["min_width"] == 24.0
@@ -761,9 +761,7 @@ class TestLayoutConstraints:
         """Test default cable chase width constant."""
         assert service.DEFAULT_CABLE_CHASE_WIDTH == 3.0
 
-    def test_tv_side_clearance(
-        self, service: EntertainmentCenterLayoutService
-    ) -> None:
+    def test_tv_side_clearance(self, service: EntertainmentCenterLayoutService) -> None:
         """Test TV side clearance constant."""
         assert service.TV_SIDE_CLEARANCE == 2.0
 
@@ -857,11 +855,11 @@ class TestServiceIntegration:
 
 
 class TestServiceExports:
-    """Tests for service exports from __init__.py."""
+    """Tests for service exports from entertainment_center subpackage."""
 
-    def test_service_importable_from_services(self) -> None:
-        """Test that service is importable from services module."""
-        from cabinets.domain.services import (
+    def test_service_importable_from_subpackage(self) -> None:
+        """Test that service is importable from entertainment_center subpackage."""
+        from cabinets.domain.services.entertainment_center import (
             CableChasePosition,
             EntertainmentCenterLayoutService,
             TVIntegration,

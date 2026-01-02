@@ -8,7 +8,6 @@ from cabinets.domain.services.woodworking import (
     MATERIAL_MODULUS,
     MAX_DEFLECTION_RATIO,
     SAFETY_FACTOR,
-    SPAN_LIMITS,
     ConnectionJoinery,
     HardwareList,
     JointSpec,
@@ -100,7 +99,9 @@ class TestMaterialModulus:
 
     def test_mdf_modulus_lower_than_plywood(self) -> None:
         """Test MDF has lower modulus than plywood."""
-        assert MATERIAL_MODULUS[MaterialType.MDF] < MATERIAL_MODULUS[MaterialType.PLYWOOD]
+        assert (
+            MATERIAL_MODULUS[MaterialType.MDF] < MATERIAL_MODULUS[MaterialType.PLYWOOD]
+        )
 
 
 class TestJointSpec:
@@ -215,7 +216,9 @@ class TestConnectionJoinery:
     def test_same_panel_raises_error(self) -> None:
         """Test that connecting panel to itself raises ValueError."""
         dado = JointSpec.dado(depth=0.25)
-        with pytest.raises(ValueError, match="from_panel and to_panel must be different"):
+        with pytest.raises(
+            ValueError, match="from_panel and to_panel must be different"
+        ):
             ConnectionJoinery(
                 from_panel=PanelType.SHELF,
                 to_panel=PanelType.SHELF,
@@ -276,10 +279,10 @@ class TestSpanWarning:
         )
         msg = warning.formatted_message
         assert "Top Panel" in msg
-        assert "42.0\"" in msg
-        assert "36.0\"" in msg
+        assert '42.0"' in msg
+        assert '36.0"' in msg
         assert "plywood" in msg
-        assert "0.75\"" in msg
+        assert '0.75"' in msg
 
     def test_critical_severity(self, plywood_material: MaterialSpec) -> None:
         """Test critical severity level."""
@@ -292,9 +295,13 @@ class TestSpanWarning:
         )
         assert warning.severity == "critical"
 
-    def test_invalid_severity_raises_error(self, plywood_material: MaterialSpec) -> None:
+    def test_invalid_severity_raises_error(
+        self, plywood_material: MaterialSpec
+    ) -> None:
         """Test that invalid severity raises ValueError."""
-        with pytest.raises(ValueError, match="Severity must be 'warning' or 'critical'"):
+        with pytest.raises(
+            ValueError, match="Severity must be 'warning' or 'critical'"
+        ):
             SpanWarning(
                 panel_label="Shelf 1",
                 span=40.0,
@@ -373,9 +380,13 @@ class TestWeightCapacity:
         assert "distributed" in msg
         assert "Advisory only" in msg
 
-    def test_invalid_load_type_raises_error(self, plywood_material: MaterialSpec) -> None:
+    def test_invalid_load_type_raises_error(
+        self, plywood_material: MaterialSpec
+    ) -> None:
         """Test that invalid load type raises ValueError."""
-        with pytest.raises(ValueError, match="Load type must be 'distributed' or 'point'"):
+        with pytest.raises(
+            ValueError, match="Load type must be 'distributed' or 'point'"
+        ):
             WeightCapacity(
                 panel_label="Shelf 1",
                 capacity_lbs=50.0,
@@ -384,7 +395,9 @@ class TestWeightCapacity:
                 material=plywood_material,
             )
 
-    def test_negative_capacity_raises_error(self, plywood_material: MaterialSpec) -> None:
+    def test_negative_capacity_raises_error(
+        self, plywood_material: MaterialSpec
+    ) -> None:
         """Test that negative capacity raises ValueError."""
         with pytest.raises(ValueError, match="Capacity must be non-negative"):
             WeightCapacity(
@@ -503,10 +516,14 @@ class TestHardwareList:
     def test_aggregate_preserves_metadata(self) -> None:
         """Test aggregate preserves first encountered metadata."""
         list1 = HardwareList(
-            items=(HardwareItem(name="Screw", quantity=10, sku="SCR-001", notes="Note1"),)
+            items=(
+                HardwareItem(name="Screw", quantity=10, sku="SCR-001", notes="Note1"),
+            )
         )
         list2 = HardwareList(
-            items=(HardwareItem(name="Screw", quantity=5, sku="SCR-002", notes="Note2"),)
+            items=(
+                HardwareItem(name="Screw", quantity=5, sku="SCR-002", notes="Note2"),
+            )
         )
         combined = HardwareList.aggregate(list1, list2)
         # First encountered metadata should be kept
@@ -557,7 +574,9 @@ class TestHardwareList:
         assert len(empty.items) == 0
         assert empty.total_count == 0
 
-    def test_hardware_list_is_frozen(self, sample_items: tuple[HardwareItem, ...]) -> None:
+    def test_hardware_list_is_frozen(
+        self, sample_items: tuple[HardwareItem, ...]
+    ) -> None:
         """Test that HardwareList is immutable."""
         hw_list = HardwareList(items=sample_items)
         with pytest.raises(AttributeError):
@@ -599,22 +618,30 @@ class TestWoodworkingConfig:
 
     def test_invalid_dado_depth_ratio_zero(self) -> None:
         """Test that zero dado_depth_ratio raises ValueError."""
-        with pytest.raises(ValueError, match="dado_depth_ratio must be between 0 and 1"):
+        with pytest.raises(
+            ValueError, match="dado_depth_ratio must be between 0 and 1"
+        ):
             WoodworkingConfig(dado_depth_ratio=0)
 
     def test_invalid_dado_depth_ratio_negative(self) -> None:
         """Test that negative dado_depth_ratio raises ValueError."""
-        with pytest.raises(ValueError, match="dado_depth_ratio must be between 0 and 1"):
+        with pytest.raises(
+            ValueError, match="dado_depth_ratio must be between 0 and 1"
+        ):
             WoodworkingConfig(dado_depth_ratio=-0.1)
 
     def test_invalid_dado_depth_ratio_greater_than_one(self) -> None:
         """Test that dado_depth_ratio > 1 raises ValueError."""
-        with pytest.raises(ValueError, match="dado_depth_ratio must be between 0 and 1"):
+        with pytest.raises(
+            ValueError, match="dado_depth_ratio must be between 0 and 1"
+        ):
             WoodworkingConfig(dado_depth_ratio=1.5)
 
     def test_invalid_rabbet_depth_ratio(self) -> None:
         """Test that invalid rabbet_depth_ratio raises ValueError."""
-        with pytest.raises(ValueError, match="rabbet_depth_ratio must be between 0 and 1"):
+        with pytest.raises(
+            ValueError, match="rabbet_depth_ratio must be between 0 and 1"
+        ):
             WoodworkingConfig(rabbet_depth_ratio=0)
 
     def test_invalid_dowel_edge_offset(self) -> None:
@@ -629,7 +656,9 @@ class TestWoodworkingConfig:
 
     def test_invalid_pocket_hole_edge_offset(self) -> None:
         """Test that non-positive pocket_hole_edge_offset raises ValueError."""
-        with pytest.raises(ValueError, match="pocket_hole_edge_offset must be positive"):
+        with pytest.raises(
+            ValueError, match="pocket_hole_edge_offset must be positive"
+        ):
             WoodworkingConfig(pocket_hole_edge_offset=0)
 
     def test_invalid_pocket_hole_spacing(self) -> None:
@@ -936,7 +965,9 @@ class TestWoodworkingIntelligenceJointSelection:
         )
         assert joint_type == JointType.POCKET_SCREW
 
-    def test_select_joint_face_frame_stile(self, intel: WoodworkingIntelligence) -> None:
+    def test_select_joint_face_frame_stile(
+        self, intel: WoodworkingIntelligence
+    ) -> None:
         """Test face frame stile joints use POCKET_SCREW."""
         joint_type = intel._select_joint(
             PanelType.FACE_FRAME_RAIL, PanelType.FACE_FRAME_STILE
@@ -947,7 +978,9 @@ class TestWoodworkingIntelligenceJointSelection:
         self, intel: WoodworkingIntelligence
     ) -> None:
         """Test horizontal divider joints use DADO."""
-        joint_type = intel._select_joint(PanelType.LEFT_SIDE, PanelType.HORIZONTAL_DIVIDER)
+        joint_type = intel._select_joint(
+            PanelType.LEFT_SIDE, PanelType.HORIZONTAL_DIVIDER
+        )
         assert joint_type == JointType.DADO
 
     def test_select_joint_default_fallback(
@@ -1281,9 +1314,7 @@ class TestCheckSpans:
 
         warnings = intel.check_spans(cabinet)
         # No top/bottom warnings because dividers reduce span to 24"
-        top_bottom_warnings = [
-            w for w in warnings if "Panel" in w.panel_label
-        ]
+        top_bottom_warnings = [w for w in warnings if "Panel" in w.panel_label]
         assert len(top_bottom_warnings) == 0
 
     def test_suggestion_text_varies_by_excess(
@@ -1440,7 +1471,9 @@ class TestGrainDirection:
             quantity=1,
             label="Face Frame Rail",
             panel_type=PanelType.FACE_FRAME_RAIL,
-            material=MaterialSpec(thickness=0.75, material_type=MaterialType.SOLID_WOOD),
+            material=MaterialSpec(
+                thickness=0.75, material_type=MaterialType.SOLID_WOOD
+            ),
         )
 
     @pytest.fixture
@@ -1525,7 +1558,9 @@ class TestGrainDirection:
             quantity=1,
             label="PB Shelf",
             panel_type=PanelType.SHELF,
-            material=MaterialSpec(thickness=0.75, material_type=MaterialType.PARTICLE_BOARD),
+            material=MaterialSpec(
+                thickness=0.75, material_type=MaterialType.PARTICLE_BOARD
+            ),
         )
         directions = intel.get_grain_directions([piece])
         from cabinets.domain.value_objects import GrainDirection
@@ -1633,7 +1668,9 @@ class TestGrainDirection:
                 quantity=4,
                 label="Face Frame Rail",
                 panel_type=PanelType.FACE_FRAME_RAIL,
-                material=MaterialSpec(thickness=0.75, material_type=MaterialType.SOLID_WOOD),
+                material=MaterialSpec(
+                    thickness=0.75, material_type=MaterialType.SOLID_WOOD
+                ),
             ),
         ]
         annotated = intel.annotate_cut_list(pieces)
@@ -1714,17 +1751,23 @@ class TestGrainDirection:
         # Divider is not visible, but > 12" longest dimension -> along longest
         assert directions["Divider"] == GrainDirection.WIDTH
 
-    def test_is_visible_panel_side_panels(
-        self, intel: WoodworkingIntelligence
-    ) -> None:
+    def test_is_visible_panel_side_panels(self, intel: WoodworkingIntelligence) -> None:
         """Test that side panels are considered visible."""
         left_piece = CutPiece(
-            width=12.0, height=30.0, quantity=1, label="Left",
-            panel_type=PanelType.LEFT_SIDE, material=MaterialSpec.standard_3_4()
+            width=12.0,
+            height=30.0,
+            quantity=1,
+            label="Left",
+            panel_type=PanelType.LEFT_SIDE,
+            material=MaterialSpec.standard_3_4(),
         )
         right_piece = CutPiece(
-            width=12.0, height=30.0, quantity=1, label="Right",
-            panel_type=PanelType.RIGHT_SIDE, material=MaterialSpec.standard_3_4()
+            width=12.0,
+            height=30.0,
+            quantity=1,
+            label="Right",
+            panel_type=PanelType.RIGHT_SIDE,
+            material=MaterialSpec.standard_3_4(),
         )
         assert intel._is_visible_panel(left_piece) is True
         assert intel._is_visible_panel(right_piece) is True
@@ -1740,16 +1783,28 @@ class TestGrainDirection:
     ) -> None:
         """Test drawer component visibility."""
         drawer_front = CutPiece(
-            width=18.0, height=6.0, quantity=1, label="Front",
-            panel_type=PanelType.DRAWER_FRONT, material=MaterialSpec.standard_3_4()
+            width=18.0,
+            height=6.0,
+            quantity=1,
+            label="Front",
+            panel_type=PanelType.DRAWER_FRONT,
+            material=MaterialSpec.standard_3_4(),
         )
         drawer_side = CutPiece(
-            width=18.0, height=6.0, quantity=1, label="Side",
-            panel_type=PanelType.DRAWER_SIDE, material=MaterialSpec.standard_3_4()
+            width=18.0,
+            height=6.0,
+            quantity=1,
+            label="Side",
+            panel_type=PanelType.DRAWER_SIDE,
+            material=MaterialSpec.standard_3_4(),
         )
         drawer_bottom = CutPiece(
-            width=18.0, height=12.0, quantity=1, label="Bottom",
-            panel_type=PanelType.DRAWER_BOTTOM, material=MaterialSpec.standard_3_4()
+            width=18.0,
+            height=12.0,
+            quantity=1,
+            label="Bottom",
+            panel_type=PanelType.DRAWER_BOTTOM,
+            material=MaterialSpec.standard_3_4(),
         )
         # Drawer front is visible
         assert intel._is_visible_panel(drawer_front) is True
@@ -1764,8 +1819,12 @@ class TestGrainDirection:
         from cabinets.domain.value_objects import GrainDirection
 
         piece = CutPiece(
-            width=36.0, height=12.0, quantity=1, label="Wide",
-            panel_type=PanelType.SHELF, material=MaterialSpec.standard_3_4()
+            width=36.0,
+            height=12.0,
+            quantity=1,
+            label="Wide",
+            panel_type=PanelType.SHELF,
+            material=MaterialSpec.standard_3_4(),
         )
         assert intel._grain_for_longest_dimension(piece) == GrainDirection.LENGTH
 
@@ -1776,8 +1835,12 @@ class TestGrainDirection:
         from cabinets.domain.value_objects import GrainDirection
 
         piece = CutPiece(
-            width=12.0, height=36.0, quantity=1, label="Tall",
-            panel_type=PanelType.LEFT_SIDE, material=MaterialSpec.standard_3_4()
+            width=12.0,
+            height=36.0,
+            quantity=1,
+            label="Tall",
+            panel_type=PanelType.LEFT_SIDE,
+            material=MaterialSpec.standard_3_4(),
         )
         assert intel._grain_for_longest_dimension(piece) == GrainDirection.WIDTH
 
@@ -1788,8 +1851,12 @@ class TestGrainDirection:
         from cabinets.domain.value_objects import GrainDirection
 
         piece = CutPiece(
-            width=24.0, height=24.0, quantity=1, label="Square",
-            panel_type=PanelType.SHELF, material=MaterialSpec.standard_3_4()
+            width=24.0,
+            height=24.0,
+            quantity=1,
+            label="Square",
+            panel_type=PanelType.SHELF,
+            material=MaterialSpec.standard_3_4(),
         )
         # When equal, defaults to LENGTH
         assert intel._grain_for_longest_dimension(piece) == GrainDirection.LENGTH
@@ -1799,9 +1866,13 @@ class TestGrainDirection:
     ) -> None:
         """Test that invalid grain_direction value returns None."""
         piece = CutPiece(
-            width=36.0, height=12.0, quantity=1, label="Invalid",
-            panel_type=PanelType.SHELF, material=MaterialSpec.standard_3_4(),
-            cut_metadata={"grain_direction": "invalid_value"}
+            width=36.0,
+            height=12.0,
+            quantity=1,
+            label="Invalid",
+            panel_type=PanelType.SHELF,
+            material=MaterialSpec.standard_3_4(),
+            cut_metadata={"grain_direction": "invalid_value"},
         )
         result = intel._get_existing_grain(piece)
         assert result is None
@@ -1813,9 +1884,13 @@ class TestGrainDirection:
         from cabinets.domain.value_objects import GrainDirection
 
         piece = CutPiece(
-            width=36.0, height=12.0, quantity=1, label="Valid",
-            panel_type=PanelType.SHELF, material=MaterialSpec.standard_3_4(),
-            cut_metadata={"grain_direction": "width"}
+            width=36.0,
+            height=12.0,
+            quantity=1,
+            label="Valid",
+            panel_type=PanelType.SHELF,
+            material=MaterialSpec.standard_3_4(),
+            cut_metadata={"grain_direction": "width"},
         )
         result = intel._get_existing_grain(piece)
         assert result == GrainDirection.WIDTH
@@ -1825,8 +1900,8 @@ class TestWeightCapacityConstants:
     """Tests for weight capacity constants."""
 
     def test_safety_factor_value(self) -> None:
-        """Test safety factor is 0.5 (50%)."""
-        assert SAFETY_FACTOR == 0.5
+        """Test safety factor is 4.0 (divide max load by 4 for safe load)."""
+        assert SAFETY_FACTOR == 4.0
 
     def test_max_deflection_ratio_value(self) -> None:
         """Test max deflection ratio is L/300."""
@@ -1885,12 +1960,8 @@ class TestEstimateCapacity:
         self, intel: WoodworkingIntelligence
     ) -> None:
         """Test that different materials have different capacities."""
-        cap_plywood = intel.estimate_capacity(
-            0.75, 12.0, 24.0, MaterialType.PLYWOOD
-        )
-        cap_mdf = intel.estimate_capacity(
-            0.75, 12.0, 24.0, MaterialType.MDF
-        )
+        cap_plywood = intel.estimate_capacity(0.75, 12.0, 24.0, MaterialType.PLYWOOD)
+        cap_mdf = intel.estimate_capacity(0.75, 12.0, 24.0, MaterialType.MDF)
 
         # Plywood has higher modulus, so higher capacity
         assert cap_plywood.capacity_lbs > cap_mdf.capacity_lbs
@@ -1899,32 +1970,20 @@ class TestEstimateCapacity:
         self, intel: WoodworkingIntelligence
     ) -> None:
         """Test that thicker material has higher capacity."""
-        cap_half = intel.estimate_capacity(
-            0.5, 12.0, 24.0, MaterialType.PLYWOOD
-        )
+        cap_half = intel.estimate_capacity(0.5, 12.0, 24.0, MaterialType.PLYWOOD)
         cap_three_quarter = intel.estimate_capacity(
             0.75, 12.0, 24.0, MaterialType.PLYWOOD
         )
-        cap_one_inch = intel.estimate_capacity(
-            1.0, 12.0, 24.0, MaterialType.PLYWOOD
-        )
+        cap_one_inch = intel.estimate_capacity(1.0, 12.0, 24.0, MaterialType.PLYWOOD)
 
         assert cap_half.capacity_lbs < cap_three_quarter.capacity_lbs
         assert cap_three_quarter.capacity_lbs < cap_one_inch.capacity_lbs
 
-    def test_deeper_shelf_higher_capacity(
-        self, intel: WoodworkingIntelligence
-    ) -> None:
+    def test_deeper_shelf_higher_capacity(self, intel: WoodworkingIntelligence) -> None:
         """Test that deeper shelves have higher capacity."""
-        cap_8_deep = intel.estimate_capacity(
-            0.75, 8.0, 24.0, MaterialType.PLYWOOD
-        )
-        cap_12_deep = intel.estimate_capacity(
-            0.75, 12.0, 24.0, MaterialType.PLYWOOD
-        )
-        cap_16_deep = intel.estimate_capacity(
-            0.75, 16.0, 24.0, MaterialType.PLYWOOD
-        )
+        cap_8_deep = intel.estimate_capacity(0.75, 8.0, 24.0, MaterialType.PLYWOOD)
+        cap_12_deep = intel.estimate_capacity(0.75, 12.0, 24.0, MaterialType.PLYWOOD)
+        cap_16_deep = intel.estimate_capacity(0.75, 16.0, 24.0, MaterialType.PLYWOOD)
 
         assert cap_8_deep.capacity_lbs < cap_12_deep.capacity_lbs
         assert cap_12_deep.capacity_lbs < cap_16_deep.capacity_lbs
@@ -1933,47 +1992,29 @@ class TestEstimateCapacity:
         self, intel: WoodworkingIntelligence
     ) -> None:
         """Test that capacity is rounded to nearest 5 lbs."""
-        capacity = intel.estimate_capacity(
-            0.75, 12.0, 24.0, MaterialType.PLYWOOD
-        )
+        capacity = intel.estimate_capacity(0.75, 12.0, 24.0, MaterialType.PLYWOOD)
         # Capacity should be divisible by 5
         assert capacity.capacity_lbs % 5 == 0
 
-    def test_minimum_capacity_is_5(
-        self, intel: WoodworkingIntelligence
-    ) -> None:
+    def test_minimum_capacity_is_5(self, intel: WoodworkingIntelligence) -> None:
         """Test that minimum capacity is 5 lbs even for weak configurations."""
         # Very long span, thin material, low modulus
-        capacity = intel.estimate_capacity(
-            0.25, 6.0, 72.0, MaterialType.PARTICLE_BOARD
-        )
+        capacity = intel.estimate_capacity(0.25, 6.0, 72.0, MaterialType.PARTICLE_BOARD)
         assert capacity.capacity_lbs >= 5.0
 
-    def test_disclaimer_always_present(
-        self, intel: WoodworkingIntelligence
-    ) -> None:
+    def test_disclaimer_always_present(self, intel: WoodworkingIntelligence) -> None:
         """Test that disclaimer is always included."""
-        capacity = intel.estimate_capacity(
-            0.75, 12.0, 24.0, MaterialType.PLYWOOD
-        )
+        capacity = intel.estimate_capacity(0.75, 12.0, 24.0, MaterialType.PLYWOOD)
         assert capacity.disclaimer == "Advisory only - not engineered"
 
-    def test_span_stored_in_result(
-        self, intel: WoodworkingIntelligence
-    ) -> None:
+    def test_span_stored_in_result(self, intel: WoodworkingIntelligence) -> None:
         """Test that span is stored in the WeightCapacity result."""
-        capacity = intel.estimate_capacity(
-            0.75, 12.0, 30.0, MaterialType.PLYWOOD
-        )
+        capacity = intel.estimate_capacity(0.75, 12.0, 30.0, MaterialType.PLYWOOD)
         assert capacity.span == 30.0
 
-    def test_material_stored_in_result(
-        self, intel: WoodworkingIntelligence
-    ) -> None:
+    def test_material_stored_in_result(self, intel: WoodworkingIntelligence) -> None:
         """Test that material is stored in the WeightCapacity result."""
-        capacity = intel.estimate_capacity(
-            0.75, 12.0, 24.0, MaterialType.MDF
-        )
+        capacity = intel.estimate_capacity(0.75, 12.0, 24.0, MaterialType.MDF)
         assert capacity.material.thickness == 0.75
         assert capacity.material.material_type == MaterialType.MDF
 
@@ -1981,12 +2022,8 @@ class TestEstimateCapacity:
         self, intel: WoodworkingIntelligence
     ) -> None:
         """Test that solid wood has higher capacity than plywood."""
-        cap_plywood = intel.estimate_capacity(
-            1.0, 12.0, 36.0, MaterialType.PLYWOOD
-        )
-        cap_solid = intel.estimate_capacity(
-            1.0, 12.0, 36.0, MaterialType.SOLID_WOOD
-        )
+        cap_plywood = intel.estimate_capacity(1.0, 12.0, 36.0, MaterialType.PLYWOOD)
+        cap_solid = intel.estimate_capacity(1.0, 12.0, 36.0, MaterialType.SOLID_WOOD)
 
         # Solid wood has higher modulus
         assert cap_solid.capacity_lbs > cap_plywood.capacity_lbs
@@ -2000,33 +2037,23 @@ class TestCalculateBaseCapacity:
         """Create WoodworkingIntelligence instance."""
         return WoodworkingIntelligence()
 
-    def test_zero_span_returns_zero(
-        self, intel: WoodworkingIntelligence
-    ) -> None:
+    def test_zero_span_returns_zero(self, intel: WoodworkingIntelligence) -> None:
         """Test that zero span returns zero capacity."""
-        capacity = intel._calculate_base_capacity(
-            0.75, 12.0, 0.0, MaterialType.PLYWOOD
-        )
+        capacity = intel._calculate_base_capacity(0.75, 12.0, 0.0, MaterialType.PLYWOOD)
         assert capacity == 0.0
 
-    def test_negative_span_returns_zero(
-        self, intel: WoodworkingIntelligence
-    ) -> None:
+    def test_negative_span_returns_zero(self, intel: WoodworkingIntelligence) -> None:
         """Test that negative span returns zero capacity."""
         capacity = intel._calculate_base_capacity(
             0.75, 12.0, -10.0, MaterialType.PLYWOOD
         )
         assert capacity == 0.0
 
-    def test_uses_material_modulus(
-        self, intel: WoodworkingIntelligence
-    ) -> None:
+    def test_uses_material_modulus(self, intel: WoodworkingIntelligence) -> None:
         """Test that calculation uses correct material modulus."""
         # MDF modulus is 400,000 vs plywood 1,200,000
         # So plywood should be 3x capacity for same dimensions
-        cap_mdf = intel._calculate_base_capacity(
-            0.75, 12.0, 24.0, MaterialType.MDF
-        )
+        cap_mdf = intel._calculate_base_capacity(0.75, 12.0, 24.0, MaterialType.MDF)
         cap_plywood = intel._calculate_base_capacity(
             0.75, 12.0, 24.0, MaterialType.PLYWOOD
         )
@@ -2035,16 +2062,10 @@ class TestCalculateBaseCapacity:
         ratio = cap_plywood / cap_mdf
         assert 2.9 < ratio < 3.1  # Allow small floating point tolerance
 
-    def test_capacity_scales_with_depth(
-        self, intel: WoodworkingIntelligence
-    ) -> None:
+    def test_capacity_scales_with_depth(self, intel: WoodworkingIntelligence) -> None:
         """Test that capacity scales linearly with depth (I = b*h^3/12)."""
-        cap_12 = intel._calculate_base_capacity(
-            0.75, 12.0, 24.0, MaterialType.PLYWOOD
-        )
-        cap_24 = intel._calculate_base_capacity(
-            0.75, 24.0, 24.0, MaterialType.PLYWOOD
-        )
+        cap_12 = intel._calculate_base_capacity(0.75, 12.0, 24.0, MaterialType.PLYWOOD)
+        cap_24 = intel._calculate_base_capacity(0.75, 24.0, 24.0, MaterialType.PLYWOOD)
 
         # Doubling depth should double capacity
         ratio = cap_24 / cap_12
@@ -2054,12 +2075,8 @@ class TestCalculateBaseCapacity:
         self, intel: WoodworkingIntelligence
     ) -> None:
         """Test that capacity scales with thickness^3 (moment of inertia)."""
-        cap_half = intel._calculate_base_capacity(
-            0.5, 12.0, 24.0, MaterialType.PLYWOOD
-        )
-        cap_one = intel._calculate_base_capacity(
-            1.0, 12.0, 24.0, MaterialType.PLYWOOD
-        )
+        cap_half = intel._calculate_base_capacity(0.5, 12.0, 24.0, MaterialType.PLYWOOD)
+        cap_one = intel._calculate_base_capacity(1.0, 12.0, 24.0, MaterialType.PLYWOOD)
 
         # Doubling thickness should increase capacity by 8x (2^3)
         ratio = cap_one / cap_half
@@ -2146,9 +2163,7 @@ class TestGetShelfCapacities:
         capacities = intel.get_shelf_capacities(cabinet)
         assert capacities == []
 
-    def test_multi_section_cabinet(
-        self, intel: WoodworkingIntelligence
-    ) -> None:
+    def test_multi_section_cabinet(self, intel: WoodworkingIntelligence) -> None:
         """Test capacity calculation for cabinet with multiple sections."""
         cabinet = Cabinet(
             width=72.0,
@@ -2280,9 +2295,7 @@ class TestFormatCapacityReport:
         assert "Point loads" in report or "point" in report.lower()
         assert "50%" in report
 
-    def test_empty_list_still_has_header(
-        self, intel: WoodworkingIntelligence
-    ) -> None:
+    def test_empty_list_still_has_header(self, intel: WoodworkingIntelligence) -> None:
         """Test that empty list produces report with header but no shelves."""
         report = intel.format_capacity_report([])
         assert "WEIGHT CAPACITY ESTIMATES" in report
@@ -2312,9 +2325,7 @@ class TestWeightCapacityIntegration:
         # which is appropriate for a 3/4" plywood shelf at 24" span
         assert 50 <= capacity.capacity_lbs <= 150
 
-    def test_longer_span_lower_capacity(
-        self, intel: WoodworkingIntelligence
-    ) -> None:
+    def test_longer_span_lower_capacity(self, intel: WoodworkingIntelligence) -> None:
         """Test that 30 inch span has lower capacity than 24 inch."""
         cap_24 = intel.estimate_capacity(
             thickness=0.75, depth=12.0, span=24.0, material_type=MaterialType.PLYWOOD
@@ -2344,9 +2355,7 @@ class TestWeightCapacityIntegration:
         ratio = cap_plywood.capacity_lbs / cap_mdf.capacity_lbs
         assert 2.5 < ratio < 3.5
 
-    def test_full_cabinet_workflow(
-        self, intel: WoodworkingIntelligence
-    ) -> None:
+    def test_full_cabinet_workflow(self, intel: WoodworkingIntelligence) -> None:
         """Test complete workflow: create cabinet, get capacities, format report."""
         # Create cabinet with shelves
         cabinet = Cabinet(
@@ -2393,7 +2402,10 @@ class TestHardwareConstants:
 
     def test_case_screw_spec(self) -> None:
         """Test case screw specification string."""
-        from cabinets.domain.services.woodworking import CASE_SCREW_SPEC, CASE_SCREW_SPACING
+        from cabinets.domain.services.woodworking import (
+            CASE_SCREW_SPEC,
+            CASE_SCREW_SPACING,
+        )
 
         assert "1-1/4" in CASE_SCREW_SPEC
         assert "#8" in CASE_SCREW_SPEC
@@ -2401,7 +2413,10 @@ class TestHardwareConstants:
 
     def test_back_panel_screw_spec(self) -> None:
         """Test back panel screw specification string."""
-        from cabinets.domain.services.woodworking import BACK_PANEL_SCREW_SPEC, BACK_PANEL_SCREW_SPACING
+        from cabinets.domain.services.woodworking import (
+            BACK_PANEL_SCREW_SPEC,
+            BACK_PANEL_SCREW_SPACING,
+        )
 
         assert "5/8" in BACK_PANEL_SCREW_SPEC
         assert "#6" in BACK_PANEL_SCREW_SPEC
@@ -2429,7 +2444,10 @@ class TestHardwareConstants:
 
     def test_biscuit_specs(self) -> None:
         """Test biscuit specification strings."""
-        from cabinets.domain.services.woodworking import BISCUIT_SPEC_10, BISCUIT_SPEC_20
+        from cabinets.domain.services.woodworking import (
+            BISCUIT_SPEC_10,
+            BISCUIT_SPEC_20,
+        )
 
         assert "#10" in BISCUIT_SPEC_10
         assert "#20" in BISCUIT_SPEC_20
@@ -2578,7 +2596,9 @@ class TestCalculateHardware:
         """Test that dividers add case and back panel screws."""
         intel = WoodworkingIntelligence()
         simple_hw = intel.calculate_hardware(simple_cabinet, include_overage=False)
-        multi_hw = intel.calculate_hardware(multi_section_cabinet, include_overage=False)
+        multi_hw = intel.calculate_hardware(
+            multi_section_cabinet, include_overage=False
+        )
 
         # Multi-section cabinet should have more screws due to divider
         assert multi_hw.total_count > simple_hw.total_count
@@ -2842,7 +2862,9 @@ class TestJoineryFasteners:
             width=24.0,
             height=30.0,
             depth=12.0,
-            material=MaterialSpec(thickness=0.75, material_type=MaterialType.SOLID_WOOD),
+            material=MaterialSpec(
+                thickness=0.75, material_type=MaterialType.SOLID_WOOD
+            ),
         )
 
         fasteners = intel._joinery_fasteners(cabinet, joinery)
@@ -3143,7 +3165,9 @@ class TestFRDSpecificCalculations:
             height=84.0,
             depth=12.0,
             material=MaterialSpec(thickness=0.75, material_type=MaterialType.PLYWOOD),
-            back_material=MaterialSpec(thickness=0.5, material_type=MaterialType.PLYWOOD),
+            back_material=MaterialSpec(
+                thickness=0.5, material_type=MaterialType.PLYWOOD
+            ),
         )
         section = Section(
             width=46.5,
@@ -3255,15 +3279,15 @@ class TestEdgeCaseValidations:
 
     def test_hardware_list_aggregate_single_list(self) -> None:
         """Test aggregate with single HardwareList."""
-        single_list = HardwareList(
-            items=(HardwareItem(name="Screw", quantity=10),)
-        )
+        single_list = HardwareList(items=(HardwareItem(name="Screw", quantity=10),))
         result = HardwareList.aggregate(single_list)
         assert result.total_count == 10
 
     def test_woodworking_config_dado_depth_ratio_greater_than_one_fails(self) -> None:
         """Test that dado_depth_ratio greater than 1.0 fails."""
-        with pytest.raises(ValueError, match="dado_depth_ratio must be between 0 and 1"):
+        with pytest.raises(
+            ValueError, match="dado_depth_ratio must be between 0 and 1"
+        ):
             WoodworkingConfig(dado_depth_ratio=1.1)
 
     def test_calculate_fastener_positions_very_short_joint(self) -> None:
@@ -3308,9 +3332,7 @@ class TestHardwareListEdgeCases:
 
     def test_hardware_list_with_overage_rounds_correctly(self) -> None:
         """Test that overage rounds up correctly for edge cases."""
-        hw_list = HardwareList(
-            items=(HardwareItem(name="Screw", quantity=1),)
-        )
+        hw_list = HardwareList(items=(HardwareItem(name="Screw", quantity=1),))
         with_overage = hw_list.with_overage(10.0)
         # 1 * 1.10 = 1.1 -> ceil = 2
         assert with_overage.items[0].quantity == 2

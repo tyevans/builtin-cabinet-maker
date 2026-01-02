@@ -99,7 +99,9 @@ class TestFaceFrameValidation:
     """Tests for FaceFrameComponent.validate()."""
 
     def test_validate_returns_ok_for_valid_config(
-        self, face_frame_component: FaceFrameComponent, standard_context: ComponentContext
+        self,
+        face_frame_component: FaceFrameComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that validate returns ok for valid config with defaults."""
         config: dict = {"face_frame": {}}
@@ -110,7 +112,9 @@ class TestFaceFrameValidation:
         assert len(result.errors) == 0
 
     def test_validate_returns_ok_for_custom_stile_width(
-        self, face_frame_component: FaceFrameComponent, standard_context: ComponentContext
+        self,
+        face_frame_component: FaceFrameComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that validate returns ok for custom stile width."""
         config = {"face_frame": {"stile_width": 2.0}}
@@ -120,7 +124,9 @@ class TestFaceFrameValidation:
         assert result.is_valid
 
     def test_validate_returns_ok_for_custom_rail_width(
-        self, face_frame_component: FaceFrameComponent, standard_context: ComponentContext
+        self,
+        face_frame_component: FaceFrameComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that validate returns ok for custom rail width."""
         config = {"face_frame": {"rail_width": 2.5}}
@@ -130,7 +136,9 @@ class TestFaceFrameValidation:
         assert result.is_valid
 
     def test_validate_returns_error_for_negative_stile_width(
-        self, face_frame_component: FaceFrameComponent, standard_context: ComponentContext
+        self,
+        face_frame_component: FaceFrameComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that validate returns error for negative stile width."""
         config = {"face_frame": {"stile_width": -1.0}}
@@ -141,7 +149,9 @@ class TestFaceFrameValidation:
         assert "stile_width must be positive" in result.errors
 
     def test_validate_returns_error_for_zero_stile_width(
-        self, face_frame_component: FaceFrameComponent, standard_context: ComponentContext
+        self,
+        face_frame_component: FaceFrameComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that validate returns error for zero stile width."""
         config = {"face_frame": {"stile_width": 0}}
@@ -152,7 +162,9 @@ class TestFaceFrameValidation:
         assert "stile_width must be positive" in result.errors
 
     def test_validate_returns_error_for_negative_rail_width(
-        self, face_frame_component: FaceFrameComponent, standard_context: ComponentContext
+        self,
+        face_frame_component: FaceFrameComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that validate returns error for negative rail width."""
         config = {"face_frame": {"rail_width": -1.0}}
@@ -163,7 +175,9 @@ class TestFaceFrameValidation:
         assert "rail_width must be positive" in result.errors
 
     def test_validate_returns_error_for_zero_rail_width(
-        self, face_frame_component: FaceFrameComponent, standard_context: ComponentContext
+        self,
+        face_frame_component: FaceFrameComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that validate returns error for zero rail width."""
         config = {"face_frame": {"rail_width": 0}}
@@ -174,7 +188,9 @@ class TestFaceFrameValidation:
         assert "rail_width must be positive" in result.errors
 
     def test_validate_returns_error_for_stile_width_too_large(
-        self, face_frame_component: FaceFrameComponent, standard_context: ComponentContext
+        self,
+        face_frame_component: FaceFrameComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that validate returns error for stile_width > cabinet_width/4."""
         # 48" cabinet width, max stile = 12"
@@ -187,7 +203,9 @@ class TestFaceFrameValidation:
         assert "48.0" in result.errors[0]
 
     def test_validate_returns_error_for_rail_width_too_large(
-        self, face_frame_component: FaceFrameComponent, standard_context: ComponentContext
+        self,
+        face_frame_component: FaceFrameComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that validate returns error for rail_width > cabinet_height/4."""
         # 84" cabinet height, max rail = 21"
@@ -226,7 +244,9 @@ class TestFaceFrameValidation:
         result = face_frame_component.validate(config, context)
 
         assert not result.is_valid
-        assert any("Opening width" in e and "less than 6\" minimum" in e for e in result.errors)
+        assert any(
+            "Opening width" in e and 'less than 6" minimum' in e for e in result.errors
+        )
 
     def test_validate_returns_error_for_opening_height_below_minimum(
         self, face_frame_component: FaceFrameComponent
@@ -251,10 +271,14 @@ class TestFaceFrameValidation:
         result = face_frame_component.validate(config, context)
 
         assert not result.is_valid
-        assert any("Opening height" in e and "less than 6\" minimum" in e for e in result.errors)
+        assert any(
+            "Opening height" in e and 'less than 6" minimum' in e for e in result.errors
+        )
 
     def test_validate_accepts_stile_at_max_quarter_width(
-        self, face_frame_component: FaceFrameComponent, standard_context: ComponentContext
+        self,
+        face_frame_component: FaceFrameComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that validate accepts stile_width exactly at cabinet_width/4."""
         # 48" cabinet width, max stile = 12"
@@ -265,7 +289,9 @@ class TestFaceFrameValidation:
         assert result.is_valid
 
     def test_validate_accepts_rail_at_max_quarter_height(
-        self, face_frame_component: FaceFrameComponent, standard_context: ComponentContext
+        self,
+        face_frame_component: FaceFrameComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that validate accepts rail_width exactly at cabinet_height/4."""
         # 84" cabinet height, max rail = 21"
@@ -276,7 +302,9 @@ class TestFaceFrameValidation:
         assert result.is_valid
 
     def test_validate_returns_validation_result_type(
-        self, face_frame_component: FaceFrameComponent, standard_context: ComponentContext
+        self,
+        face_frame_component: FaceFrameComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that validate returns ValidationResult type."""
         config: dict = {}
@@ -295,7 +323,9 @@ class TestFaceFrameGeneration:
     """Tests for FaceFrameComponent.generate()."""
 
     def test_generate_produces_four_panels(
-        self, face_frame_component: FaceFrameComponent, standard_context: ComponentContext
+        self,
+        face_frame_component: FaceFrameComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that generate produces exactly 4 panels."""
         config = {"face_frame": {"stile_width": 1.5, "rail_width": 2.0}}
@@ -305,18 +335,24 @@ class TestFaceFrameGeneration:
         assert len(result.panels) == 4
 
     def test_generate_produces_two_stiles(
-        self, face_frame_component: FaceFrameComponent, standard_context: ComponentContext
+        self,
+        face_frame_component: FaceFrameComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that generate produces 2 stile panels."""
         config = {"face_frame": {"stile_width": 1.5, "rail_width": 2.0}}
 
         result = face_frame_component.generate(config, standard_context)
 
-        stiles = [p for p in result.panels if p.panel_type == PanelType.FACE_FRAME_STILE]
+        stiles = [
+            p for p in result.panels if p.panel_type == PanelType.FACE_FRAME_STILE
+        ]
         assert len(stiles) == 2
 
     def test_generate_produces_two_rails(
-        self, face_frame_component: FaceFrameComponent, standard_context: ComponentContext
+        self,
+        face_frame_component: FaceFrameComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that generate produces 2 rail panels."""
         config = {"face_frame": {"stile_width": 1.5, "rail_width": 2.0}}
@@ -327,20 +363,26 @@ class TestFaceFrameGeneration:
         assert len(rails) == 2
 
     def test_generate_stile_dimensions(
-        self, face_frame_component: FaceFrameComponent, standard_context: ComponentContext
+        self,
+        face_frame_component: FaceFrameComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that stiles have correct dimensions (full height)."""
         config = {"face_frame": {"stile_width": 1.5, "rail_width": 2.0}}
 
         result = face_frame_component.generate(config, standard_context)
 
-        stiles = [p for p in result.panels if p.panel_type == PanelType.FACE_FRAME_STILE]
+        stiles = [
+            p for p in result.panels if p.panel_type == PanelType.FACE_FRAME_STILE
+        ]
         for stile in stiles:
             assert stile.width == pytest.approx(1.5)
             assert stile.height == pytest.approx(84.0)  # Full height
 
     def test_generate_rail_dimensions(
-        self, face_frame_component: FaceFrameComponent, standard_context: ComponentContext
+        self,
+        face_frame_component: FaceFrameComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that rails have correct dimensions (between stiles)."""
         config = {"face_frame": {"stile_width": 1.5, "rail_width": 2.0}}
@@ -356,7 +398,9 @@ class TestFaceFrameGeneration:
             assert rail.height == pytest.approx(2.0)
 
     def test_generate_left_stile_position(
-        self, face_frame_component: FaceFrameComponent, standard_context: ComponentContext
+        self,
+        face_frame_component: FaceFrameComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test left stile position is at context origin."""
         config = {"face_frame": {"stile_width": 1.5}}
@@ -364,14 +408,18 @@ class TestFaceFrameGeneration:
         result = face_frame_component.generate(config, standard_context)
 
         left_stile = next(
-            p for p in result.panels
-            if p.panel_type == PanelType.FACE_FRAME_STILE and p.metadata.get("location") == "left"
+            p
+            for p in result.panels
+            if p.panel_type == PanelType.FACE_FRAME_STILE
+            and p.metadata.get("location") == "left"
         )
         assert left_stile.position.x == pytest.approx(0.0)
         assert left_stile.position.y == pytest.approx(0.0)
 
     def test_generate_right_stile_position(
-        self, face_frame_component: FaceFrameComponent, standard_context: ComponentContext
+        self,
+        face_frame_component: FaceFrameComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test right stile position is at context.width - stile_width."""
         config = {"face_frame": {"stile_width": 1.5}}
@@ -379,14 +427,18 @@ class TestFaceFrameGeneration:
         result = face_frame_component.generate(config, standard_context)
 
         right_stile = next(
-            p for p in result.panels
-            if p.panel_type == PanelType.FACE_FRAME_STILE and p.metadata.get("location") == "right"
+            p
+            for p in result.panels
+            if p.panel_type == PanelType.FACE_FRAME_STILE
+            and p.metadata.get("location") == "right"
         )
         assert right_stile.position.x == pytest.approx(48.0 - 1.5)
         assert right_stile.position.y == pytest.approx(0.0)
 
     def test_generate_top_rail_position(
-        self, face_frame_component: FaceFrameComponent, standard_context: ComponentContext
+        self,
+        face_frame_component: FaceFrameComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test top rail position is at context.height - rail_width."""
         config = {"face_frame": {"stile_width": 1.5, "rail_width": 2.0}}
@@ -394,14 +446,18 @@ class TestFaceFrameGeneration:
         result = face_frame_component.generate(config, standard_context)
 
         top_rail = next(
-            p for p in result.panels
-            if p.panel_type == PanelType.FACE_FRAME_RAIL and p.metadata.get("location") == "top"
+            p
+            for p in result.panels
+            if p.panel_type == PanelType.FACE_FRAME_RAIL
+            and p.metadata.get("location") == "top"
         )
         assert top_rail.position.x == pytest.approx(1.5)  # After left stile
         assert top_rail.position.y == pytest.approx(84.0 - 2.0)
 
     def test_generate_bottom_rail_position(
-        self, face_frame_component: FaceFrameComponent, standard_context: ComponentContext
+        self,
+        face_frame_component: FaceFrameComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test bottom rail position is at context origin.y."""
         config = {"face_frame": {"stile_width": 1.5, "rail_width": 2.0}}
@@ -409,14 +465,18 @@ class TestFaceFrameGeneration:
         result = face_frame_component.generate(config, standard_context)
 
         bottom_rail = next(
-            p for p in result.panels
-            if p.panel_type == PanelType.FACE_FRAME_RAIL and p.metadata.get("location") == "bottom"
+            p
+            for p in result.panels
+            if p.panel_type == PanelType.FACE_FRAME_RAIL
+            and p.metadata.get("location") == "bottom"
         )
         assert bottom_rail.position.x == pytest.approx(1.5)  # After left stile
         assert bottom_rail.position.y == pytest.approx(0.0)
 
     def test_generate_panel_material_thickness(
-        self, face_frame_component: FaceFrameComponent, standard_context: ComponentContext
+        self,
+        face_frame_component: FaceFrameComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that panels use configured material thickness."""
         config = {"face_frame": {"material_thickness": 0.625}}
@@ -427,7 +487,9 @@ class TestFaceFrameGeneration:
             assert panel.material.thickness == pytest.approx(0.625)
 
     def test_generate_panel_joinery_metadata(
-        self, face_frame_component: FaceFrameComponent, standard_context: ComponentContext
+        self,
+        face_frame_component: FaceFrameComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that panels include joinery_type in metadata."""
         config = {"face_frame": {"joinery": "mortise_tenon"}}
@@ -438,7 +500,9 @@ class TestFaceFrameGeneration:
             assert panel.metadata.get("joinery_type") == "mortise_tenon"
 
     def test_generate_returns_generation_result(
-        self, face_frame_component: FaceFrameComponent, standard_context: ComponentContext
+        self,
+        face_frame_component: FaceFrameComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that generate returns a GenerationResult instance."""
         config: dict = {}
@@ -448,7 +512,9 @@ class TestFaceFrameGeneration:
         assert isinstance(result, GenerationResult)
 
     def test_generate_metadata_includes_opening_dimensions(
-        self, face_frame_component: FaceFrameComponent, standard_context: ComponentContext
+        self,
+        face_frame_component: FaceFrameComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that metadata includes opening_width and opening_height."""
         config = {"face_frame": {"stile_width": 1.5, "rail_width": 2.0}}
@@ -463,7 +529,9 @@ class TestFaceFrameGeneration:
         assert result.metadata["opening_height"] == pytest.approx(80.0)
 
     def test_generate_metadata_includes_frame_dimensions(
-        self, face_frame_component: FaceFrameComponent, standard_context: ComponentContext
+        self,
+        face_frame_component: FaceFrameComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that metadata includes stile_width and rail_width."""
         config = {"face_frame": {"stile_width": 2.0, "rail_width": 2.5}}
@@ -474,7 +542,9 @@ class TestFaceFrameGeneration:
         assert result.metadata["rail_width"] == pytest.approx(2.5)
 
     def test_generate_metadata_includes_joinery_type(
-        self, face_frame_component: FaceFrameComponent, standard_context: ComponentContext
+        self,
+        face_frame_component: FaceFrameComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that metadata includes joinery_type."""
         config = {"face_frame": {"joinery": "dowel"}}
@@ -503,8 +573,10 @@ class TestFaceFrameGeneration:
         result = face_frame_component.generate(config, context)
 
         left_stile = next(
-            p for p in result.panels
-            if p.panel_type == PanelType.FACE_FRAME_STILE and p.metadata.get("location") == "left"
+            p
+            for p in result.panels
+            if p.panel_type == PanelType.FACE_FRAME_STILE
+            and p.metadata.get("location") == "left"
         )
         assert left_stile.position.x == pytest.approx(10.0)
         assert left_stile.position.y == pytest.approx(5.0)
@@ -519,7 +591,9 @@ class TestFaceFrameHardware:
     """Tests for FaceFrameComponent.hardware()."""
 
     def test_hardware_pocket_screw_returns_8_screws(
-        self, face_frame_component: FaceFrameComponent, standard_context: ComponentContext
+        self,
+        face_frame_component: FaceFrameComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that pocket_screw joinery returns 8 screws."""
         config = {"face_frame": {"joinery": "pocket_screw"}}
@@ -531,7 +605,9 @@ class TestFaceFrameHardware:
         assert "Pocket Screw" in hardware[0].name
 
     def test_hardware_pocket_screw_sku(
-        self, face_frame_component: FaceFrameComponent, standard_context: ComponentContext
+        self,
+        face_frame_component: FaceFrameComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that pocket_screw hardware has correct SKU."""
         config = {"face_frame": {"joinery": "pocket_screw"}}
@@ -541,7 +617,9 @@ class TestFaceFrameHardware:
         assert hardware[0].sku == "KJ-PS-125"
 
     def test_hardware_pocket_screw_notes(
-        self, face_frame_component: FaceFrameComponent, standard_context: ComponentContext
+        self,
+        face_frame_component: FaceFrameComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that pocket_screw hardware has descriptive notes."""
         config = {"face_frame": {"joinery": "pocket_screw"}}
@@ -552,7 +630,9 @@ class TestFaceFrameHardware:
         assert "4 corners" in hardware[0].notes
 
     def test_hardware_dowel_returns_8_dowels(
-        self, face_frame_component: FaceFrameComponent, standard_context: ComponentContext
+        self,
+        face_frame_component: FaceFrameComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that dowel joinery returns 8 dowel pins."""
         config = {"face_frame": {"joinery": "dowel"}}
@@ -564,7 +644,9 @@ class TestFaceFrameHardware:
         assert "Dowel Pin" in hardware[0].name
 
     def test_hardware_dowel_sku(
-        self, face_frame_component: FaceFrameComponent, standard_context: ComponentContext
+        self,
+        face_frame_component: FaceFrameComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that dowel hardware has correct SKU."""
         config = {"face_frame": {"joinery": "dowel"}}
@@ -574,7 +656,9 @@ class TestFaceFrameHardware:
         assert hardware[0].sku == "DP-375-2"
 
     def test_hardware_dowel_notes(
-        self, face_frame_component: FaceFrameComponent, standard_context: ComponentContext
+        self,
+        face_frame_component: FaceFrameComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that dowel hardware has descriptive notes."""
         config = {"face_frame": {"joinery": "dowel"}}
@@ -585,7 +669,9 @@ class TestFaceFrameHardware:
         assert "4 corners" in hardware[0].notes
 
     def test_hardware_mortise_tenon_returns_no_hardware(
-        self, face_frame_component: FaceFrameComponent, standard_context: ComponentContext
+        self,
+        face_frame_component: FaceFrameComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that mortise_tenon joinery returns empty hardware list."""
         config = {"face_frame": {"joinery": "mortise_tenon"}}
@@ -595,7 +681,9 @@ class TestFaceFrameHardware:
         assert len(hardware) == 0
 
     def test_hardware_default_joinery_is_pocket_screw(
-        self, face_frame_component: FaceFrameComponent, standard_context: ComponentContext
+        self,
+        face_frame_component: FaceFrameComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that default joinery (pocket_screw) is used when not specified."""
         config: dict = {}
@@ -606,7 +694,9 @@ class TestFaceFrameHardware:
         assert "Pocket Screw" in hardware[0].name
 
     def test_hardware_returns_list_of_hardware_items(
-        self, face_frame_component: FaceFrameComponent, standard_context: ComponentContext
+        self,
+        face_frame_component: FaceFrameComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that hardware returns list of HardwareItem objects."""
         config = {"face_frame": {"joinery": "pocket_screw"}}
@@ -618,7 +708,9 @@ class TestFaceFrameHardware:
             assert isinstance(item, HardwareItem)
 
     def test_hardware_included_in_generate_result(
-        self, face_frame_component: FaceFrameComponent, standard_context: ComponentContext
+        self,
+        face_frame_component: FaceFrameComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that generate() includes hardware in the result."""
         config = {"face_frame": {"joinery": "dowel"}}
@@ -729,9 +821,7 @@ class TestFaceFrameConfigParsing:
 class TestFaceFrameComponentIntegration:
     """Integration tests for FaceFrameComponent with the registry."""
 
-    def test_full_workflow(
-        self, standard_context: ComponentContext
-    ) -> None:
+    def test_full_workflow(self, standard_context: ComponentContext) -> None:
         """Test complete workflow: get component, validate, generate, hardware."""
         component_class = component_registry.get("decorative.face_frame")
         component = component_class()
@@ -753,8 +843,12 @@ class TestFaceFrameComponentIntegration:
         assert len(generation.panels) == 4
 
         # Verify panel types
-        stiles = [p for p in generation.panels if p.panel_type == PanelType.FACE_FRAME_STILE]
-        rails = [p for p in generation.panels if p.panel_type == PanelType.FACE_FRAME_RAIL]
+        stiles = [
+            p for p in generation.panels if p.panel_type == PanelType.FACE_FRAME_STILE
+        ]
+        rails = [
+            p for p in generation.panels if p.panel_type == PanelType.FACE_FRAME_RAIL
+        ]
         assert len(stiles) == 2
         assert len(rails) == 2
 
@@ -782,9 +876,7 @@ class TestFaceFrameComponentIntegration:
         assert len(generation.hardware) == 1
         assert generation.hardware[0].quantity == 8
 
-    def test_workflow_with_dowels(
-        self, standard_context: ComponentContext
-    ) -> None:
+    def test_workflow_with_dowels(self, standard_context: ComponentContext) -> None:
         """Test workflow with dowel joinery."""
         component = FaceFrameComponent()
 
@@ -831,7 +923,9 @@ class TestFaceFrameEdgeCases:
         assert validation.is_valid
 
     def test_various_joinery_types_in_metadata(
-        self, face_frame_component: FaceFrameComponent, standard_context: ComponentContext
+        self,
+        face_frame_component: FaceFrameComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that all joinery types are correctly recorded in panel metadata."""
         for joinery in ["pocket_screw", "mortise_tenon", "dowel"]:
@@ -843,7 +937,9 @@ class TestFaceFrameEdgeCases:
                 assert panel.metadata.get("joinery_type") == joinery
 
     def test_panel_locations_in_metadata(
-        self, face_frame_component: FaceFrameComponent, standard_context: ComponentContext
+        self,
+        face_frame_component: FaceFrameComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that all panels have correct location in metadata."""
         config: dict = {}
@@ -857,7 +953,9 @@ class TestFaceFrameEdgeCases:
         assert "bottom" in locations
 
     def test_empty_face_frame_config_uses_defaults(
-        self, face_frame_component: FaceFrameComponent, standard_context: ComponentContext
+        self,
+        face_frame_component: FaceFrameComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that empty face_frame config uses all defaults."""
         config = {"face_frame": {}}
@@ -870,7 +968,9 @@ class TestFaceFrameEdgeCases:
         assert result.metadata["opening_height"] == pytest.approx(81.0)
 
     def test_no_face_frame_key_uses_defaults(
-        self, face_frame_component: FaceFrameComponent, standard_context: ComponentContext
+        self,
+        face_frame_component: FaceFrameComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that missing face_frame key uses all defaults."""
         config: dict = {}  # No face_frame key at all
@@ -925,8 +1025,12 @@ class TestFaceFrameManualVerification:
         assert len(gen_result.panels) == 4
 
         # Check panel types and dimensions
-        stiles = [p for p in gen_result.panels if p.panel_type == PanelType.FACE_FRAME_STILE]
-        rails = [p for p in gen_result.panels if p.panel_type == PanelType.FACE_FRAME_RAIL]
+        stiles = [
+            p for p in gen_result.panels if p.panel_type == PanelType.FACE_FRAME_STILE
+        ]
+        rails = [
+            p for p in gen_result.panels if p.panel_type == PanelType.FACE_FRAME_RAIL
+        ]
 
         assert len(stiles) == 2
         assert len(rails) == 2

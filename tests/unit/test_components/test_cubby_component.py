@@ -7,18 +7,14 @@ import pytest
 from cabinets.domain.components import (
     ComponentContext,
     GenerationResult,
-    HardwareItem,
-    ValidationResult,
     component_registry,
 )
 from cabinets.domain.components.cubby import (
-    MIN_CUBBY_SIZE,
     MAX_GRID_SIZE,
     NotchSpec,
     UniformCubbyComponent,
     VariableCubbyComponent,
     _calculate_uniform_sizes,
-    _generate_dividers,
 )
 from cabinets.domain.value_objects import MaterialSpec, PanelType, Position
 
@@ -187,7 +183,9 @@ class TestUniformCubbyComponentValidation:
     """Tests for UniformCubbyComponent.validate()."""
 
     def test_validate_returns_ok_for_valid_config(
-        self, uniform_cubby_component: UniformCubbyComponent, large_context: ComponentContext
+        self,
+        uniform_cubby_component: UniformCubbyComponent,
+        large_context: ComponentContext,
     ) -> None:
         """Test that validate returns ok for valid rows and columns."""
         config = {"rows": 3, "columns": 4}
@@ -198,7 +196,9 @@ class TestUniformCubbyComponentValidation:
         assert len(result.errors) == 0
 
     def test_validate_returns_ok_for_single_cubby(
-        self, uniform_cubby_component: UniformCubbyComponent, standard_context: ComponentContext
+        self,
+        uniform_cubby_component: UniformCubbyComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that validate returns ok for 1x1 grid (no dividers)."""
         config = {"rows": 1, "columns": 1}
@@ -208,7 +208,9 @@ class TestUniformCubbyComponentValidation:
         assert result.is_valid
 
     def test_validate_returns_ok_for_defaults(
-        self, uniform_cubby_component: UniformCubbyComponent, standard_context: ComponentContext
+        self,
+        uniform_cubby_component: UniformCubbyComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that validate returns ok with default rows/columns."""
         config = {}
@@ -218,7 +220,9 @@ class TestUniformCubbyComponentValidation:
         assert result.is_valid
 
     def test_validate_returns_error_for_zero_rows(
-        self, uniform_cubby_component: UniformCubbyComponent, standard_context: ComponentContext
+        self,
+        uniform_cubby_component: UniformCubbyComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that validate returns error for zero rows."""
         config = {"rows": 0, "columns": 2}
@@ -229,7 +233,9 @@ class TestUniformCubbyComponentValidation:
         assert "rows must be a positive integer" in result.errors
 
     def test_validate_returns_error_for_negative_rows(
-        self, uniform_cubby_component: UniformCubbyComponent, standard_context: ComponentContext
+        self,
+        uniform_cubby_component: UniformCubbyComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that validate returns error for negative rows."""
         config = {"rows": -1, "columns": 2}
@@ -240,7 +246,9 @@ class TestUniformCubbyComponentValidation:
         assert "rows must be a positive integer" in result.errors
 
     def test_validate_returns_error_for_zero_columns(
-        self, uniform_cubby_component: UniformCubbyComponent, standard_context: ComponentContext
+        self,
+        uniform_cubby_component: UniformCubbyComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that validate returns error for zero columns."""
         config = {"rows": 2, "columns": 0}
@@ -251,7 +259,9 @@ class TestUniformCubbyComponentValidation:
         assert "columns must be a positive integer" in result.errors
 
     def test_validate_returns_error_for_rows_exceeding_max(
-        self, uniform_cubby_component: UniformCubbyComponent, standard_context: ComponentContext
+        self,
+        uniform_cubby_component: UniformCubbyComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that validate returns error for rows > 10."""
         config = {"rows": 11, "columns": 2}
@@ -262,7 +272,9 @@ class TestUniformCubbyComponentValidation:
         assert f"rows exceeds maximum of {MAX_GRID_SIZE}" in result.errors
 
     def test_validate_returns_error_for_columns_exceeding_max(
-        self, uniform_cubby_component: UniformCubbyComponent, standard_context: ComponentContext
+        self,
+        uniform_cubby_component: UniformCubbyComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that validate returns error for columns > 10."""
         config = {"rows": 2, "columns": 11}
@@ -273,7 +285,9 @@ class TestUniformCubbyComponentValidation:
         assert f"columns exceeds maximum of {MAX_GRID_SIZE}" in result.errors
 
     def test_validate_returns_error_for_cubby_width_below_minimum(
-        self, uniform_cubby_component: UniformCubbyComponent, standard_context: ComponentContext
+        self,
+        uniform_cubby_component: UniformCubbyComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that validate returns error when cubby width < 6 inches."""
         # 24" width, 5 columns: (24 - 4*0.75) / 5 = 4.2" (below 6")
@@ -286,7 +300,9 @@ class TestUniformCubbyComponentValidation:
         assert "less than minimum" in result.errors[0]
 
     def test_validate_returns_error_for_cubby_height_below_minimum(
-        self, uniform_cubby_component: UniformCubbyComponent, standard_context: ComponentContext
+        self,
+        uniform_cubby_component: UniformCubbyComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that validate returns error when cubby height < 6 inches."""
         # 36" height, 7 rows: (36 - 6*0.75) / 7 = 4.5" (below 6")
@@ -322,7 +338,9 @@ class TestUniformCubbyComponentValidation:
         assert result.is_valid
 
     def test_validate_returns_error_for_float_rows(
-        self, uniform_cubby_component: UniformCubbyComponent, standard_context: ComponentContext
+        self,
+        uniform_cubby_component: UniformCubbyComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that validate returns error for float rows."""
         config = {"rows": 2.5, "columns": 2}
@@ -342,7 +360,9 @@ class TestUniformCubbyComponentGeneration:
     """Tests for UniformCubbyComponent.generate()."""
 
     def test_generate_returns_empty_for_single_cubby(
-        self, uniform_cubby_component: UniformCubbyComponent, standard_context: ComponentContext
+        self,
+        uniform_cubby_component: UniformCubbyComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that 1x1 grid generates no panels (no dividers needed)."""
         config = {"rows": 1, "columns": 1}
@@ -352,29 +372,39 @@ class TestUniformCubbyComponentGeneration:
         assert len(result.panels) == 0
 
     def test_generate_creates_horizontal_dividers(
-        self, uniform_cubby_component: UniformCubbyComponent, large_context: ComponentContext
+        self,
+        uniform_cubby_component: UniformCubbyComponent,
+        large_context: ComponentContext,
     ) -> None:
         """Test that horizontal dividers are created for multiple rows."""
         config = {"rows": 3, "columns": 1}  # 2 horizontal dividers
 
         result = uniform_cubby_component.generate(config, large_context)
 
-        horizontal_panels = [p for p in result.panels if p.panel_type == PanelType.SHELF]
+        horizontal_panels = [
+            p for p in result.panels if p.panel_type == PanelType.SHELF
+        ]
         assert len(horizontal_panels) == 2
 
     def test_generate_creates_vertical_dividers(
-        self, uniform_cubby_component: UniformCubbyComponent, large_context: ComponentContext
+        self,
+        uniform_cubby_component: UniformCubbyComponent,
+        large_context: ComponentContext,
     ) -> None:
         """Test that vertical dividers are created for multiple columns."""
         config = {"rows": 1, "columns": 3}  # 2 vertical dividers
 
         result = uniform_cubby_component.generate(config, large_context)
 
-        vertical_panels = [p for p in result.panels if p.panel_type == PanelType.DIVIDER]
+        vertical_panels = [
+            p for p in result.panels if p.panel_type == PanelType.DIVIDER
+        ]
         assert len(vertical_panels) == 2
 
     def test_generate_creates_correct_total_panels_for_grid(
-        self, uniform_cubby_component: UniformCubbyComponent, large_context: ComponentContext
+        self,
+        uniform_cubby_component: UniformCubbyComponent,
+        large_context: ComponentContext,
     ) -> None:
         """Test total panel count for a 3x4 grid.
 
@@ -392,7 +422,9 @@ class TestUniformCubbyComponentGeneration:
         assert len(result.panels) == expected_horizontal + expected_vertical
 
     def test_generate_horizontal_dividers_use_shelf_panel_type(
-        self, uniform_cubby_component: UniformCubbyComponent, large_context: ComponentContext
+        self,
+        uniform_cubby_component: UniformCubbyComponent,
+        large_context: ComponentContext,
     ) -> None:
         """Test that horizontal dividers use PanelType.SHELF."""
         config = {"rows": 2, "columns": 1}
@@ -400,11 +432,15 @@ class TestUniformCubbyComponentGeneration:
         result = uniform_cubby_component.generate(config, large_context)
 
         for panel in result.panels:
-            if panel.width == large_context.width:  # Horizontal dividers span full width
+            if (
+                panel.width == large_context.width
+            ):  # Horizontal dividers span full width
                 assert panel.panel_type == PanelType.SHELF
 
     def test_generate_vertical_dividers_use_divider_panel_type(
-        self, uniform_cubby_component: UniformCubbyComponent, large_context: ComponentContext
+        self,
+        uniform_cubby_component: UniformCubbyComponent,
+        large_context: ComponentContext,
     ) -> None:
         """Test that vertical dividers use PanelType.DIVIDER."""
         config = {"rows": 1, "columns": 2}
@@ -415,7 +451,9 @@ class TestUniformCubbyComponentGeneration:
             assert panel.panel_type == PanelType.DIVIDER
 
     def test_generate_horizontal_divider_dimensions(
-        self, uniform_cubby_component: UniformCubbyComponent, large_context: ComponentContext
+        self,
+        uniform_cubby_component: UniformCubbyComponent,
+        large_context: ComponentContext,
     ) -> None:
         """Test horizontal divider has correct dimensions."""
         config = {"rows": 2, "columns": 1}
@@ -428,7 +466,9 @@ class TestUniformCubbyComponentGeneration:
         assert panel.height == large_context.depth  # Section depth
 
     def test_generate_returns_notch_specs_in_metadata(
-        self, uniform_cubby_component: UniformCubbyComponent, large_context: ComponentContext
+        self,
+        uniform_cubby_component: UniformCubbyComponent,
+        large_context: ComponentContext,
     ) -> None:
         """Test that notch_specs are included in metadata."""
         config = {"rows": 2, "columns": 2}
@@ -439,7 +479,9 @@ class TestUniformCubbyComponentGeneration:
         assert isinstance(result.metadata["notch_specs"], dict)
 
     def test_generate_notch_specs_keyed_by_divider_label(
-        self, uniform_cubby_component: UniformCubbyComponent, large_context: ComponentContext
+        self,
+        uniform_cubby_component: UniformCubbyComponent,
+        large_context: ComponentContext,
     ) -> None:
         """Test that notch_specs are keyed by divider labels."""
         config = {"rows": 2, "columns": 2}
@@ -451,7 +493,9 @@ class TestUniformCubbyComponentGeneration:
         assert "horizontal_divider_1" in notch_specs
 
     def test_generate_includes_edge_banding_hardware(
-        self, uniform_cubby_component: UniformCubbyComponent, large_context: ComponentContext
+        self,
+        uniform_cubby_component: UniformCubbyComponent,
+        large_context: ComponentContext,
     ) -> None:
         """Test that edge banding hardware is included."""
         config = {"rows": 2, "columns": 2}
@@ -462,7 +506,9 @@ class TestUniformCubbyComponentGeneration:
         assert result.hardware[0].name == "Edge Banding"
 
     def test_generate_no_edge_banding_when_disabled(
-        self, uniform_cubby_component: UniformCubbyComponent, large_context: ComponentContext
+        self,
+        uniform_cubby_component: UniformCubbyComponent,
+        large_context: ComponentContext,
     ) -> None:
         """Test that edge banding is excluded when disabled."""
         config = {"rows": 2, "columns": 2, "edge_band_front": False}
@@ -472,7 +518,9 @@ class TestUniformCubbyComponentGeneration:
         assert len(result.hardware) == 0
 
     def test_generate_returns_generation_result_type(
-        self, uniform_cubby_component: UniformCubbyComponent, large_context: ComponentContext
+        self,
+        uniform_cubby_component: UniformCubbyComponent,
+        large_context: ComponentContext,
     ) -> None:
         """Test that generate returns a GenerationResult instance."""
         config = {"rows": 2, "columns": 2}
@@ -491,7 +539,9 @@ class TestUniformCubbyComponentHardware:
     """Tests for UniformCubbyComponent.hardware()."""
 
     def test_hardware_returns_edge_banding(
-        self, uniform_cubby_component: UniformCubbyComponent, large_context: ComponentContext
+        self,
+        uniform_cubby_component: UniformCubbyComponent,
+        large_context: ComponentContext,
     ) -> None:
         """Test that hardware returns edge banding for grid."""
         config = {"rows": 2, "columns": 2}
@@ -502,7 +552,9 @@ class TestUniformCubbyComponentHardware:
         assert result[0].name == "Edge Banding"
 
     def test_hardware_returns_empty_for_single_cubby(
-        self, uniform_cubby_component: UniformCubbyComponent, standard_context: ComponentContext
+        self,
+        uniform_cubby_component: UniformCubbyComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that hardware returns empty for 1x1 grid (no dividers)."""
         config = {"rows": 1, "columns": 1}
@@ -512,7 +564,9 @@ class TestUniformCubbyComponentHardware:
         assert len(result) == 0
 
     def test_hardware_returns_empty_when_disabled(
-        self, uniform_cubby_component: UniformCubbyComponent, large_context: ComponentContext
+        self,
+        uniform_cubby_component: UniformCubbyComponent,
+        large_context: ComponentContext,
     ) -> None:
         """Test that hardware returns empty when edge_band_front is False."""
         config = {"rows": 2, "columns": 2, "edge_band_front": False}
@@ -522,7 +576,9 @@ class TestUniformCubbyComponentHardware:
         assert len(result) == 0
 
     def test_hardware_calculates_correct_banding_length(
-        self, uniform_cubby_component: UniformCubbyComponent, large_context: ComponentContext
+        self,
+        uniform_cubby_component: UniformCubbyComponent,
+        large_context: ComponentContext,
     ) -> None:
         """Test that edge banding calculation is correct.
 
@@ -653,7 +709,9 @@ class TestVariableCubbyComponentValidation:
         assert result.is_valid
 
     def test_validate_returns_error_for_empty_row_heights(
-        self, variable_cubby_component: VariableCubbyComponent, standard_context: ComponentContext
+        self,
+        variable_cubby_component: VariableCubbyComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that validate returns error for empty row_heights list."""
         config = {"row_heights": [], "columns": 2}
@@ -664,7 +722,9 @@ class TestVariableCubbyComponentValidation:
         assert "row_heights must be a non-empty list" in result.errors
 
     def test_validate_returns_error_for_empty_column_widths(
-        self, variable_cubby_component: VariableCubbyComponent, standard_context: ComponentContext
+        self,
+        variable_cubby_component: VariableCubbyComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that validate returns error for empty column_widths list."""
         config = {"column_widths": [], "rows": 2}
@@ -675,7 +735,9 @@ class TestVariableCubbyComponentValidation:
         assert "column_widths must be a non-empty list" in result.errors
 
     def test_validate_returns_error_for_negative_row_height(
-        self, variable_cubby_component: VariableCubbyComponent, standard_context: ComponentContext
+        self,
+        variable_cubby_component: VariableCubbyComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that validate returns error for negative row height."""
         config = {"row_heights": [10.0, -5.0], "columns": 1}
@@ -686,7 +748,9 @@ class TestVariableCubbyComponentValidation:
         assert "Row 2 height must be positive" in result.errors
 
     def test_validate_returns_error_for_row_height_below_minimum(
-        self, variable_cubby_component: VariableCubbyComponent, standard_context: ComponentContext
+        self,
+        variable_cubby_component: VariableCubbyComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that validate returns error for row height < 6 inches."""
         config = {"row_heights": [5.0], "columns": 1}
@@ -697,7 +761,9 @@ class TestVariableCubbyComponentValidation:
         assert "less than minimum" in result.errors[0]
 
     def test_validate_returns_error_for_dimension_mismatch(
-        self, variable_cubby_component: VariableCubbyComponent, standard_context: ComponentContext
+        self,
+        variable_cubby_component: VariableCubbyComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that validate returns error when dimensions don't match section."""
         # 36" height but row_heights sum to different value
@@ -709,7 +775,9 @@ class TestVariableCubbyComponentValidation:
         assert "does not equal section height" in result.errors[0]
 
     def test_validate_returns_error_for_too_many_rows(
-        self, variable_cubby_component: VariableCubbyComponent, standard_context: ComponentContext
+        self,
+        variable_cubby_component: VariableCubbyComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that validate returns error for more than 10 rows."""
         config = {"row_heights": [6.0] * 11, "columns": 1}
@@ -837,7 +905,9 @@ class TestVariableCubbyComponentGeneration:
         assert "notch_specs" in result.metadata
 
     def test_generate_returns_empty_for_invalid_config(
-        self, variable_cubby_component: VariableCubbyComponent, standard_context: ComponentContext
+        self,
+        variable_cubby_component: VariableCubbyComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that generate returns empty for invalid config."""
         config = {"rows": 0, "columns": 0}
@@ -856,7 +926,9 @@ class TestNotchSpecGeneration:
     """Tests for notch specification generation in dividers."""
 
     def test_horizontal_divider_notches_on_top_edge(
-        self, uniform_cubby_component: UniformCubbyComponent, large_context: ComponentContext
+        self,
+        uniform_cubby_component: UniformCubbyComponent,
+        large_context: ComponentContext,
     ) -> None:
         """Test that horizontal dividers have notches on top edge."""
         config = {"rows": 2, "columns": 2}
@@ -869,7 +941,9 @@ class TestNotchSpecGeneration:
         assert h_notches[0].edge == "top"
 
     def test_bottom_row_vertical_divider_notch_on_top(
-        self, uniform_cubby_component: UniformCubbyComponent, large_context: ComponentContext
+        self,
+        uniform_cubby_component: UniformCubbyComponent,
+        large_context: ComponentContext,
     ) -> None:
         """Test that vertical dividers in bottom row have notch on top edge."""
         config = {"rows": 2, "columns": 2}
@@ -883,7 +957,9 @@ class TestNotchSpecGeneration:
         assert v_notches[0].edge == "top"
 
     def test_top_row_vertical_divider_notch_on_bottom(
-        self, uniform_cubby_component: UniformCubbyComponent, large_context: ComponentContext
+        self,
+        uniform_cubby_component: UniformCubbyComponent,
+        large_context: ComponentContext,
     ) -> None:
         """Test that vertical dividers in top row have notch on bottom edge."""
         config = {"rows": 2, "columns": 2}
@@ -923,7 +999,9 @@ class TestNotchSpecGeneration:
         assert edges == {"top", "bottom"}
 
     def test_single_row_vertical_dividers_no_notches(
-        self, uniform_cubby_component: UniformCubbyComponent, large_context: ComponentContext
+        self,
+        uniform_cubby_component: UniformCubbyComponent,
+        large_context: ComponentContext,
     ) -> None:
         """Test that vertical dividers in single-row grid have no notches."""
         config = {"rows": 1, "columns": 2}
@@ -935,7 +1013,9 @@ class TestNotchSpecGeneration:
         assert len(v_notches) == 0
 
     def test_notch_width_equals_material_thickness(
-        self, uniform_cubby_component: UniformCubbyComponent, large_context: ComponentContext
+        self,
+        uniform_cubby_component: UniformCubbyComponent,
+        large_context: ComponentContext,
     ) -> None:
         """Test that notch width equals material thickness."""
         config = {"rows": 2, "columns": 2}
@@ -948,7 +1028,9 @@ class TestNotchSpecGeneration:
                 assert notch.width == large_context.material.thickness
 
     def test_notch_depth_equals_half_thickness(
-        self, uniform_cubby_component: UniformCubbyComponent, large_context: ComponentContext
+        self,
+        uniform_cubby_component: UniformCubbyComponent,
+        large_context: ComponentContext,
     ) -> None:
         """Test that notch depth equals half material thickness."""
         config = {"rows": 2, "columns": 2}
@@ -1011,9 +1093,7 @@ class TestCubbyComponentIntegration:
         if "cubby.variable" not in component_registry.list():
             component_registry.register("cubby.variable")(VariableCubbyComponent)
 
-    def test_full_workflow_uniform_cubby(
-        self, large_context: ComponentContext
-    ) -> None:
+    def test_full_workflow_uniform_cubby(self, large_context: ComponentContext) -> None:
         """Test complete workflow: get component, validate, generate, hardware."""
         component_class = component_registry.get("cubby.uniform")
         component = component_class()
@@ -1144,7 +1224,9 @@ class TestCubbyComponentEdgeCases:
         assert len(result.panels) == expected_horizontal + expected_vertical
 
     def test_panel_positions_are_correct(
-        self, uniform_cubby_component: UniformCubbyComponent, large_context: ComponentContext
+        self,
+        uniform_cubby_component: UniformCubbyComponent,
+        large_context: ComponentContext,
     ) -> None:
         """Test that panel positions are calculated correctly."""
         config = {"rows": 2, "columns": 1}

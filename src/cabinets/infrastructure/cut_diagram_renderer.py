@@ -175,9 +175,7 @@ class CutDiagramRenderer:
             legend_y = header_height + sheet.height * self.scale
             parts.append("")
             parts.append("  <!-- Legend -->")
-            parts.append(
-                self._render_legend(panel_types_used, svg_width, legend_y)
-            )
+            parts.append(self._render_legend(panel_types_used, svg_width, legend_y))
 
         # Close SVG
         parts.append("")
@@ -292,7 +290,7 @@ class CutDiagramRenderer:
 
         # Build the piece SVG group
         svg_parts = [
-            f"  <g>",
+            "  <g>",
             f'    <rect x="{x}" y="{y}" width="{w}" height="{h}" '
             f'fill="{fill_color}" stroke="{self.piece_stroke}"/>',
         ]
@@ -317,9 +315,7 @@ class CutDiagramRenderer:
 
         # Add grain direction indicator if show_grain is True
         if self.show_grain:
-            grain_svg = self._render_grain_indicator(
-                placement, x, y, w, h, font_size
-            )
+            grain_svg = self._render_grain_indicator(placement, x, y, w, h, font_size)
             if grain_svg:
                 svg_parts.append(grain_svg)
 
@@ -382,16 +378,20 @@ class CutDiagramRenderer:
             else:
                 # Horizontal arrow (pointing right)
                 return self._render_arrow(
-                    arrow_x, arrow_y - arrow_length / 2,
-                    arrow_x + arrow_length, arrow_y - arrow_length / 2,
+                    arrow_x,
+                    arrow_y - arrow_length / 2,
+                    arrow_x + arrow_length,
+                    arrow_y - arrow_length / 2,
                 )
         elif grain_direction == "width":
             # Grain runs along the original width (shortest dimension)
             if placement.rotated:
                 # Horizontal arrow
                 return self._render_arrow(
-                    arrow_x, arrow_y - arrow_length / 2,
-                    arrow_x + arrow_length, arrow_y - arrow_length / 2,
+                    arrow_x,
+                    arrow_y - arrow_length / 2,
+                    arrow_x + arrow_length,
+                    arrow_y - arrow_length / 2,
                 )
             else:
                 # Vertical arrow
@@ -404,9 +404,7 @@ class CutDiagramRenderer:
         # "none" or unrecognized - no indicator
         return None
 
-    def _render_arrow(
-        self, x1: float, y1: float, x2: float, y2: float
-    ) -> str:
+    def _render_arrow(self, x1: float, y1: float, x2: float, y2: float) -> str:
         """Render an arrow from (x1, y1) to (x2, y2).
 
         Args:
@@ -424,6 +422,7 @@ class CutDiagramRenderer:
 
         # Calculate arrow head points
         import math
+
         angle = math.atan2(y2 - y1, x2 - x1)
         head_length = 6
         head_angle = math.pi / 6  # 30 degrees
@@ -639,9 +638,7 @@ class CutDiagramRenderer:
             parts.append("  </g>")
 
             y_offset += (
-                layout.sheet_config.height * self.scale
-                + header_height
-                + sheet_spacing
+                layout.sheet_config.height * self.scale + header_height + sheet_spacing
             )
 
         parts.append("</svg>")
@@ -677,7 +674,9 @@ class CutDiagramRenderer:
 
         # Calculate height in lines (proportional to width)
         aspect_ratio = sheet.height / sheet.width
-        grid_height = int(usable_width * aspect_ratio * 0.5)  # 0.5 for char aspect ratio
+        grid_height = int(
+            usable_width * aspect_ratio * 0.5
+        )  # 0.5 for char aspect ratio
         grid_height = max(grid_height, 10)  # Minimum height
 
         scale_y = grid_height / sheet.height

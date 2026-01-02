@@ -11,7 +11,7 @@ from dataclasses import dataclass
 from typing import Any
 
 from ..entities import Panel
-from ..value_objects import MaterialSpec, PanelType, Position
+from ..value_objects import PanelType, Position
 from .context import ComponentContext
 from .registry import component_registry
 from .results import GenerationResult, HardwareItem, ValidationResult
@@ -309,8 +309,8 @@ class UniformCubbyComponent:
 
             if cubby_width < MIN_CUBBY_SIZE:
                 errors.append(
-                    f"Cubby width {cubby_width:.2f}\" is less than "
-                    f"minimum {MIN_CUBBY_SIZE}\""
+                    f'Cubby width {cubby_width:.2f}" is less than '
+                    f'minimum {MIN_CUBBY_SIZE}"'
                 )
 
             # Calculate cubby height
@@ -320,8 +320,8 @@ class UniformCubbyComponent:
 
             if cubby_height < MIN_CUBBY_SIZE:
                 errors.append(
-                    f"Cubby height {cubby_height:.2f}\" is less than "
-                    f"minimum {MIN_CUBBY_SIZE}\""
+                    f'Cubby height {cubby_height:.2f}" is less than '
+                    f'minimum {MIN_CUBBY_SIZE}"'
                 )
 
         return ValidationResult(errors=tuple(errors), warnings=tuple(warnings))
@@ -352,12 +352,8 @@ class UniformCubbyComponent:
         thickness = context.material.thickness
 
         # Calculate uniform sizes
-        column_widths = _calculate_uniform_sizes(
-            context.width, columns, thickness
-        )
-        row_heights = _calculate_uniform_sizes(
-            context.height, rows, thickness
-        )
+        column_widths = _calculate_uniform_sizes(context.width, columns, thickness)
+        row_heights = _calculate_uniform_sizes(context.height, rows, thickness)
 
         # Generate dividers with notch specs
         panels, notch_specs = _generate_dividers(
@@ -368,7 +364,6 @@ class UniformCubbyComponent:
         # Horizontal dividers: context.width each
         # Vertical dividers: row_heights for each column in each row
         num_horizontal = rows - 1
-        num_vertical = (columns - 1) * rows
 
         horizontal_banding = context.width * num_horizontal
         vertical_banding = sum(row_heights) * (columns - 1)
@@ -417,9 +412,7 @@ class UniformCubbyComponent:
         thickness = context.material.thickness
 
         # Calculate row heights for vertical banding
-        row_heights = _calculate_uniform_sizes(
-            context.height, rows, thickness
-        )
+        row_heights = _calculate_uniform_sizes(context.height, rows, thickness)
 
         num_horizontal = rows - 1
         horizontal_banding = context.width * num_horizontal
@@ -506,8 +499,8 @@ class VariableCubbyComponent:
                         errors.append(f"Row {i + 1} height must be positive")
                     elif h < MIN_CUBBY_SIZE:
                         errors.append(
-                            f"Row {i + 1} height {h:.2f}\" is less than "
-                            f"minimum {MIN_CUBBY_SIZE}\""
+                            f'Row {i + 1} height {h:.2f}" is less than '
+                            f'minimum {MIN_CUBBY_SIZE}"'
                         )
 
                 # Validate total height
@@ -516,9 +509,9 @@ class VariableCubbyComponent:
                     total = sum(row_heights) + (num_dividers * thickness)
                     if abs(total - context.height) > tolerance:
                         errors.append(
-                            f"Row heights ({sum(row_heights):.2f}\") + dividers "
-                            f"({num_dividers * thickness:.2f}\") = {total:.2f}\" "
-                            f"does not equal section height ({context.height:.2f}\")"
+                            f'Row heights ({sum(row_heights):.2f}") + dividers '
+                            f'({num_dividers * thickness:.2f}") = {total:.2f}" '
+                            f'does not equal section height ({context.height:.2f}")'
                         )
         else:
             # Using rows count
@@ -533,8 +526,8 @@ class VariableCubbyComponent:
                 row_height = available / rows
                 if row_height < MIN_CUBBY_SIZE:
                     errors.append(
-                        f"Calculated row height {row_height:.2f}\" is less than "
-                        f"minimum {MIN_CUBBY_SIZE}\""
+                        f'Calculated row height {row_height:.2f}" is less than '
+                        f'minimum {MIN_CUBBY_SIZE}"'
                     )
 
         # Resolve column configuration
@@ -553,8 +546,8 @@ class VariableCubbyComponent:
                         errors.append(f"Column {i + 1} width must be positive")
                     elif w < MIN_CUBBY_SIZE:
                         errors.append(
-                            f"Column {i + 1} width {w:.2f}\" is less than "
-                            f"minimum {MIN_CUBBY_SIZE}\""
+                            f'Column {i + 1} width {w:.2f}" is less than '
+                            f'minimum {MIN_CUBBY_SIZE}"'
                         )
 
                 # Validate total width
@@ -563,9 +556,9 @@ class VariableCubbyComponent:
                     total = sum(column_widths) + (num_dividers * thickness)
                     if abs(total - context.width) > tolerance:
                         errors.append(
-                            f"Column widths ({sum(column_widths):.2f}\") + dividers "
-                            f"({num_dividers * thickness:.2f}\") = {total:.2f}\" "
-                            f"does not equal section width ({context.width:.2f}\")"
+                            f'Column widths ({sum(column_widths):.2f}") + dividers '
+                            f'({num_dividers * thickness:.2f}") = {total:.2f}" '
+                            f'does not equal section width ({context.width:.2f}")'
                         )
         else:
             # Using columns count
@@ -580,8 +573,8 @@ class VariableCubbyComponent:
                 col_width = available / columns
                 if col_width < MIN_CUBBY_SIZE:
                     errors.append(
-                        f"Calculated column width {col_width:.2f}\" is less than "
-                        f"minimum {MIN_CUBBY_SIZE}\""
+                        f'Calculated column width {col_width:.2f}" is less than '
+                        f'minimum {MIN_CUBBY_SIZE}"'
                     )
 
         return ValidationResult(errors=tuple(errors), warnings=tuple(warnings))
@@ -610,9 +603,7 @@ class VariableCubbyComponent:
             rows = config.get("rows", 1)
             if rows < 1:
                 return GenerationResult()
-            row_heights = _calculate_uniform_sizes(
-                context.height, rows, thickness
-            )
+            row_heights = _calculate_uniform_sizes(context.height, rows, thickness)
         rows = len(row_heights)
 
         # Resolve column widths
@@ -621,9 +612,7 @@ class VariableCubbyComponent:
             columns = config.get("columns", 1)
             if columns < 1:
                 return GenerationResult()
-            column_widths = _calculate_uniform_sizes(
-                context.width, columns, thickness
-            )
+            column_widths = _calculate_uniform_sizes(context.width, columns, thickness)
         columns = len(column_widths)
 
         if rows < 1 or columns < 1:
@@ -678,9 +667,7 @@ class VariableCubbyComponent:
             rows = config.get("rows", 1)
             if rows < 1:
                 return []
-            row_heights = _calculate_uniform_sizes(
-                context.height, rows, thickness
-            )
+            row_heights = _calculate_uniform_sizes(context.height, rows, thickness)
         rows = len(row_heights)
 
         # Resolve column widths
@@ -689,9 +676,7 @@ class VariableCubbyComponent:
             columns = config.get("columns", 1)
             if columns < 1:
                 return []
-            column_widths = _calculate_uniform_sizes(
-                context.width, columns, thickness
-            )
+            column_widths = _calculate_uniform_sizes(context.width, columns, thickness)
         columns = len(column_widths)
 
         if rows < 1 or columns < 1:

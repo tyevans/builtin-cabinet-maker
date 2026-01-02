@@ -11,17 +11,12 @@ import json
 import pytest
 from pydantic import ValidationError
 
-from cabinets.application.config.schema import (
-    ArchTopConfigSchema,
+from cabinets.application.config.schemas import (
     BaseZoneConfigSchema,
     CabinetConfig,
     CabinetConfiguration,
     CrownMoldingConfigSchema,
-    EdgeProfileConfigSchema,
     FaceFrameConfigSchema,
-    LightRailConfigSchema,
-    ScallopConfigSchema,
-    SectionConfig,
 )
 from cabinets.domain.entities import Cabinet
 from cabinets.domain.services import MaterialEstimate

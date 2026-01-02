@@ -10,6 +10,8 @@ Registered exporters:
 - bom: Bill of Materials with sheet goods, hardware, and edge banding
 - dxf: DXF format for 2D CNC machining and manufacturing
 - json: Enhanced JSON with normalized config, 3D positions, joinery, and BOM
+- llm-assembly: LLM-generated assembly instructions via Ollama
+- safety-labels: SVG safety labels for weight capacity, anti-tip, installation
 - stl: STL format for 3D visualization/printing
 - svg: SVG cut diagrams showing piece placements on sheets
 
@@ -22,6 +24,7 @@ Usage:
         EnhancedJsonExporter,
         ExportManager,
         ExporterRegistry,
+        LLMAssemblyExporter,
         StlLayoutExporter,
         SvgExporter,
     )
@@ -41,6 +44,9 @@ Usage:
 
     json_exporter_cls = ExporterRegistry.get("json")
     json_exporter = json_exporter_cls(include_3d_positions=True, include_joinery=True)
+
+    llm_exporter_cls = ExporterRegistry.get("llm-assembly")
+    llm_exporter = llm_exporter_cls(skill_level="beginner")
 
     stl_exporter_cls = ExporterRegistry.get("stl")
     stl_exporter = stl_exporter_cls()
@@ -70,7 +76,12 @@ from cabinets.infrastructure.exporters.bom import (
 )
 from cabinets.infrastructure.exporters.dxf import DxfExporter
 from cabinets.infrastructure.exporters.enhanced_json import EnhancedJsonExporter
+from cabinets.infrastructure.exporters.llm_assembly import LLMAssemblyExporter
 from cabinets.infrastructure.exporters.stl import StlLayoutExporter
+from cabinets.infrastructure.exporters.safety_labels import (
+    LabelStyle,
+    SafetyLabelExporter,
+)
 from cabinets.infrastructure.exporters.svg import SvgExporter
 
 # Re-export the underlying STL implementation for backwards compatibility
@@ -100,6 +111,9 @@ __all__ = [
     "EdgeBandingItem",
     "EnhancedJsonExporter",
     "HardwareBomItem",
+    "LabelStyle",
+    "LLMAssemblyExporter",
+    "SafetyLabelExporter",
     "SheetGoodItem",
     "StlLayoutExporter",
     "SvgExporter",

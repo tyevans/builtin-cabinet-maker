@@ -7,7 +7,6 @@ elements (FR-02 Scalloped Edges).
 
 from __future__ import annotations
 
-import math
 
 import pytest
 
@@ -347,9 +346,7 @@ class TestScallopServiceTemplateInfo:
 class TestScallopServiceCalculateCenters:
     """Tests for ScallopService.calculate_scallop_centers()."""
 
-    def test_calculate_centers_count(
-        self, scallop_service: ScallopService
-    ) -> None:
+    def test_calculate_centers_count(self, scallop_service: ScallopService) -> None:
         """Test correct number of centers are returned."""
         metadata = ScallopCutMetadata(
             scallop_depth=1.5,
@@ -403,9 +400,7 @@ class TestScallopServiceCalculateCenters:
             spacing = centers[i] - centers[i - 1]
             assert spacing == pytest.approx(6.0)
 
-    def test_calculate_centers_symmetry(
-        self, scallop_service: ScallopService
-    ) -> None:
+    def test_calculate_centers_symmetry(self, scallop_service: ScallopService) -> None:
         """Test centers are symmetric about piece center (FR-02.4)."""
         metadata = ScallopCutMetadata(
             scallop_depth=1.5,
@@ -485,7 +480,9 @@ class TestScallopServiceGeneratePoints:
             scallop_count=1,
             template_required=True,
         )
-        points = scallop_service.generate_scallop_points(metadata, num_points_per_scallop=11)
+        points = scallop_service.generate_scallop_points(
+            metadata, num_points_per_scallop=11
+        )
 
         # Find the center point (should be at index 5 for 11 points)
         center_point = points[5]
@@ -869,9 +866,7 @@ class TestScallopComponentHardware:
 class TestScallopComponentIntegration:
     """Integration tests for ScallopComponent with the registry."""
 
-    def test_full_workflow_auto_count(
-        self, standard_context: ComponentContext
-    ) -> None:
+    def test_full_workflow_auto_count(self, standard_context: ComponentContext) -> None:
         """Test complete workflow with auto count."""
         component_class = component_registry.get("decorative.scallop")
         component = component_class()
@@ -921,9 +916,7 @@ class TestScallopComponentIntegration:
         assert panel.metadata["scallop_count"] == 12
         assert panel.metadata["scallop_width"] == pytest.approx(4.0)
 
-    def test_full_workflow_narrow_piece(
-        self, narrow_context: ComponentContext
-    ) -> None:
+    def test_full_workflow_narrow_piece(self, narrow_context: ComponentContext) -> None:
         """Test complete workflow with narrow 24\" piece."""
         component = ScallopComponent()
 
@@ -1010,9 +1003,7 @@ class TestScallopTaskSpecVerification:
 class TestScallopEdgeCases:
     """Edge case tests for ScallopComponent and ScallopService."""
 
-    def test_single_scallop(
-        self, scallop_component: ScallopComponent
-    ) -> None:
+    def test_single_scallop(self, scallop_component: ScallopComponent) -> None:
         """Test scallop pattern with single scallop."""
         context = ComponentContext(
             width=6.0,
@@ -1076,7 +1067,9 @@ class TestScallopEdgeCases:
             scallop_count=3,
             template_required=True,
         )
-        points = scallop_service.generate_scallop_points(metadata, num_points_per_scallop=5)
+        points = scallop_service.generate_scallop_points(
+            metadata, num_points_per_scallop=5
+        )
 
         # Should have points from x=0 to x=18 (3 scallops * 6")
         x_values = [p[0] for p in points]

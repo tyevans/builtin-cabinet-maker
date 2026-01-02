@@ -19,6 +19,9 @@ import pytest
 from pydantic import ValidationError as PydanticValidationError
 
 from cabinets.application.config import (
+    ArchTopConfigSchema,
+    ArchTypeConfig,
+    BaseZoneConfigSchema,
     BinPackingConfigSchema,
     CabinetConfig,
     CabinetConfiguration,
@@ -26,7 +29,15 @@ from cabinets.application.config import (
     CeilingSlopeConfig,
     ClearanceConfig,
     ConfigError,
+    CrownMoldingConfigSchema,
+    EdgeProfileConfigSchema,
+    EdgeProfileTypeConfig,
+    FaceFrameConfigSchema,
+    HardwareConfigSchema,
     HeightMode,
+    JoineryConfigSchema,
+    JoineryTypeConfig,
+    LightRailConfigSchema,
     MaterialConfig,
     ObstacleConfig,
     ObstacleDefaultsConfig,
@@ -35,13 +46,16 @@ from cabinets.application.config import (
     OutputConfig,
     RoomConfig,
     RowConfig,
+    ScallopConfigSchema,
     SectionConfig,
     SectionTypeConfig,
     SheetSizeConfigSchema,
     SkylightConfig,
+    SpanLimitsConfigSchema,
     SUPPORTED_VERSIONS,
     ValidationResult,
     WallSegmentConfig,
+    WoodworkingConfigSchema,
     config_to_bin_packing,
     load_config,
     load_config_from_dict,
@@ -276,13 +290,17 @@ class TestRoomConfig:
         wall = WallSegmentConfig(length=120.0, height=96.0)
         with pytest.raises(PydanticValidationError) as exc_info:
             RoomConfig(name="", walls=[wall])
-        assert "min_length" in str(exc_info.value) or "at least 1" in str(exc_info.value)
+        assert "min_length" in str(exc_info.value) or "at least 1" in str(
+            exc_info.value
+        )
 
     def test_walls_cannot_be_empty(self) -> None:
         """Walls list must have at least 1 wall."""
         with pytest.raises(PydanticValidationError) as exc_info:
             RoomConfig(name="test", walls=[])
-        assert "min_length" in str(exc_info.value) or "at least 1" in str(exc_info.value)
+        assert "min_length" in str(exc_info.value) or "at least 1" in str(
+            exc_info.value
+        )
 
     def test_first_wall_must_have_zero_angle(self) -> None:
         """First wall must have angle=0."""
@@ -307,7 +325,9 @@ class TestRoomConfig:
         wall2 = WallSegmentConfig(length=100.0, height=96.0, angle=90)
         wall3 = WallSegmentConfig(length=100.0, height=96.0, angle=90)
         wall4 = WallSegmentConfig(length=100.0, height=96.0, angle=90)
-        config = RoomConfig(name="square", walls=[wall1, wall2, wall3, wall4], is_closed=True)
+        config = RoomConfig(
+            name="square", walls=[wall1, wall2, wall3, wall4], is_closed=True
+        )
         assert config.is_closed is True
 
     def test_rejects_unknown_fields(self) -> None:
@@ -427,7 +447,16 @@ class TestOutputConfig:
 
     def test_valid_formats(self) -> None:
         """All valid format values should be accepted."""
-        for fmt in ["all", "cutlist", "diagram", "materials", "json", "stl", "cutlayout", "woodworking"]:
+        for fmt in [
+            "all",
+            "cutlist",
+            "diagram",
+            "materials",
+            "json",
+            "stl",
+            "cutlayout",
+            "woodworking",
+        ]:
             config = OutputConfig(format=fmt)  # type: ignore
             assert config.format == fmt
 
@@ -464,7 +493,7 @@ class TestCabinetConfiguration:
         for version in ["1.0", "1.1", "2.0", "10.20"]:
             # Note: only 1.x is actually supported, but pattern validation comes first
             try:
-                config = CabinetConfiguration(
+                _config = CabinetConfiguration(
                     schema_version=version,
                     cabinet=CabinetConfig(width=48.0, height=84.0, depth=12.0),
                 )
@@ -485,7 +514,10 @@ class TestCabinetConfiguration:
                     cabinet=CabinetConfig(width=48.0, height=84.0, depth=12.0),
                 )
             # Pattern validation error
-            assert "schema_version" in str(exc_info.value) or "pattern" in str(exc_info.value).lower()
+            assert (
+                "schema_version" in str(exc_info.value)
+                or "pattern" in str(exc_info.value).lower()
+            )
 
     def test_unsupported_version(self) -> None:
         """Unsupported schema versions should be rejected."""
@@ -770,7 +802,10 @@ class TestValidateConfig:
         )
         result = validate_config(config)
         assert result.is_valid
-        assert any("thin" in w.message.lower() or "thickness" in w.message.lower() for w in result.warnings)
+        assert any(
+            "thin" in w.message.lower() or "thickness" in w.message.lower()
+            for w in result.warnings
+        )
 
     def test_aspect_ratio_warning(self) -> None:
         """Extreme height-to-depth ratio should trigger warning."""
@@ -784,7 +819,10 @@ class TestValidateConfig:
         )
         result = validate_config(config)
         assert result.is_valid
-        assert any("ratio" in w.message.lower() or "stability" in w.message.lower() for w in result.warnings)
+        assert any(
+            "ratio" in w.message.lower() or "stability" in w.message.lower()
+            for w in result.warnings
+        )
 
     def test_fixed_sections_exceed_width_error(self) -> None:
         """Fixed section widths exceeding cabinet should error."""
@@ -824,7 +862,10 @@ class TestValidateConfig:
         result = validate_config(config)
         assert not result.is_valid
         assert len(result.errors) > 0
-        assert any("depth" in e.message.lower() and "exceed" in e.message.lower() for e in result.errors)
+        assert any(
+            "depth" in e.message.lower() and "exceed" in e.message.lower()
+            for e in result.errors
+        )
         assert any("sections[0].depth" in e.path for e in result.errors)
 
     def test_section_depth_at_cabinet_depth_valid(self) -> None:
@@ -837,13 +878,19 @@ class TestValidateConfig:
                 depth=12.0,
                 material=MaterialConfig(thickness=0.75),
                 sections=[
-                    SectionConfig(width=20.0, shelves=3, depth=12.0),  # Equal to cabinet
+                    SectionConfig(
+                        width=20.0, shelves=3, depth=12.0
+                    ),  # Equal to cabinet
                 ],
             ),
         )
         result = validate_config(config)
         # Should be valid (no depth errors)
-        depth_errors = [e for e in result.errors if "depth" in e.message.lower() and "exceed" in e.message.lower()]
+        depth_errors = [
+            e
+            for e in result.errors
+            if "depth" in e.message.lower() and "exceed" in e.message.lower()
+        ]
         assert len(depth_errors) == 0
 
     def test_section_depth_below_cabinet_depth_valid(self) -> None:
@@ -856,13 +903,19 @@ class TestValidateConfig:
                 depth=12.0,
                 material=MaterialConfig(thickness=0.75),
                 sections=[
-                    SectionConfig(width=20.0, shelves=3, depth=8.0),  # Shallower section
+                    SectionConfig(
+                        width=20.0, shelves=3, depth=8.0
+                    ),  # Shallower section
                 ],
             ),
         )
         result = validate_config(config)
         # Should be valid (no depth errors)
-        depth_errors = [e for e in result.errors if "depth" in e.message.lower() and "exceed" in e.message.lower()]
+        depth_errors = [
+            e
+            for e in result.errors
+            if "depth" in e.message.lower() and "exceed" in e.message.lower()
+        ]
         assert len(depth_errors) == 0
 
     def test_multiple_sections_depth_validation(self) -> None:
@@ -875,7 +928,7 @@ class TestValidateConfig:
                 depth=12.0,
                 material=MaterialConfig(thickness=0.75),
                 sections=[
-                    SectionConfig(width=20.0, shelves=3, depth=8.0),   # Valid
+                    SectionConfig(width=20.0, shelves=3, depth=8.0),  # Valid
                     SectionConfig(width=20.0, shelves=3, depth=15.0),  # Invalid
                     SectionConfig(width=20.0, shelves=3, depth=18.0),  # Invalid
                 ],
@@ -883,7 +936,11 @@ class TestValidateConfig:
         )
         result = validate_config(config)
         assert not result.is_valid
-        depth_errors = [e for e in result.errors if "depth" in e.message.lower() and "exceed" in e.message.lower()]
+        depth_errors = [
+            e
+            for e in result.errors
+            if "depth" in e.message.lower() and "exceed" in e.message.lower()
+        ]
         assert len(depth_errors) == 2  # sections[1] and sections[2]
         assert any("sections[1].depth" in e.path for e in depth_errors)
         assert any("sections[2].depth" in e.path for e in depth_errors)
@@ -907,8 +964,10 @@ class TestValidateConfig:
                     RowConfig(
                         height="fill",
                         sections=[
-                            SectionConfig(width=20.0, shelves=2, depth=8.0),   # Valid
-                            SectionConfig(width="fill", shelves=2, depth=16.0),  # Invalid: 16 > 12
+                            SectionConfig(width=20.0, shelves=2, depth=8.0),  # Valid
+                            SectionConfig(
+                                width="fill", shelves=2, depth=16.0
+                            ),  # Invalid: 16 > 12
                         ],
                     ),
                 ],
@@ -916,7 +975,11 @@ class TestValidateConfig:
         )
         result = validate_config(config)
         assert not result.is_valid
-        depth_errors = [e for e in result.errors if "depth" in e.message.lower() and "exceed" in e.message.lower()]
+        depth_errors = [
+            e
+            for e in result.errors
+            if "depth" in e.message.lower() and "exceed" in e.message.lower()
+        ]
         assert len(depth_errors) == 1
         assert any("rows[1].sections[1].depth" in e.path for e in depth_errors)
 
@@ -933,10 +996,15 @@ class TestObstacleTypeConfig:
         assert ObstacleTypeConfig.VENT.value == "vent"
         assert ObstacleTypeConfig.SKYLIGHT.value == "skylight"
         assert ObstacleTypeConfig.CUSTOM.value == "custom"
+        # FRD-21 safety-related obstacle types
+        assert ObstacleTypeConfig.ELECTRICAL_PANEL.value == "electrical_panel"
+        assert ObstacleTypeConfig.COOKTOP.value == "cooktop"
+        assert ObstacleTypeConfig.HEAT_SOURCE.value == "heat_source"
+        assert ObstacleTypeConfig.CLOSET_LIGHT.value == "closet_light"
 
     def test_obstacle_type_count(self) -> None:
-        """ObstacleTypeConfig should have exactly 7 values."""
-        assert len(ObstacleTypeConfig) == 7
+        """ObstacleTypeConfig should have exactly 11 values (7 original + 4 FRD-21 safety)."""
+        assert len(ObstacleTypeConfig) == 11
 
 
 class TestHeightMode:
@@ -2160,23 +2228,6 @@ class TestCabinetConfigurationWithFRD11:
 # FRD-12: Decorative Element Configuration Tests
 # =============================================================================
 
-from cabinets.application.config import (
-    ArchTopConfigSchema,
-    ArchTypeConfig,
-    BaseZoneConfigSchema,
-    CrownMoldingConfigSchema,
-    EdgeProfileConfigSchema,
-    EdgeProfileTypeConfig,
-    FaceFrameConfigSchema,
-    HardwareConfigSchema,
-    JoineryConfigSchema,
-    JoineryTypeConfig,
-    LightRailConfigSchema,
-    ScallopConfigSchema,
-    SpanLimitsConfigSchema,
-    WoodworkingConfigSchema,
-)
-
 
 class TestArchTypeConfig:
     """Tests for ArchTypeConfig enum (FRD-12)."""
@@ -3391,7 +3442,7 @@ class TestCabinetConfigurationWoodworking:
 
     def test_v1_5_in_supported_versions(self) -> None:
         """SUPPORTED_VERSIONS should include '1.5'."""
-        from cabinets.application.config.schema import SUPPORTED_VERSIONS
+        from cabinets.application.config.schemas import SUPPORTED_VERSIONS
 
         assert "1.5" in SUPPORTED_VERSIONS
 
@@ -3426,7 +3477,9 @@ class TestCabinetConfigurationWoodworking:
         )
         assert config.woodworking is not None
         assert config.woodworking.joinery is not None
-        assert config.woodworking.joinery.dado_depth_ratio == pytest.approx(0.333, rel=0.01)
+        assert config.woodworking.joinery.dado_depth_ratio == pytest.approx(
+            0.333, rel=0.01
+        )
 
 
 class TestConfigToWoodworkingAdapter:
@@ -3434,7 +3487,7 @@ class TestConfigToWoodworkingAdapter:
 
     def test_none_woodworking_returns_none(self) -> None:
         """config_to_woodworking should return None if no woodworking config."""
-        from cabinets.application.config.adapter import config_to_woodworking
+        from cabinets.application.config import config_to_woodworking
 
         config = CabinetConfiguration(
             schema_version="1.5",
@@ -3445,7 +3498,7 @@ class TestConfigToWoodworkingAdapter:
 
     def test_converts_to_domain_config(self) -> None:
         """config_to_woodworking should convert to domain WoodworkingConfig."""
-        from cabinets.application.config.adapter import config_to_woodworking
+        from cabinets.application.config import config_to_woodworking
         from cabinets.domain.value_objects import JointType
 
         config = CabinetConfiguration(
@@ -3465,7 +3518,7 @@ class TestConfigToWoodworkingAdapter:
 
     def test_maps_joint_types_correctly(self) -> None:
         """config_to_woodworking should map all joint types correctly."""
-        from cabinets.application.config.adapter import config_to_woodworking
+        from cabinets.application.config import config_to_woodworking
         from cabinets.domain.value_objects import JointType
 
         config = CabinetConfiguration(
@@ -4492,7 +4545,18 @@ class TestOutputConfigFRD16:
 
     def test_all_valid_formats(self) -> None:
         """OutputConfig should accept all valid format names."""
-        valid_formats = ["stl", "dxf", "json", "bom", "svg", "assembly", "cutlist", "diagram", "materials", "woodworking"]
+        valid_formats = [
+            "stl",
+            "dxf",
+            "json",
+            "bom",
+            "svg",
+            "assembly",
+            "cutlist",
+            "diagram",
+            "materials",
+            "woodworking",
+        ]
         config = OutputConfig(formats=valid_formats)
         assert set(config.formats) == set(valid_formats)
 
@@ -4549,7 +4613,9 @@ class TestOutputConfigFRD16:
         """OutputConfig should accept assembly configuration."""
         from cabinets.application.config import AssemblyOutputConfigSchema
 
-        config = OutputConfig(assembly=AssemblyOutputConfigSchema(include_safety_warnings=False))
+        config = OutputConfig(
+            assembly=AssemblyOutputConfigSchema(include_safety_warnings=False)
+        )
         assert config.assembly is not None
         assert config.assembly.include_safety_warnings is False
 
@@ -4595,7 +4661,9 @@ class TestCabinetConfigurationFRD16:
                 svg=SvgOutputConfigSchema(scale=15.0, show_grain=True),
                 bom=BomOutputConfigSchema(format="csv"),
                 assembly=AssemblyOutputConfigSchema(include_safety_warnings=True),
-                json_options=JsonOutputConfigSchema(include_3d_positions=True, include_joinery=True),
+                json_options=JsonOutputConfigSchema(
+                    include_3d_positions=True, include_joinery=True
+                ),
             ),
         )
         assert config.output.formats == ["stl", "dxf", "json", "bom", "svg", "assembly"]
@@ -4646,7 +4714,7 @@ class TestDeskTypeConfig:
 
     def test_desk_type_values(self) -> None:
         """DeskTypeConfig should have expected values."""
-        from cabinets.application.config.schema import DeskTypeConfig
+        from cabinets.application.config.schemas import DeskTypeConfig
 
         assert DeskTypeConfig.SINGLE.value == "single"
         assert DeskTypeConfig.L_SHAPED.value == "l_shaped"
@@ -4655,7 +4723,7 @@ class TestDeskTypeConfig:
 
     def test_desk_type_count(self) -> None:
         """DeskTypeConfig should have 4 values."""
-        from cabinets.application.config.schema import DeskTypeConfig
+        from cabinets.application.config.schemas import DeskTypeConfig
 
         assert len(DeskTypeConfig) == 4
 
@@ -4665,7 +4733,7 @@ class TestEdgeTreatmentConfig:
 
     def test_edge_treatment_values(self) -> None:
         """EdgeTreatmentConfig should have expected values."""
-        from cabinets.application.config.schema import EdgeTreatmentConfig
+        from cabinets.application.config.schemas import EdgeTreatmentConfig
 
         assert EdgeTreatmentConfig.SQUARE.value == "square"
         assert EdgeTreatmentConfig.BULLNOSE.value == "bullnose"
@@ -4674,7 +4742,7 @@ class TestEdgeTreatmentConfig:
 
     def test_edge_treatment_count(self) -> None:
         """EdgeTreatmentConfig should have 4 values."""
-        from cabinets.application.config.schema import EdgeTreatmentConfig
+        from cabinets.application.config.schemas import EdgeTreatmentConfig
 
         assert len(EdgeTreatmentConfig) == 4
 
@@ -4684,7 +4752,7 @@ class TestPedestalTypeConfig:
 
     def test_pedestal_type_values(self) -> None:
         """PedestalTypeConfig should have expected values."""
-        from cabinets.application.config.schema import PedestalTypeConfig
+        from cabinets.application.config.schemas import PedestalTypeConfig
 
         assert PedestalTypeConfig.FILE.value == "file"
         assert PedestalTypeConfig.STORAGE.value == "storage"
@@ -4692,7 +4760,7 @@ class TestPedestalTypeConfig:
 
     def test_pedestal_type_count(self) -> None:
         """PedestalTypeConfig should have 3 values."""
-        from cabinets.application.config.schema import PedestalTypeConfig
+        from cabinets.application.config.schemas import PedestalTypeConfig
 
         assert len(PedestalTypeConfig) == 3
 
@@ -4702,7 +4770,7 @@ class TestDeskMountingConfig:
 
     def test_desk_mounting_values(self) -> None:
         """DeskMountingConfig should have expected values."""
-        from cabinets.application.config.schema import DeskMountingConfig
+        from cabinets.application.config.schemas import DeskMountingConfig
 
         assert DeskMountingConfig.PEDESTAL.value == "pedestal"
         assert DeskMountingConfig.FLOATING.value == "floating"
@@ -4710,7 +4778,7 @@ class TestDeskMountingConfig:
 
     def test_desk_mounting_count(self) -> None:
         """DeskMountingConfig should have 3 values."""
-        from cabinets.application.config.schema import DeskMountingConfig
+        from cabinets.application.config.schemas import DeskMountingConfig
 
         assert len(DeskMountingConfig) == 3
 
@@ -4720,7 +4788,7 @@ class TestDeskGrommetConfigSchema:
 
     def test_valid_grommet(self) -> None:
         """Valid grommet configuration should be accepted."""
-        from cabinets.application.config.schema import DeskGrommetConfigSchema
+        from cabinets.application.config.schemas import DeskGrommetConfigSchema
 
         config = DeskGrommetConfigSchema(x_position=24.0, y_position=21.0)
         assert config.x_position == 24.0
@@ -4729,28 +4797,28 @@ class TestDeskGrommetConfigSchema:
 
     def test_custom_diameter(self) -> None:
         """Custom diameter within range should be accepted."""
-        from cabinets.application.config.schema import DeskGrommetConfigSchema
+        from cabinets.application.config.schemas import DeskGrommetConfigSchema
 
         config = DeskGrommetConfigSchema(x_position=10.0, y_position=10.0, diameter=3.0)
         assert config.diameter == 3.0
 
     def test_diameter_at_minimum(self) -> None:
         """Diameter at minimum value should be accepted."""
-        from cabinets.application.config.schema import DeskGrommetConfigSchema
+        from cabinets.application.config.schemas import DeskGrommetConfigSchema
 
         config = DeskGrommetConfigSchema(x_position=10.0, y_position=10.0, diameter=1.5)
         assert config.diameter == 1.5
 
     def test_diameter_at_maximum(self) -> None:
         """Diameter at maximum value should be accepted."""
-        from cabinets.application.config.schema import DeskGrommetConfigSchema
+        from cabinets.application.config.schemas import DeskGrommetConfigSchema
 
         config = DeskGrommetConfigSchema(x_position=10.0, y_position=10.0, diameter=3.5)
         assert config.diameter == 3.5
 
     def test_diameter_below_minimum_raises_error(self) -> None:
         """Diameter below minimum should raise error."""
-        from cabinets.application.config.schema import DeskGrommetConfigSchema
+        from cabinets.application.config.schemas import DeskGrommetConfigSchema
 
         with pytest.raises(PydanticValidationError) as exc_info:
             DeskGrommetConfigSchema(x_position=10.0, y_position=10.0, diameter=1.0)
@@ -4758,7 +4826,7 @@ class TestDeskGrommetConfigSchema:
 
     def test_diameter_above_maximum_raises_error(self) -> None:
         """Diameter above maximum should raise error."""
-        from cabinets.application.config.schema import DeskGrommetConfigSchema
+        from cabinets.application.config.schemas import DeskGrommetConfigSchema
 
         with pytest.raises(PydanticValidationError) as exc_info:
             DeskGrommetConfigSchema(x_position=10.0, y_position=10.0, diameter=5.0)
@@ -4766,7 +4834,7 @@ class TestDeskGrommetConfigSchema:
 
     def test_x_position_required(self) -> None:
         """x_position is required."""
-        from cabinets.application.config.schema import DeskGrommetConfigSchema
+        from cabinets.application.config.schemas import DeskGrommetConfigSchema
 
         with pytest.raises(PydanticValidationError) as exc_info:
             DeskGrommetConfigSchema(y_position=10.0)  # type: ignore
@@ -4774,7 +4842,7 @@ class TestDeskGrommetConfigSchema:
 
     def test_y_position_required(self) -> None:
         """y_position is required."""
-        from cabinets.application.config.schema import DeskGrommetConfigSchema
+        from cabinets.application.config.schemas import DeskGrommetConfigSchema
 
         with pytest.raises(PydanticValidationError) as exc_info:
             DeskGrommetConfigSchema(x_position=10.0)  # type: ignore
@@ -4782,7 +4850,7 @@ class TestDeskGrommetConfigSchema:
 
     def test_rejects_unknown_fields(self) -> None:
         """Unknown fields should be rejected."""
-        from cabinets.application.config.schema import DeskGrommetConfigSchema
+        from cabinets.application.config.schemas import DeskGrommetConfigSchema
 
         with pytest.raises(PydanticValidationError) as exc_info:
             DeskGrommetConfigSchema(x_position=10.0, y_position=10.0, color="black")  # type: ignore
@@ -4794,7 +4862,7 @@ class TestDeskSurfaceConfigSchema:
 
     def test_defaults(self) -> None:
         """DeskSurfaceConfigSchema should have sensible defaults."""
-        from cabinets.application.config.schema import (
+        from cabinets.application.config.schemas import (
             DeskMountingConfig,
             DeskSurfaceConfigSchema,
             EdgeTreatmentConfig,
@@ -4812,7 +4880,7 @@ class TestDeskSurfaceConfigSchema:
 
     def test_desk_height_range(self) -> None:
         """desk_height should accept values within range."""
-        from cabinets.application.config.schema import DeskSurfaceConfigSchema
+        from cabinets.application.config.schemas import DeskSurfaceConfigSchema
 
         # At minimum
         config = DeskSurfaceConfigSchema(desk_height=26.0)
@@ -4824,7 +4892,7 @@ class TestDeskSurfaceConfigSchema:
 
     def test_desk_height_below_minimum_raises_error(self) -> None:
         """desk_height below minimum should raise error."""
-        from cabinets.application.config.schema import DeskSurfaceConfigSchema
+        from cabinets.application.config.schemas import DeskSurfaceConfigSchema
 
         with pytest.raises(PydanticValidationError) as exc_info:
             DeskSurfaceConfigSchema(desk_height=25.0)
@@ -4832,7 +4900,7 @@ class TestDeskSurfaceConfigSchema:
 
     def test_desk_height_above_maximum_raises_error(self) -> None:
         """desk_height above maximum should raise error."""
-        from cabinets.application.config.schema import DeskSurfaceConfigSchema
+        from cabinets.application.config.schemas import DeskSurfaceConfigSchema
 
         with pytest.raises(PydanticValidationError) as exc_info:
             DeskSurfaceConfigSchema(desk_height=51.0)
@@ -4840,7 +4908,7 @@ class TestDeskSurfaceConfigSchema:
 
     def test_depth_range(self) -> None:
         """depth should accept values within range."""
-        from cabinets.application.config.schema import DeskSurfaceConfigSchema
+        from cabinets.application.config.schemas import DeskSurfaceConfigSchema
 
         # At minimum
         config = DeskSurfaceConfigSchema(depth=18.0)
@@ -4852,7 +4920,7 @@ class TestDeskSurfaceConfigSchema:
 
     def test_depth_below_minimum_raises_error(self) -> None:
         """depth below minimum should raise error."""
-        from cabinets.application.config.schema import DeskSurfaceConfigSchema
+        from cabinets.application.config.schemas import DeskSurfaceConfigSchema
 
         with pytest.raises(PydanticValidationError) as exc_info:
             DeskSurfaceConfigSchema(depth=17.0)
@@ -4860,7 +4928,7 @@ class TestDeskSurfaceConfigSchema:
 
     def test_thickness_range(self) -> None:
         """thickness should accept values within range."""
-        from cabinets.application.config.schema import DeskSurfaceConfigSchema
+        from cabinets.application.config.schemas import DeskSurfaceConfigSchema
 
         # At minimum
         config = DeskSurfaceConfigSchema(thickness=0.75)
@@ -4872,7 +4940,7 @@ class TestDeskSurfaceConfigSchema:
 
     def test_edge_treatment_values(self) -> None:
         """All edge treatment values should be accepted."""
-        from cabinets.application.config.schema import (
+        from cabinets.application.config.schemas import (
             DeskSurfaceConfigSchema,
             EdgeTreatmentConfig,
         )
@@ -4883,7 +4951,7 @@ class TestDeskSurfaceConfigSchema:
 
     def test_mounting_values(self) -> None:
         """All mounting values should be accepted."""
-        from cabinets.application.config.schema import (
+        from cabinets.application.config.schemas import (
             DeskMountingConfig,
             DeskSurfaceConfigSchema,
         )
@@ -4894,7 +4962,7 @@ class TestDeskSurfaceConfigSchema:
 
     def test_with_grommets(self) -> None:
         """Surface with grommets should be accepted."""
-        from cabinets.application.config.schema import (
+        from cabinets.application.config.schemas import (
             DeskGrommetConfigSchema,
             DeskSurfaceConfigSchema,
         )
@@ -4911,7 +4979,7 @@ class TestDeskSurfaceConfigSchema:
 
     def test_exposed_edges(self) -> None:
         """Exposed edge flags should be configurable."""
-        from cabinets.application.config.schema import DeskSurfaceConfigSchema
+        from cabinets.application.config.schemas import DeskSurfaceConfigSchema
 
         config = DeskSurfaceConfigSchema(exposed_left=True, exposed_right=True)
         assert config.exposed_left is True
@@ -4919,7 +4987,7 @@ class TestDeskSurfaceConfigSchema:
 
     def test_rejects_unknown_fields(self) -> None:
         """Unknown fields should be rejected."""
-        from cabinets.application.config.schema import DeskSurfaceConfigSchema
+        from cabinets.application.config.schemas import DeskSurfaceConfigSchema
 
         with pytest.raises(PydanticValidationError) as exc_info:
             DeskSurfaceConfigSchema(color="walnut")  # type: ignore
@@ -4931,7 +4999,7 @@ class TestDeskPedestalConfigSchema:
 
     def test_defaults(self) -> None:
         """DeskPedestalConfigSchema should have sensible defaults."""
-        from cabinets.application.config.schema import (
+        from cabinets.application.config.schemas import (
             DeskPedestalConfigSchema,
             PedestalTypeConfig,
         )
@@ -4946,7 +5014,7 @@ class TestDeskPedestalConfigSchema:
 
     def test_pedestal_type_values(self) -> None:
         """All pedestal type values should be accepted."""
-        from cabinets.application.config.schema import (
+        from cabinets.application.config.schemas import (
             DeskPedestalConfigSchema,
             PedestalTypeConfig,
         )
@@ -4957,7 +5025,7 @@ class TestDeskPedestalConfigSchema:
 
     def test_width_range(self) -> None:
         """width should accept values within range."""
-        from cabinets.application.config.schema import DeskPedestalConfigSchema
+        from cabinets.application.config.schemas import DeskPedestalConfigSchema
 
         # At minimum
         config = DeskPedestalConfigSchema(width=12.0)
@@ -4969,7 +5037,7 @@ class TestDeskPedestalConfigSchema:
 
     def test_width_below_minimum_raises_error(self) -> None:
         """width below minimum should raise error."""
-        from cabinets.application.config.schema import DeskPedestalConfigSchema
+        from cabinets.application.config.schemas import DeskPedestalConfigSchema
 
         with pytest.raises(PydanticValidationError) as exc_info:
             DeskPedestalConfigSchema(width=11.0)
@@ -4977,7 +5045,7 @@ class TestDeskPedestalConfigSchema:
 
     def test_position_values(self) -> None:
         """Position should accept left and right."""
-        from cabinets.application.config.schema import DeskPedestalConfigSchema
+        from cabinets.application.config.schemas import DeskPedestalConfigSchema
 
         config = DeskPedestalConfigSchema(position="left")
         assert config.position == "left"
@@ -4987,7 +5055,7 @@ class TestDeskPedestalConfigSchema:
 
     def test_drawer_count_range(self) -> None:
         """drawer_count should accept values within range."""
-        from cabinets.application.config.schema import DeskPedestalConfigSchema
+        from cabinets.application.config.schemas import DeskPedestalConfigSchema
 
         # At minimum
         config = DeskPedestalConfigSchema(drawer_count=1)
@@ -4999,7 +5067,7 @@ class TestDeskPedestalConfigSchema:
 
     def test_drawer_count_below_minimum_raises_error(self) -> None:
         """drawer_count below minimum should raise error."""
-        from cabinets.application.config.schema import DeskPedestalConfigSchema
+        from cabinets.application.config.schemas import DeskPedestalConfigSchema
 
         with pytest.raises(PydanticValidationError) as exc_info:
             DeskPedestalConfigSchema(drawer_count=0)
@@ -5007,7 +5075,7 @@ class TestDeskPedestalConfigSchema:
 
     def test_file_type_values(self) -> None:
         """file_type should accept letter and legal."""
-        from cabinets.application.config.schema import DeskPedestalConfigSchema
+        from cabinets.application.config.schemas import DeskPedestalConfigSchema
 
         config = DeskPedestalConfigSchema(file_type="letter")
         assert config.file_type == "letter"
@@ -5017,14 +5085,14 @@ class TestDeskPedestalConfigSchema:
 
     def test_wire_chase_enabled(self) -> None:
         """wire_chase flag should be configurable."""
-        from cabinets.application.config.schema import DeskPedestalConfigSchema
+        from cabinets.application.config.schemas import DeskPedestalConfigSchema
 
         config = DeskPedestalConfigSchema(wire_chase=True)
         assert config.wire_chase is True
 
     def test_rejects_unknown_fields(self) -> None:
         """Unknown fields should be rejected."""
-        from cabinets.application.config.schema import DeskPedestalConfigSchema
+        from cabinets.application.config.schemas import DeskPedestalConfigSchema
 
         with pytest.raises(PydanticValidationError) as exc_info:
             DeskPedestalConfigSchema(color="black")  # type: ignore
@@ -5036,7 +5104,7 @@ class TestKeyboardTrayConfigSchema:
 
     def test_defaults(self) -> None:
         """KeyboardTrayConfigSchema should have sensible defaults."""
-        from cabinets.application.config.schema import KeyboardTrayConfigSchema
+        from cabinets.application.config.schemas import KeyboardTrayConfigSchema
 
         config = KeyboardTrayConfigSchema()
         assert config.width == 20.0
@@ -5047,7 +5115,7 @@ class TestKeyboardTrayConfigSchema:
 
     def test_width_range(self) -> None:
         """width should accept values within range."""
-        from cabinets.application.config.schema import KeyboardTrayConfigSchema
+        from cabinets.application.config.schemas import KeyboardTrayConfigSchema
 
         # At minimum
         config = KeyboardTrayConfigSchema(width=15.0)
@@ -5059,7 +5127,7 @@ class TestKeyboardTrayConfigSchema:
 
     def test_width_below_minimum_raises_error(self) -> None:
         """width below minimum should raise error."""
-        from cabinets.application.config.schema import KeyboardTrayConfigSchema
+        from cabinets.application.config.schemas import KeyboardTrayConfigSchema
 
         with pytest.raises(PydanticValidationError) as exc_info:
             KeyboardTrayConfigSchema(width=14.0)
@@ -5067,7 +5135,7 @@ class TestKeyboardTrayConfigSchema:
 
     def test_depth_range(self) -> None:
         """depth should accept values within range."""
-        from cabinets.application.config.schema import KeyboardTrayConfigSchema
+        from cabinets.application.config.schemas import KeyboardTrayConfigSchema
 
         # At minimum
         config = KeyboardTrayConfigSchema(depth=8.0)
@@ -5079,7 +5147,7 @@ class TestKeyboardTrayConfigSchema:
 
     def test_slide_length_range(self) -> None:
         """slide_length should accept values within range."""
-        from cabinets.application.config.schema import KeyboardTrayConfigSchema
+        from cabinets.application.config.schemas import KeyboardTrayConfigSchema
 
         # At minimum
         config = KeyboardTrayConfigSchema(slide_length=10)
@@ -5091,7 +5159,7 @@ class TestKeyboardTrayConfigSchema:
 
     def test_slide_length_below_minimum_raises_error(self) -> None:
         """slide_length below minimum should raise error."""
-        from cabinets.application.config.schema import KeyboardTrayConfigSchema
+        from cabinets.application.config.schemas import KeyboardTrayConfigSchema
 
         with pytest.raises(PydanticValidationError) as exc_info:
             KeyboardTrayConfigSchema(slide_length=9)
@@ -5099,7 +5167,7 @@ class TestKeyboardTrayConfigSchema:
 
     def test_enclosed_and_wrist_rest(self) -> None:
         """enclosed and wrist_rest flags should be configurable."""
-        from cabinets.application.config.schema import KeyboardTrayConfigSchema
+        from cabinets.application.config.schemas import KeyboardTrayConfigSchema
 
         config = KeyboardTrayConfigSchema(enclosed=True, wrist_rest=True)
         assert config.enclosed is True
@@ -5107,7 +5175,7 @@ class TestKeyboardTrayConfigSchema:
 
     def test_rejects_unknown_fields(self) -> None:
         """Unknown fields should be rejected."""
-        from cabinets.application.config.schema import KeyboardTrayConfigSchema
+        from cabinets.application.config.schemas import KeyboardTrayConfigSchema
 
         with pytest.raises(PydanticValidationError) as exc_info:
             KeyboardTrayConfigSchema(color="black")  # type: ignore
@@ -5119,7 +5187,7 @@ class TestHutchConfigSchema:
 
     def test_defaults(self) -> None:
         """HutchConfigSchema should have sensible defaults."""
-        from cabinets.application.config.schema import HutchConfigSchema
+        from cabinets.application.config.schemas import HutchConfigSchema
 
         config = HutchConfigSchema()
         assert config.height == 24.0
@@ -5131,7 +5199,7 @@ class TestHutchConfigSchema:
 
     def test_height_range(self) -> None:
         """height should accept values within range."""
-        from cabinets.application.config.schema import HutchConfigSchema
+        from cabinets.application.config.schemas import HutchConfigSchema
 
         # At minimum
         config = HutchConfigSchema(height=12.0)
@@ -5143,7 +5211,7 @@ class TestHutchConfigSchema:
 
     def test_height_below_minimum_raises_error(self) -> None:
         """height below minimum should raise error."""
-        from cabinets.application.config.schema import HutchConfigSchema
+        from cabinets.application.config.schemas import HutchConfigSchema
 
         with pytest.raises(PydanticValidationError) as exc_info:
             HutchConfigSchema(height=11.0)
@@ -5151,7 +5219,7 @@ class TestHutchConfigSchema:
 
     def test_depth_range(self) -> None:
         """depth should accept values within range."""
-        from cabinets.application.config.schema import HutchConfigSchema
+        from cabinets.application.config.schemas import HutchConfigSchema
 
         # At minimum
         config = HutchConfigSchema(depth=6.0)
@@ -5163,7 +5231,7 @@ class TestHutchConfigSchema:
 
     def test_head_clearance_range(self) -> None:
         """head_clearance should accept values within range."""
-        from cabinets.application.config.schema import HutchConfigSchema
+        from cabinets.application.config.schemas import HutchConfigSchema
 
         # At minimum
         config = HutchConfigSchema(head_clearance=12.0)
@@ -5175,7 +5243,7 @@ class TestHutchConfigSchema:
 
     def test_shelf_count_range(self) -> None:
         """shelf_count should accept values within range."""
-        from cabinets.application.config.schema import HutchConfigSchema
+        from cabinets.application.config.schemas import HutchConfigSchema
 
         # At minimum
         config = HutchConfigSchema(shelf_count=0)
@@ -5187,7 +5255,7 @@ class TestHutchConfigSchema:
 
     def test_shelf_count_above_maximum_raises_error(self) -> None:
         """shelf_count above maximum should raise error."""
-        from cabinets.application.config.schema import HutchConfigSchema
+        from cabinets.application.config.schemas import HutchConfigSchema
 
         with pytest.raises(PydanticValidationError) as exc_info:
             HutchConfigSchema(shelf_count=5)
@@ -5195,7 +5263,7 @@ class TestHutchConfigSchema:
 
     def test_doors_and_task_light_zone(self) -> None:
         """doors and task_light_zone flags should be configurable."""
-        from cabinets.application.config.schema import HutchConfigSchema
+        from cabinets.application.config.schemas import HutchConfigSchema
 
         config = HutchConfigSchema(doors=True, task_light_zone=False)
         assert config.doors is True
@@ -5203,7 +5271,7 @@ class TestHutchConfigSchema:
 
     def test_rejects_unknown_fields(self) -> None:
         """Unknown fields should be rejected."""
-        from cabinets.application.config.schema import HutchConfigSchema
+        from cabinets.application.config.schemas import HutchConfigSchema
 
         with pytest.raises(PydanticValidationError) as exc_info:
             HutchConfigSchema(color="white")  # type: ignore
@@ -5215,7 +5283,7 @@ class TestMonitorShelfConfigSchema:
 
     def test_defaults(self) -> None:
         """MonitorShelfConfigSchema should have sensible defaults."""
-        from cabinets.application.config.schema import MonitorShelfConfigSchema
+        from cabinets.application.config.schemas import MonitorShelfConfigSchema
 
         config = MonitorShelfConfigSchema()
         assert config.width == 24.0
@@ -5226,7 +5294,7 @@ class TestMonitorShelfConfigSchema:
 
     def test_width_range(self) -> None:
         """width should accept values within range."""
-        from cabinets.application.config.schema import MonitorShelfConfigSchema
+        from cabinets.application.config.schemas import MonitorShelfConfigSchema
 
         # At minimum
         config = MonitorShelfConfigSchema(width=12.0)
@@ -5238,7 +5306,7 @@ class TestMonitorShelfConfigSchema:
 
     def test_width_below_minimum_raises_error(self) -> None:
         """width below minimum should raise error."""
-        from cabinets.application.config.schema import MonitorShelfConfigSchema
+        from cabinets.application.config.schemas import MonitorShelfConfigSchema
 
         with pytest.raises(PydanticValidationError) as exc_info:
             MonitorShelfConfigSchema(width=11.0)
@@ -5246,7 +5314,7 @@ class TestMonitorShelfConfigSchema:
 
     def test_height_range(self) -> None:
         """height should accept values within range."""
-        from cabinets.application.config.schema import MonitorShelfConfigSchema
+        from cabinets.application.config.schemas import MonitorShelfConfigSchema
 
         # At minimum
         config = MonitorShelfConfigSchema(height=4.0)
@@ -5258,7 +5326,7 @@ class TestMonitorShelfConfigSchema:
 
     def test_depth_range(self) -> None:
         """depth should accept values within range."""
-        from cabinets.application.config.schema import MonitorShelfConfigSchema
+        from cabinets.application.config.schemas import MonitorShelfConfigSchema
 
         # At minimum
         config = MonitorShelfConfigSchema(depth=6.0)
@@ -5270,7 +5338,7 @@ class TestMonitorShelfConfigSchema:
 
     def test_cable_pass_and_arm_mount(self) -> None:
         """cable_pass and arm_mount flags should be configurable."""
-        from cabinets.application.config.schema import MonitorShelfConfigSchema
+        from cabinets.application.config.schemas import MonitorShelfConfigSchema
 
         config = MonitorShelfConfigSchema(cable_pass=False, arm_mount=True)
         assert config.cable_pass is False
@@ -5278,7 +5346,7 @@ class TestMonitorShelfConfigSchema:
 
     def test_rejects_unknown_fields(self) -> None:
         """Unknown fields should be rejected."""
-        from cabinets.application.config.schema import MonitorShelfConfigSchema
+        from cabinets.application.config.schemas import MonitorShelfConfigSchema
 
         with pytest.raises(PydanticValidationError) as exc_info:
             MonitorShelfConfigSchema(color="black")  # type: ignore
@@ -5290,7 +5358,7 @@ class TestDeskSectionConfigSchema:
 
     def test_defaults(self) -> None:
         """DeskSectionConfigSchema should have sensible defaults."""
-        from cabinets.application.config.schema import (
+        from cabinets.application.config.schemas import (
             DeskSectionConfigSchema,
             DeskTypeConfig,
         )
@@ -5307,7 +5375,7 @@ class TestDeskSectionConfigSchema:
 
     def test_desk_type_values(self) -> None:
         """All desk type values should be accepted."""
-        from cabinets.application.config.schema import (
+        from cabinets.application.config.schemas import (
             DeskSectionConfigSchema,
             DeskTypeConfig,
         )
@@ -5319,7 +5387,7 @@ class TestDeskSectionConfigSchema:
 
     def test_knee_clearance_width_minimum(self) -> None:
         """knee_clearance_width should accept values at or above minimum."""
-        from cabinets.application.config.schema import DeskSectionConfigSchema
+        from cabinets.application.config.schemas import DeskSectionConfigSchema
 
         # At minimum
         config = DeskSectionConfigSchema(knee_clearance_width=20.0)
@@ -5331,7 +5399,7 @@ class TestDeskSectionConfigSchema:
 
     def test_knee_clearance_width_below_minimum_raises_error(self) -> None:
         """knee_clearance_width below minimum should raise error."""
-        from cabinets.application.config.schema import DeskSectionConfigSchema
+        from cabinets.application.config.schemas import DeskSectionConfigSchema
 
         with pytest.raises(PydanticValidationError) as exc_info:
             DeskSectionConfigSchema(knee_clearance_width=19.0)
@@ -5339,7 +5407,7 @@ class TestDeskSectionConfigSchema:
 
     def test_with_pedestals(self) -> None:
         """Desk with pedestals should be accepted."""
-        from cabinets.application.config.schema import (
+        from cabinets.application.config.schemas import (
             DeskPedestalConfigSchema,
             DeskSectionConfigSchema,
         )
@@ -5356,7 +5424,7 @@ class TestDeskSectionConfigSchema:
 
     def test_with_keyboard_tray(self) -> None:
         """Desk with keyboard tray should be accepted."""
-        from cabinets.application.config.schema import (
+        from cabinets.application.config.schemas import (
             DeskSectionConfigSchema,
             KeyboardTrayConfigSchema,
         )
@@ -5370,7 +5438,7 @@ class TestDeskSectionConfigSchema:
 
     def test_with_hutch(self) -> None:
         """Desk with hutch should be accepted."""
-        from cabinets.application.config.schema import (
+        from cabinets.application.config.schemas import (
             DeskSectionConfigSchema,
             HutchConfigSchema,
         )
@@ -5384,7 +5452,7 @@ class TestDeskSectionConfigSchema:
 
     def test_with_monitor_shelf(self) -> None:
         """Desk with monitor shelf should be accepted."""
-        from cabinets.application.config.schema import (
+        from cabinets.application.config.schemas import (
             DeskSectionConfigSchema,
             MonitorShelfConfigSchema,
         )
@@ -5398,7 +5466,7 @@ class TestDeskSectionConfigSchema:
 
     def test_standing_desk_requires_minimum_height(self) -> None:
         """Standing desk with height below 38\" should raise error."""
-        from cabinets.application.config.schema import (
+        from cabinets.application.config.schemas import (
             DeskSectionConfigSchema,
             DeskSurfaceConfigSchema,
             DeskTypeConfig,
@@ -5415,7 +5483,7 @@ class TestDeskSectionConfigSchema:
 
     def test_standing_desk_valid_height(self) -> None:
         """Standing desk with height at or above 38\" should be accepted."""
-        from cabinets.application.config.schema import (
+        from cabinets.application.config.schemas import (
             DeskSectionConfigSchema,
             DeskSurfaceConfigSchema,
             DeskTypeConfig,
@@ -5438,14 +5506,14 @@ class TestDeskSectionConfigSchema:
 
     def test_modesty_panel_configurable(self) -> None:
         """modesty_panel flag should be configurable."""
-        from cabinets.application.config.schema import DeskSectionConfigSchema
+        from cabinets.application.config.schemas import DeskSectionConfigSchema
 
         config = DeskSectionConfigSchema(modesty_panel=False)
         assert config.modesty_panel is False
 
     def test_rejects_unknown_fields(self) -> None:
         """Unknown fields should be rejected."""
-        from cabinets.application.config.schema import DeskSectionConfigSchema
+        from cabinets.application.config.schemas import DeskSectionConfigSchema
 
         with pytest.raises(PydanticValidationError) as exc_info:
             DeskSectionConfigSchema(color="walnut")  # type: ignore
@@ -5453,7 +5521,7 @@ class TestDeskSectionConfigSchema:
 
     def test_full_desk_configuration(self) -> None:
         """Full desk configuration with all components should be accepted."""
-        from cabinets.application.config.schema import (
+        from cabinets.application.config.schemas import (
             DeskGrommetConfigSchema,
             DeskPedestalConfigSchema,
             DeskSectionConfigSchema,
@@ -5473,7 +5541,9 @@ class TestDeskSectionConfigSchema:
                 thickness=1.0,
                 edge_treatment=EdgeTreatmentConfig.BULLNOSE,
                 grommets=[
-                    DeskGrommetConfigSchema(x_position=24.0, y_position=21.0, diameter=2.5)
+                    DeskGrommetConfigSchema(
+                        x_position=24.0, y_position=21.0, diameter=2.5
+                    )
                 ],
                 exposed_left=True,
             ),
@@ -5512,7 +5582,7 @@ class TestEquipmentTypeConfig:
 
     def test_equipment_type_values(self) -> None:
         """EquipmentTypeConfig should have all expected values."""
-        from cabinets.application.config.schema import EquipmentTypeConfig
+        from cabinets.application.config.schemas import EquipmentTypeConfig
 
         assert EquipmentTypeConfig.RECEIVER.value == "receiver"
         assert EquipmentTypeConfig.CONSOLE_HORIZONTAL.value == "console_horizontal"
@@ -5525,7 +5595,7 @@ class TestEquipmentTypeConfig:
 
     def test_equipment_type_count(self) -> None:
         """EquipmentTypeConfig should have exactly 8 values."""
-        from cabinets.application.config.schema import EquipmentTypeConfig
+        from cabinets.application.config.schemas import EquipmentTypeConfig
 
         assert len(EquipmentTypeConfig) == 8
 
@@ -5535,7 +5605,7 @@ class TestMediaVentilationTypeConfig:
 
     def test_media_ventilation_type_values(self) -> None:
         """MediaVentilationTypeConfig should have all expected values."""
-        from cabinets.application.config.schema import MediaVentilationTypeConfig
+        from cabinets.application.config.schemas import MediaVentilationTypeConfig
 
         assert MediaVentilationTypeConfig.PASSIVE_REAR.value == "passive_rear"
         assert MediaVentilationTypeConfig.PASSIVE_BOTTOM.value == "passive_bottom"
@@ -5545,7 +5615,7 @@ class TestMediaVentilationTypeConfig:
 
     def test_media_ventilation_type_count(self) -> None:
         """MediaVentilationTypeConfig should have exactly 5 values."""
-        from cabinets.application.config.schema import MediaVentilationTypeConfig
+        from cabinets.application.config.schemas import MediaVentilationTypeConfig
 
         assert len(MediaVentilationTypeConfig) == 5
 
@@ -5555,7 +5625,7 @@ class TestSoundbarTypeConfig:
 
     def test_soundbar_type_values(self) -> None:
         """SoundbarTypeConfig should have all expected values."""
-        from cabinets.application.config.schema import SoundbarTypeConfig
+        from cabinets.application.config.schemas import SoundbarTypeConfig
 
         assert SoundbarTypeConfig.COMPACT.value == "compact"
         assert SoundbarTypeConfig.STANDARD.value == "standard"
@@ -5564,7 +5634,7 @@ class TestSoundbarTypeConfig:
 
     def test_soundbar_type_count(self) -> None:
         """SoundbarTypeConfig should have exactly 4 values."""
-        from cabinets.application.config.schema import SoundbarTypeConfig
+        from cabinets.application.config.schemas import SoundbarTypeConfig
 
         assert len(SoundbarTypeConfig) == 4
 
@@ -5574,7 +5644,7 @@ class TestSpeakerTypeConfig:
 
     def test_speaker_type_values(self) -> None:
         """SpeakerTypeConfig should have all expected values."""
-        from cabinets.application.config.schema import SpeakerTypeConfig
+        from cabinets.application.config.schemas import SpeakerTypeConfig
 
         assert SpeakerTypeConfig.CENTER_CHANNEL.value == "center_channel"
         assert SpeakerTypeConfig.BOOKSHELF.value == "bookshelf"
@@ -5582,7 +5652,7 @@ class TestSpeakerTypeConfig:
 
     def test_speaker_type_count(self) -> None:
         """SpeakerTypeConfig should have exactly 3 values."""
-        from cabinets.application.config.schema import SpeakerTypeConfig
+        from cabinets.application.config.schemas import SpeakerTypeConfig
 
         assert len(SpeakerTypeConfig) == 3
 
@@ -5592,7 +5662,7 @@ class TestGrommetPositionConfig:
 
     def test_grommet_position_values(self) -> None:
         """GrommetPositionConfig should have all expected values."""
-        from cabinets.application.config.schema import GrommetPositionConfig
+        from cabinets.application.config.schemas import GrommetPositionConfig
 
         assert GrommetPositionConfig.CENTER_REAR.value == "center_rear"
         assert GrommetPositionConfig.LEFT_REAR.value == "left_rear"
@@ -5601,7 +5671,7 @@ class TestGrommetPositionConfig:
 
     def test_grommet_position_count(self) -> None:
         """GrommetPositionConfig should have exactly 4 values."""
-        from cabinets.application.config.schema import GrommetPositionConfig
+        from cabinets.application.config.schemas import GrommetPositionConfig
 
         assert len(GrommetPositionConfig) == 4
 
@@ -5611,7 +5681,7 @@ class TestEntertainmentLayoutTypeConfig:
 
     def test_entertainment_layout_type_values(self) -> None:
         """EntertainmentLayoutTypeConfig should have all expected values."""
-        from cabinets.application.config.schema import EntertainmentLayoutTypeConfig
+        from cabinets.application.config.schemas import EntertainmentLayoutTypeConfig
 
         assert EntertainmentLayoutTypeConfig.CONSOLE.value == "console"
         assert EntertainmentLayoutTypeConfig.WALL_UNIT.value == "wall_unit"
@@ -5620,7 +5690,7 @@ class TestEntertainmentLayoutTypeConfig:
 
     def test_entertainment_layout_type_count(self) -> None:
         """EntertainmentLayoutTypeConfig should have exactly 4 values."""
-        from cabinets.application.config.schema import EntertainmentLayoutTypeConfig
+        from cabinets.application.config.schemas import EntertainmentLayoutTypeConfig
 
         assert len(EntertainmentLayoutTypeConfig) == 4
 
@@ -5630,14 +5700,14 @@ class TestTVMountingConfig:
 
     def test_tv_mounting_values(self) -> None:
         """TVMountingConfig should have all expected values."""
-        from cabinets.application.config.schema import TVMountingConfig
+        from cabinets.application.config.schemas import TVMountingConfig
 
         assert TVMountingConfig.WALL.value == "wall"
         assert TVMountingConfig.STAND.value == "stand"
 
     def test_tv_mounting_count(self) -> None:
         """TVMountingConfig should have exactly 2 values."""
-        from cabinets.application.config.schema import TVMountingConfig
+        from cabinets.application.config.schemas import TVMountingConfig
 
         assert len(TVMountingConfig) == 2
 
@@ -5647,7 +5717,7 @@ class TestEquipmentConfigSchema:
 
     def test_defaults(self) -> None:
         """EquipmentConfigSchema should have sensible defaults."""
-        from cabinets.application.config.schema import (
+        from cabinets.application.config.schemas import (
             EquipmentConfigSchema,
             EquipmentTypeConfig,
             GrommetPositionConfig,
@@ -5663,7 +5733,7 @@ class TestEquipmentConfigSchema:
 
     def test_grommet_diameter_constraints(self) -> None:
         """EquipmentConfigSchema should enforce grommet diameter constraints."""
-        from cabinets.application.config.schema import EquipmentConfigSchema
+        from cabinets.application.config.schemas import EquipmentConfigSchema
 
         # Valid values
         config = EquipmentConfigSchema(grommet_diameter=1.5)
@@ -5684,7 +5754,7 @@ class TestEquipmentConfigSchema:
 
     def test_depth_constraints(self) -> None:
         """EquipmentConfigSchema should enforce depth constraints."""
-        from cabinets.application.config.schema import EquipmentConfigSchema
+        from cabinets.application.config.schemas import EquipmentConfigSchema
 
         # Valid values
         config = EquipmentConfigSchema(depth=12.0)
@@ -5705,7 +5775,7 @@ class TestEquipmentConfigSchema:
 
     def test_vertical_clearance_constraints(self) -> None:
         """EquipmentConfigSchema should enforce vertical clearance constraints."""
-        from cabinets.application.config.schema import EquipmentConfigSchema
+        from cabinets.application.config.schemas import EquipmentConfigSchema
 
         # Valid values
         config = EquipmentConfigSchema(vertical_clearance=4.0)
@@ -5726,7 +5796,7 @@ class TestEquipmentConfigSchema:
 
     def test_rejects_unknown_fields(self) -> None:
         """EquipmentConfigSchema should reject unknown fields."""
-        from cabinets.application.config.schema import EquipmentConfigSchema
+        from cabinets.application.config.schemas import EquipmentConfigSchema
 
         with pytest.raises(PydanticValidationError) as exc_info:
             EquipmentConfigSchema(color="black")  # type: ignore
@@ -5738,7 +5808,7 @@ class TestMediaVentilationConfigSchema:
 
     def test_defaults(self) -> None:
         """MediaVentilationConfigSchema should have sensible defaults."""
-        from cabinets.application.config.schema import (
+        from cabinets.application.config.schemas import (
             MediaVentilationConfigSchema,
             MediaVentilationTypeConfig,
             VentilationPatternConfig,
@@ -5754,7 +5824,7 @@ class TestMediaVentilationConfigSchema:
 
     def test_open_area_percent_constraints(self) -> None:
         """MediaVentilationConfigSchema should enforce open area percentage constraints."""
-        from cabinets.application.config.schema import MediaVentilationConfigSchema
+        from cabinets.application.config.schemas import MediaVentilationConfigSchema
 
         # Valid values
         config = MediaVentilationConfigSchema(open_area_percent=10.0)
@@ -5775,7 +5845,7 @@ class TestMediaVentilationConfigSchema:
 
     def test_fan_size_mm_constraints(self) -> None:
         """MediaVentilationConfigSchema should enforce fan size constraints."""
-        from cabinets.application.config.schema import MediaVentilationConfigSchema
+        from cabinets.application.config.schemas import MediaVentilationConfigSchema
 
         # Valid values
         config = MediaVentilationConfigSchema(fan_size_mm=80)
@@ -5796,7 +5866,7 @@ class TestMediaVentilationConfigSchema:
 
     def test_rejects_unknown_fields(self) -> None:
         """MediaVentilationConfigSchema should reject unknown fields."""
-        from cabinets.application.config.schema import MediaVentilationConfigSchema
+        from cabinets.application.config.schemas import MediaVentilationConfigSchema
 
         with pytest.raises(PydanticValidationError) as exc_info:
             MediaVentilationConfigSchema(filter_type="hepa")  # type: ignore
@@ -5808,7 +5878,10 @@ class TestSoundbarConfigSchema:
 
     def test_defaults(self) -> None:
         """SoundbarConfigSchema should have sensible defaults."""
-        from cabinets.application.config.schema import SoundbarConfigSchema, SoundbarTypeConfig
+        from cabinets.application.config.schemas import (
+            SoundbarConfigSchema,
+            SoundbarTypeConfig,
+        )
 
         config = SoundbarConfigSchema()
         assert config.soundbar_type == SoundbarTypeConfig.STANDARD
@@ -5822,7 +5895,7 @@ class TestSoundbarConfigSchema:
 
     def test_soundbar_width_constraints(self) -> None:
         """SoundbarConfigSchema should enforce width constraints."""
-        from cabinets.application.config.schema import SoundbarConfigSchema
+        from cabinets.application.config.schemas import SoundbarConfigSchema
 
         # Valid values
         config = SoundbarConfigSchema(soundbar_width=18.0)
@@ -5843,7 +5916,7 @@ class TestSoundbarConfigSchema:
 
     def test_soundbar_height_constraints(self) -> None:
         """SoundbarConfigSchema should enforce height constraints."""
-        from cabinets.application.config.schema import SoundbarConfigSchema
+        from cabinets.application.config.schemas import SoundbarConfigSchema
 
         # Valid values
         config = SoundbarConfigSchema(soundbar_height=2.0)
@@ -5864,7 +5937,7 @@ class TestSoundbarConfigSchema:
 
     def test_soundbar_depth_constraints(self) -> None:
         """SoundbarConfigSchema should enforce depth constraints."""
-        from cabinets.application.config.schema import SoundbarConfigSchema
+        from cabinets.application.config.schemas import SoundbarConfigSchema
 
         # Valid values
         config = SoundbarConfigSchema(soundbar_depth=2.0)
@@ -5885,7 +5958,7 @@ class TestSoundbarConfigSchema:
 
     def test_side_clearance_constraints(self) -> None:
         """SoundbarConfigSchema should enforce side clearance constraints."""
-        from cabinets.application.config.schema import SoundbarConfigSchema
+        from cabinets.application.config.schemas import SoundbarConfigSchema
 
         # Zero is allowed
         config = SoundbarConfigSchema(side_clearance=0.0)
@@ -5906,7 +5979,7 @@ class TestSoundbarConfigSchema:
 
     def test_ceiling_clearance_constraints(self) -> None:
         """SoundbarConfigSchema should enforce ceiling clearance constraints."""
-        from cabinets.application.config.schema import SoundbarConfigSchema
+        from cabinets.application.config.schemas import SoundbarConfigSchema
 
         # Valid values
         config = SoundbarConfigSchema(ceiling_clearance=12.0)
@@ -5927,7 +6000,7 @@ class TestSoundbarConfigSchema:
 
     def test_rejects_unknown_fields(self) -> None:
         """SoundbarConfigSchema should reject unknown fields."""
-        from cabinets.application.config.schema import SoundbarConfigSchema
+        from cabinets.application.config.schemas import SoundbarConfigSchema
 
         with pytest.raises(PydanticValidationError) as exc_info:
             SoundbarConfigSchema(brand="sonos")  # type: ignore
@@ -5939,7 +6012,10 @@ class TestSpeakerConfigSchema:
 
     def test_defaults(self) -> None:
         """SpeakerConfigSchema should have sensible defaults."""
-        from cabinets.application.config.schema import SpeakerConfigSchema, SpeakerTypeConfig
+        from cabinets.application.config.schemas import (
+            SpeakerConfigSchema,
+            SpeakerTypeConfig,
+        )
 
         config = SpeakerConfigSchema()
         assert config.speaker_type == SpeakerTypeConfig.CENTER_CHANNEL
@@ -5953,7 +6029,7 @@ class TestSpeakerConfigSchema:
 
     def test_speaker_width_constraints(self) -> None:
         """SpeakerConfigSchema should enforce width constraints."""
-        from cabinets.application.config.schema import SpeakerConfigSchema
+        from cabinets.application.config.schemas import SpeakerConfigSchema
 
         # Valid values
         config = SpeakerConfigSchema(speaker_width=4.0)
@@ -5974,7 +6050,7 @@ class TestSpeakerConfigSchema:
 
     def test_alcove_height_from_floor_constraints(self) -> None:
         """SpeakerConfigSchema should enforce alcove height constraints."""
-        from cabinets.application.config.schema import SpeakerConfigSchema
+        from cabinets.application.config.schemas import SpeakerConfigSchema
 
         # Valid values
         config = SpeakerConfigSchema(alcove_height_from_floor=6.0)
@@ -5995,7 +6071,7 @@ class TestSpeakerConfigSchema:
 
     def test_port_clearance_constraints(self) -> None:
         """SpeakerConfigSchema should enforce port clearance constraints."""
-        from cabinets.application.config.schema import SpeakerConfigSchema
+        from cabinets.application.config.schemas import SpeakerConfigSchema
 
         # Valid values
         config = SpeakerConfigSchema(port_clearance=2.0)
@@ -6016,7 +6092,7 @@ class TestSpeakerConfigSchema:
 
     def test_rejects_unknown_fields(self) -> None:
         """SpeakerConfigSchema should reject unknown fields."""
-        from cabinets.application.config.schema import SpeakerConfigSchema
+        from cabinets.application.config.schemas import SpeakerConfigSchema
 
         with pytest.raises(PydanticValidationError) as exc_info:
             SpeakerConfigSchema(brand="klipsch")  # type: ignore
@@ -6028,7 +6104,7 @@ class TestTVConfigSchema:
 
     def test_defaults(self) -> None:
         """TVConfigSchema should have sensible defaults."""
-        from cabinets.application.config.schema import TVConfigSchema, TVMountingConfig
+        from cabinets.application.config.schemas import TVConfigSchema, TVMountingConfig
 
         config = TVConfigSchema()
         assert config.screen_size == 55
@@ -6038,7 +6114,7 @@ class TestTVConfigSchema:
 
     def test_screen_size_literal_enforcement(self) -> None:
         """TVConfigSchema should only accept valid screen sizes."""
-        from cabinets.application.config.schema import TVConfigSchema
+        from cabinets.application.config.schemas import TVConfigSchema
 
         # Valid screen sizes
         for size in [50, 55, 65, 75, 85]:
@@ -6052,7 +6128,7 @@ class TestTVConfigSchema:
 
     def test_center_height_constraints(self) -> None:
         """TVConfigSchema should enforce center height constraints."""
-        from cabinets.application.config.schema import TVConfigSchema
+        from cabinets.application.config.schemas import TVConfigSchema
 
         # Valid values
         config = TVConfigSchema(center_height=24.0)
@@ -6073,7 +6149,7 @@ class TestTVConfigSchema:
 
     def test_rejects_unknown_fields(self) -> None:
         """TVConfigSchema should reject unknown fields."""
-        from cabinets.application.config.schema import TVConfigSchema
+        from cabinets.application.config.schemas import TVConfigSchema
 
         with pytest.raises(PydanticValidationError) as exc_info:
             TVConfigSchema(brand="samsung")  # type: ignore
@@ -6085,7 +6161,7 @@ class TestMediaStorageConfigSchema:
 
     def test_defaults(self) -> None:
         """MediaStorageConfigSchema should have sensible defaults."""
-        from cabinets.application.config.schema import MediaStorageConfigSchema
+        from cabinets.application.config.schemas import MediaStorageConfigSchema
 
         config = MediaStorageConfigSchema()
         assert config.storage_type == "mixed"
@@ -6094,7 +6170,7 @@ class TestMediaStorageConfigSchema:
 
     def test_storage_type_literal_enforcement(self) -> None:
         """MediaStorageConfigSchema should only accept valid storage types."""
-        from cabinets.application.config.schema import MediaStorageConfigSchema
+        from cabinets.application.config.schemas import MediaStorageConfigSchema
 
         # Valid storage types
         for stype in ["dvd_drawer", "game_cubbies", "controller_drawer", "mixed"]:
@@ -6108,7 +6184,7 @@ class TestMediaStorageConfigSchema:
 
     def test_drawer_count_constraints(self) -> None:
         """MediaStorageConfigSchema should enforce drawer count constraints."""
-        from cabinets.application.config.schema import MediaStorageConfigSchema
+        from cabinets.application.config.schemas import MediaStorageConfigSchema
 
         # Valid values
         config = MediaStorageConfigSchema(drawer_count=1)
@@ -6129,7 +6205,7 @@ class TestMediaStorageConfigSchema:
 
     def test_rejects_unknown_fields(self) -> None:
         """MediaStorageConfigSchema should reject unknown fields."""
-        from cabinets.application.config.schema import MediaStorageConfigSchema
+        from cabinets.application.config.schemas import MediaStorageConfigSchema
 
         with pytest.raises(PydanticValidationError) as exc_info:
             MediaStorageConfigSchema(material="oak")  # type: ignore
@@ -6141,7 +6217,7 @@ class TestMediaCableManagementConfigSchema:
 
     def test_defaults(self) -> None:
         """MediaCableManagementConfigSchema should have sensible defaults."""
-        from cabinets.application.config.schema import MediaCableManagementConfigSchema
+        from cabinets.application.config.schemas import MediaCableManagementConfigSchema
 
         config = MediaCableManagementConfigSchema()
         assert config.vertical_chase is False
@@ -6151,7 +6227,7 @@ class TestMediaCableManagementConfigSchema:
 
     def test_chase_width_constraints(self) -> None:
         """MediaCableManagementConfigSchema should enforce chase width constraints."""
-        from cabinets.application.config.schema import MediaCableManagementConfigSchema
+        from cabinets.application.config.schemas import MediaCableManagementConfigSchema
 
         # Valid values
         config = MediaCableManagementConfigSchema(chase_width=2.0)
@@ -6172,7 +6248,7 @@ class TestMediaCableManagementConfigSchema:
 
     def test_grommets_per_shelf_constraints(self) -> None:
         """MediaCableManagementConfigSchema should enforce grommets per shelf constraints."""
-        from cabinets.application.config.schema import MediaCableManagementConfigSchema
+        from cabinets.application.config.schemas import MediaCableManagementConfigSchema
 
         # Valid values
         config = MediaCableManagementConfigSchema(grommets_per_shelf=0)
@@ -6193,7 +6269,7 @@ class TestMediaCableManagementConfigSchema:
 
     def test_grommet_diameter_constraints(self) -> None:
         """MediaCableManagementConfigSchema should enforce grommet diameter constraints."""
-        from cabinets.application.config.schema import MediaCableManagementConfigSchema
+        from cabinets.application.config.schemas import MediaCableManagementConfigSchema
 
         # Valid values
         config = MediaCableManagementConfigSchema(grommet_diameter=1.5)
@@ -6214,7 +6290,7 @@ class TestMediaCableManagementConfigSchema:
 
     def test_rejects_unknown_fields(self) -> None:
         """MediaCableManagementConfigSchema should reject unknown fields."""
-        from cabinets.application.config.schema import MediaCableManagementConfigSchema
+        from cabinets.application.config.schemas import MediaCableManagementConfigSchema
 
         with pytest.raises(PydanticValidationError) as exc_info:
             MediaCableManagementConfigSchema(cable_type="hdmi")  # type: ignore
@@ -6226,7 +6302,7 @@ class TestMediaSectionConfigSchema:
 
     def test_defaults(self) -> None:
         """MediaSectionConfigSchema should have sensible defaults."""
-        from cabinets.application.config.schema import MediaSectionConfigSchema
+        from cabinets.application.config.schemas import MediaSectionConfigSchema
 
         config = MediaSectionConfigSchema()
         assert config.section_type == "equipment"
@@ -6238,7 +6314,7 @@ class TestMediaSectionConfigSchema:
 
     def test_section_type_literal_enforcement(self) -> None:
         """MediaSectionConfigSchema should only accept valid section types."""
-        from cabinets.application.config.schema import MediaSectionConfigSchema
+        from cabinets.application.config.schemas import MediaSectionConfigSchema
 
         # Valid section types
         for stype in ["equipment", "soundbar", "speaker", "storage", "ventilated"]:
@@ -6252,7 +6328,7 @@ class TestMediaSectionConfigSchema:
 
     def test_with_equipment_config(self) -> None:
         """MediaSectionConfigSchema should accept equipment configuration."""
-        from cabinets.application.config.schema import (
+        from cabinets.application.config.schemas import (
             EquipmentConfigSchema,
             EquipmentTypeConfig,
             MediaSectionConfigSchema,
@@ -6270,7 +6346,7 @@ class TestMediaSectionConfigSchema:
 
     def test_with_ventilation_config(self) -> None:
         """MediaSectionConfigSchema should accept ventilation configuration."""
-        from cabinets.application.config.schema import (
+        from cabinets.application.config.schemas import (
             MediaSectionConfigSchema,
             MediaVentilationConfigSchema,
             MediaVentilationTypeConfig,
@@ -6284,11 +6360,13 @@ class TestMediaSectionConfigSchema:
         )
         assert config.section_type == "ventilated"
         assert config.ventilation is not None
-        assert config.ventilation.ventilation_type == MediaVentilationTypeConfig.ACTIVE_FAN
+        assert (
+            config.ventilation.ventilation_type == MediaVentilationTypeConfig.ACTIVE_FAN
+        )
 
     def test_with_soundbar_config(self) -> None:
         """MediaSectionConfigSchema should accept soundbar configuration."""
-        from cabinets.application.config.schema import (
+        from cabinets.application.config.schemas import (
             MediaSectionConfigSchema,
             SoundbarConfigSchema,
             SoundbarTypeConfig,
@@ -6307,7 +6385,7 @@ class TestMediaSectionConfigSchema:
 
     def test_with_speaker_config(self) -> None:
         """MediaSectionConfigSchema should accept speaker configuration."""
-        from cabinets.application.config.schema import (
+        from cabinets.application.config.schemas import (
             MediaSectionConfigSchema,
             SpeakerConfigSchema,
             SpeakerTypeConfig,
@@ -6325,11 +6403,16 @@ class TestMediaSectionConfigSchema:
 
     def test_with_storage_config(self) -> None:
         """MediaSectionConfigSchema should accept storage configuration."""
-        from cabinets.application.config.schema import MediaSectionConfigSchema, MediaStorageConfigSchema
+        from cabinets.application.config.schemas import (
+            MediaSectionConfigSchema,
+            MediaStorageConfigSchema,
+        )
 
         config = MediaSectionConfigSchema(
             section_type="storage",
-            storage=MediaStorageConfigSchema(storage_type="game_cubbies", drawer_count=4),
+            storage=MediaStorageConfigSchema(
+                storage_type="game_cubbies", drawer_count=4
+            ),
         )
         assert config.section_type == "storage"
         assert config.storage is not None
@@ -6337,7 +6420,7 @@ class TestMediaSectionConfigSchema:
 
     def test_rejects_unknown_fields(self) -> None:
         """MediaSectionConfigSchema should reject unknown fields."""
-        from cabinets.application.config.schema import MediaSectionConfigSchema
+        from cabinets.application.config.schemas import MediaSectionConfigSchema
 
         with pytest.raises(PydanticValidationError) as exc_info:
             MediaSectionConfigSchema(color="black")  # type: ignore
@@ -6349,7 +6432,7 @@ class TestEntertainmentCenterConfigSchema:
 
     def test_defaults(self) -> None:
         """EntertainmentCenterConfigSchema should have sensible defaults."""
-        from cabinets.application.config.schema import (
+        from cabinets.application.config.schemas import (
             EntertainmentCenterConfigSchema,
             EntertainmentLayoutTypeConfig,
             TVMountingConfig,
@@ -6367,7 +6450,7 @@ class TestEntertainmentCenterConfigSchema:
 
     def test_layout_type_enum_values(self) -> None:
         """EntertainmentCenterConfigSchema should accept all layout types."""
-        from cabinets.application.config.schema import (
+        from cabinets.application.config.schemas import (
             EntertainmentCenterConfigSchema,
             EntertainmentLayoutTypeConfig,
         )
@@ -6378,7 +6461,7 @@ class TestEntertainmentCenterConfigSchema:
 
     def test_flanking_width_constraints(self) -> None:
         """EntertainmentCenterConfigSchema should enforce flanking width constraints."""
-        from cabinets.application.config.schema import EntertainmentCenterConfigSchema
+        from cabinets.application.config.schemas import EntertainmentCenterConfigSchema
 
         # Valid values
         config = EntertainmentCenterConfigSchema(flanking_width=12.0)
@@ -6399,14 +6482,16 @@ class TestEntertainmentCenterConfigSchema:
 
     def test_with_custom_tv(self) -> None:
         """EntertainmentCenterConfigSchema should accept custom TV configuration."""
-        from cabinets.application.config.schema import (
+        from cabinets.application.config.schemas import (
             EntertainmentCenterConfigSchema,
             TVConfigSchema,
             TVMountingConfig,
         )
 
         config = EntertainmentCenterConfigSchema(
-            tv=TVConfigSchema(screen_size=75, mounting=TVMountingConfig.STAND, center_height=48.0)
+            tv=TVConfigSchema(
+                screen_size=75, mounting=TVMountingConfig.STAND, center_height=48.0
+            )
         )
         assert config.tv.screen_size == 75
         assert config.tv.mounting == TVMountingConfig.STAND
@@ -6414,7 +6499,7 @@ class TestEntertainmentCenterConfigSchema:
 
     def test_with_media_sections(self) -> None:
         """EntertainmentCenterConfigSchema should accept media sections list."""
-        from cabinets.application.config.schema import (
+        from cabinets.application.config.schemas import (
             EntertainmentCenterConfigSchema,
             EquipmentConfigSchema,
             EquipmentTypeConfig,
@@ -6429,7 +6514,9 @@ class TestEntertainmentCenterConfigSchema:
                 ),
                 MediaSectionConfigSchema(
                     section_type="equipment",
-                    equipment=EquipmentConfigSchema(equipment_type=EquipmentTypeConfig.RECEIVER),
+                    equipment=EquipmentConfigSchema(
+                        equipment_type=EquipmentTypeConfig.RECEIVER
+                    ),
                 ),
             ]
         )
@@ -6439,7 +6526,7 @@ class TestEntertainmentCenterConfigSchema:
 
     def test_with_custom_cable_management(self) -> None:
         """EntertainmentCenterConfigSchema should accept custom cable management."""
-        from cabinets.application.config.schema import (
+        from cabinets.application.config.schemas import (
             EntertainmentCenterConfigSchema,
             MediaCableManagementConfigSchema,
         )
@@ -6455,7 +6542,7 @@ class TestEntertainmentCenterConfigSchema:
 
     def test_rejects_unknown_fields(self) -> None:
         """EntertainmentCenterConfigSchema should reject unknown fields."""
-        from cabinets.application.config.schema import EntertainmentCenterConfigSchema
+        from cabinets.application.config.schemas import EntertainmentCenterConfigSchema
 
         with pytest.raises(PydanticValidationError) as exc_info:
             EntertainmentCenterConfigSchema(color="mahogany")  # type: ignore
@@ -6463,7 +6550,7 @@ class TestEntertainmentCenterConfigSchema:
 
     def test_full_entertainment_center_configuration(self) -> None:
         """Full entertainment center configuration with all components should be accepted."""
-        from cabinets.application.config.schema import (
+        from cabinets.application.config.schemas import (
             EntertainmentCenterConfigSchema,
             EntertainmentLayoutTypeConfig,
             EquipmentConfigSchema,
@@ -6483,7 +6570,10 @@ class TestEntertainmentCenterConfigSchema:
         config = EntertainmentCenterConfigSchema(
             layout_type=EntertainmentLayoutTypeConfig.WALL_UNIT,
             tv=TVConfigSchema(
-                screen_size=65, mounting=TVMountingConfig.WALL, center_height=48.0, cable_grommet=True
+                screen_size=65,
+                mounting=TVMountingConfig.WALL,
+                center_height=48.0,
+                cable_grommet=True,
             ),
             sections=[
                 MediaSectionConfigSchema(
@@ -6532,3 +6622,494 @@ class TestEntertainmentCenterConfigSchema:
         assert config.sections[2].speaker is not None
         assert config.cable_management.vertical_chase is True
         assert config.flanking_storage is True
+
+
+# =============================================================================
+# Safety Compliance Configuration Tests (FRD-21)
+# =============================================================================
+
+
+class TestAccessibilityConfigSchema:
+    """Tests for AccessibilityConfigSchema model (FRD-21)."""
+
+    def test_defaults(self) -> None:
+        """AccessibilityConfigSchema should have sensible defaults."""
+        from cabinets.application.config import AccessibilityConfigSchema
+
+        config = AccessibilityConfigSchema()
+        assert config.enabled is False
+        assert config.standard == "ADA_2010"
+        assert config.min_accessible_percentage == 50.0
+
+    def test_enabled_true(self) -> None:
+        """AccessibilityConfigSchema should accept enabled=True."""
+        from cabinets.application.config import AccessibilityConfigSchema
+
+        config = AccessibilityConfigSchema(enabled=True)
+        assert config.enabled is True
+
+    def test_standard_ada_2010(self) -> None:
+        """AccessibilityConfigSchema should accept ADA_2010 standard."""
+        from cabinets.application.config import AccessibilityConfigSchema
+
+        config = AccessibilityConfigSchema(standard="ADA_2010")
+        assert config.standard == "ADA_2010"
+
+    def test_standard_ansi_a117_1(self) -> None:
+        """AccessibilityConfigSchema should accept ANSI_A117.1 standard."""
+        from cabinets.application.config import AccessibilityConfigSchema
+
+        config = AccessibilityConfigSchema(standard="ANSI_A117.1")
+        assert config.standard == "ANSI_A117.1"
+
+    def test_invalid_standard_rejected(self) -> None:
+        """AccessibilityConfigSchema should reject invalid standards."""
+        from cabinets.application.config import AccessibilityConfigSchema
+
+        with pytest.raises(PydanticValidationError):
+            AccessibilityConfigSchema(standard="INVALID")  # type: ignore
+
+    def test_min_accessible_percentage_valid(self) -> None:
+        """AccessibilityConfigSchema should accept valid percentage."""
+        from cabinets.application.config import AccessibilityConfigSchema
+
+        config = AccessibilityConfigSchema(min_accessible_percentage=75.0)
+        assert config.min_accessible_percentage == 75.0
+
+    def test_min_accessible_percentage_zero(self) -> None:
+        """AccessibilityConfigSchema should accept 0%."""
+        from cabinets.application.config import AccessibilityConfigSchema
+
+        config = AccessibilityConfigSchema(min_accessible_percentage=0)
+        assert config.min_accessible_percentage == 0
+
+    def test_min_accessible_percentage_100(self) -> None:
+        """AccessibilityConfigSchema should accept 100%."""
+        from cabinets.application.config import AccessibilityConfigSchema
+
+        config = AccessibilityConfigSchema(min_accessible_percentage=100)
+        assert config.min_accessible_percentage == 100
+
+    def test_min_accessible_percentage_negative_rejected(self) -> None:
+        """AccessibilityConfigSchema should reject negative percentage."""
+        from cabinets.application.config import AccessibilityConfigSchema
+
+        with pytest.raises(PydanticValidationError) as exc_info:
+            AccessibilityConfigSchema(min_accessible_percentage=-1.0)
+        assert "greater than or equal to 0" in str(exc_info.value)
+
+    def test_min_accessible_percentage_over_100_rejected(self) -> None:
+        """AccessibilityConfigSchema should reject percentage over 100."""
+        from cabinets.application.config import AccessibilityConfigSchema
+
+        with pytest.raises(PydanticValidationError) as exc_info:
+            AccessibilityConfigSchema(min_accessible_percentage=101.0)
+        assert "less than or equal to 100" in str(exc_info.value)
+
+    def test_rejects_unknown_fields(self) -> None:
+        """AccessibilityConfigSchema should reject unknown fields."""
+        from cabinets.application.config import AccessibilityConfigSchema
+
+        with pytest.raises(PydanticValidationError) as exc_info:
+            AccessibilityConfigSchema(wheelchair_only=True)  # type: ignore
+        assert "wheelchair_only" in str(exc_info.value)
+
+
+class TestSafetyConfigSchema:
+    """Tests for SafetyConfigSchema model (FRD-21)."""
+
+    def test_defaults(self) -> None:
+        """SafetyConfigSchema should have sensible defaults."""
+        from cabinets.application.config import SafetyConfigSchema
+
+        config = SafetyConfigSchema()
+        assert config.safety_factor == 4.0
+        assert config.deflection_limit == "L/200"
+        assert config.accessibility is None
+        assert config.child_safe_mode is False
+        assert config.seismic_zone is None
+        assert config.check_clearances is True
+        assert config.material_certification == "unknown"
+        assert config.finish_voc_category == "unknown"
+        assert config.generate_labels is True
+        assert config.generate_safety_report is True
+
+    def test_safety_factor_valid_minimum(self) -> None:
+        """SafetyConfigSchema should accept safety_factor at minimum (2.0)."""
+        from cabinets.application.config import SafetyConfigSchema
+
+        config = SafetyConfigSchema(safety_factor=2.0)
+        assert config.safety_factor == 2.0
+
+    def test_safety_factor_valid_maximum(self) -> None:
+        """SafetyConfigSchema should accept safety_factor at maximum (6.0)."""
+        from cabinets.application.config import SafetyConfigSchema
+
+        config = SafetyConfigSchema(safety_factor=6.0)
+        assert config.safety_factor == 6.0
+
+    def test_safety_factor_below_minimum_rejected(self) -> None:
+        """SafetyConfigSchema should reject safety_factor below 2.0."""
+        from cabinets.application.config import SafetyConfigSchema
+
+        with pytest.raises(PydanticValidationError) as exc_info:
+            SafetyConfigSchema(safety_factor=1.0)
+        assert "greater than or equal to 2" in str(exc_info.value)
+
+    def test_safety_factor_above_maximum_rejected(self) -> None:
+        """SafetyConfigSchema should reject safety_factor above 6.0."""
+        from cabinets.application.config import SafetyConfigSchema
+
+        with pytest.raises(PydanticValidationError) as exc_info:
+            SafetyConfigSchema(safety_factor=7.0)
+        assert "less than or equal to 6" in str(exc_info.value)
+
+    def test_deflection_limit_l200(self) -> None:
+        """SafetyConfigSchema should accept L/200 deflection limit."""
+        from cabinets.application.config import SafetyConfigSchema
+
+        config = SafetyConfigSchema(deflection_limit="L/200")
+        assert config.deflection_limit == "L/200"
+
+    def test_deflection_limit_l240(self) -> None:
+        """SafetyConfigSchema should accept L/240 deflection limit."""
+        from cabinets.application.config import SafetyConfigSchema
+
+        config = SafetyConfigSchema(deflection_limit="L/240")
+        assert config.deflection_limit == "L/240"
+
+    def test_deflection_limit_l360(self) -> None:
+        """SafetyConfigSchema should accept L/360 deflection limit."""
+        from cabinets.application.config import SafetyConfigSchema
+
+        config = SafetyConfigSchema(deflection_limit="L/360")
+        assert config.deflection_limit == "L/360"
+
+    def test_deflection_limit_invalid_rejected(self) -> None:
+        """SafetyConfigSchema should reject invalid deflection limits."""
+        from cabinets.application.config import SafetyConfigSchema
+
+        with pytest.raises(PydanticValidationError):
+            SafetyConfigSchema(deflection_limit="L/100")  # type: ignore
+
+    def test_accessibility_nested_config(self) -> None:
+        """SafetyConfigSchema should accept nested accessibility config."""
+        from cabinets.application.config import (
+            AccessibilityConfigSchema,
+            SafetyConfigSchema,
+        )
+
+        accessibility = AccessibilityConfigSchema(enabled=True, standard="ADA_2010")
+        config = SafetyConfigSchema(accessibility=accessibility)
+        assert config.accessibility is not None
+        assert config.accessibility.enabled is True
+        assert config.accessibility.standard == "ADA_2010"
+
+    def test_accessibility_from_dict(self) -> None:
+        """SafetyConfigSchema should accept accessibility as dict."""
+        from cabinets.application.config import SafetyConfigSchema
+
+        config = SafetyConfigSchema(accessibility={"enabled": True})  # type: ignore
+        assert config.accessibility is not None
+        assert config.accessibility.enabled is True
+
+    def test_child_safe_mode_true(self) -> None:
+        """SafetyConfigSchema should accept child_safe_mode=True."""
+        from cabinets.application.config import SafetyConfigSchema
+
+        config = SafetyConfigSchema(child_safe_mode=True)
+        assert config.child_safe_mode is True
+
+    def test_seismic_zones_valid(self) -> None:
+        """SafetyConfigSchema should accept all valid seismic zones."""
+        from cabinets.application.config import SafetyConfigSchema
+
+        for zone in ["A", "B", "C", "D", "E", "F"]:
+            config = SafetyConfigSchema(seismic_zone=zone)  # type: ignore
+            assert config.seismic_zone == zone
+
+    def test_seismic_zone_invalid_rejected(self) -> None:
+        """SafetyConfigSchema should reject invalid seismic zones."""
+        from cabinets.application.config import SafetyConfigSchema
+
+        with pytest.raises(PydanticValidationError):
+            SafetyConfigSchema(seismic_zone="G")  # type: ignore
+
+    def test_material_certification_carb_phase2(self) -> None:
+        """SafetyConfigSchema should accept carb_phase2 certification."""
+        from cabinets.application.config import SafetyConfigSchema
+
+        config = SafetyConfigSchema(material_certification="carb_phase2")
+        assert config.material_certification == "carb_phase2"
+
+    def test_material_certification_naf(self) -> None:
+        """SafetyConfigSchema should accept naf certification."""
+        from cabinets.application.config import SafetyConfigSchema
+
+        config = SafetyConfigSchema(material_certification="naf")
+        assert config.material_certification == "naf"
+
+    def test_material_certification_ulef(self) -> None:
+        """SafetyConfigSchema should accept ulef certification."""
+        from cabinets.application.config import SafetyConfigSchema
+
+        config = SafetyConfigSchema(material_certification="ulef")
+        assert config.material_certification == "ulef"
+
+    def test_material_certification_none(self) -> None:
+        """SafetyConfigSchema should accept none certification."""
+        from cabinets.application.config import SafetyConfigSchema
+
+        config = SafetyConfigSchema(material_certification="none")
+        assert config.material_certification == "none"
+
+    def test_material_certification_invalid_rejected(self) -> None:
+        """SafetyConfigSchema should reject invalid material certification."""
+        from cabinets.application.config import SafetyConfigSchema
+
+        with pytest.raises(PydanticValidationError):
+            SafetyConfigSchema(material_certification="invalid")  # type: ignore
+
+    def test_finish_voc_category_super_compliant(self) -> None:
+        """SafetyConfigSchema should accept super_compliant VOC category."""
+        from cabinets.application.config import SafetyConfigSchema
+
+        config = SafetyConfigSchema(finish_voc_category="super_compliant")
+        assert config.finish_voc_category == "super_compliant"
+
+    def test_finish_voc_category_compliant(self) -> None:
+        """SafetyConfigSchema should accept compliant VOC category."""
+        from cabinets.application.config import SafetyConfigSchema
+
+        config = SafetyConfigSchema(finish_voc_category="compliant")
+        assert config.finish_voc_category == "compliant"
+
+    def test_finish_voc_category_standard(self) -> None:
+        """SafetyConfigSchema should accept standard VOC category."""
+        from cabinets.application.config import SafetyConfigSchema
+
+        config = SafetyConfigSchema(finish_voc_category="standard")
+        assert config.finish_voc_category == "standard"
+
+    def test_finish_voc_category_invalid_rejected(self) -> None:
+        """SafetyConfigSchema should reject invalid VOC category."""
+        from cabinets.application.config import SafetyConfigSchema
+
+        with pytest.raises(PydanticValidationError):
+            SafetyConfigSchema(finish_voc_category="invalid")  # type: ignore
+
+    def test_generate_labels_false(self) -> None:
+        """SafetyConfigSchema should accept generate_labels=False."""
+        from cabinets.application.config import SafetyConfigSchema
+
+        config = SafetyConfigSchema(generate_labels=False)
+        assert config.generate_labels is False
+
+    def test_generate_safety_report_false(self) -> None:
+        """SafetyConfigSchema should accept generate_safety_report=False."""
+        from cabinets.application.config import SafetyConfigSchema
+
+        config = SafetyConfigSchema(generate_safety_report=False)
+        assert config.generate_safety_report is False
+
+    def test_rejects_unknown_fields(self) -> None:
+        """SafetyConfigSchema should reject unknown fields."""
+        from cabinets.application.config import SafetyConfigSchema
+
+        with pytest.raises(PydanticValidationError) as exc_info:
+            SafetyConfigSchema(extra_field=True)  # type: ignore
+        assert "extra_field" in str(exc_info.value)
+
+    def test_full_config(self) -> None:
+        """SafetyConfigSchema should accept all valid fields together."""
+        from cabinets.application.config import SafetyConfigSchema
+
+        config = SafetyConfigSchema(
+            safety_factor=4.0,
+            deflection_limit="L/200",
+            accessibility={"enabled": True, "standard": "ADA_2010"},  # type: ignore
+            child_safe_mode=True,
+            seismic_zone="D",  # type: ignore
+            check_clearances=True,
+            material_certification="carb_phase2",
+            finish_voc_category="compliant",
+            generate_labels=True,
+            generate_safety_report=True,
+        )
+        assert config.safety_factor == 4.0
+        assert config.seismic_zone == "D"
+        assert config.accessibility is not None
+        assert config.accessibility.enabled is True
+        assert config.child_safe_mode is True
+        assert config.material_certification == "carb_phase2"
+
+
+class TestCabinetConfigurationSafety:
+    """Tests for CabinetConfiguration safety field (FRD-21)."""
+
+    def test_safety_optional_defaults_none(self) -> None:
+        """Safety field should be optional and default to None."""
+        config = CabinetConfiguration(
+            schema_version="1.0",
+            cabinet=CabinetConfig(width=48.0, height=84.0, depth=12.0),
+        )
+        assert config.safety is None
+
+    def test_safety_field_accepted(self) -> None:
+        """CabinetConfiguration should accept safety field."""
+        from cabinets.application.config import SafetyConfigSchema
+
+        safety = SafetyConfigSchema(safety_factor=4.0, seismic_zone="D")  # type: ignore
+        config = CabinetConfiguration(
+            schema_version="1.10",
+            cabinet=CabinetConfig(width=48.0, height=84.0, depth=12.0),
+            safety=safety,
+        )
+        assert config.safety is not None
+        assert config.safety.safety_factor == 4.0
+        assert config.safety.seismic_zone == "D"
+
+    def test_safety_from_dict(self) -> None:
+        """CabinetConfiguration should accept safety as dict."""
+        config = CabinetConfiguration(
+            schema_version="1.10",
+            cabinet=CabinetConfig(width=48.0, height=84.0, depth=12.0),
+            safety={
+                "safety_factor": 4.0,
+                "child_safe_mode": True,
+            },
+        )
+        assert config.safety is not None
+        assert config.safety.safety_factor == 4.0
+        assert config.safety.child_safe_mode is True
+
+    def test_schema_version_1_10_supported(self) -> None:
+        """Schema version 1.10 should be supported."""
+        config = CabinetConfiguration(
+            schema_version="1.10",
+            cabinet=CabinetConfig(width=48.0, height=84.0, depth=12.0),
+        )
+        assert config.schema_version == "1.10"
+
+    def test_supported_versions_includes_1_10(self) -> None:
+        """SUPPORTED_VERSIONS should include 1.10."""
+        assert "1.10" in SUPPORTED_VERSIONS
+
+
+class TestConfigToSafetyAdapter:
+    """Tests for config_to_safety() adapter function (FRD-21)."""
+
+    def test_config_to_safety_none_returns_default(self) -> None:
+        """config_to_safety(None) should return default SafetyConfig."""
+        from cabinets.application.config import config_to_safety
+
+        result = config_to_safety(None)
+        assert result.safety_factor == 4.0
+        assert result.accessibility_enabled is False
+
+    def test_config_to_safety_full_conversion(self) -> None:
+        """config_to_safety should convert all fields correctly."""
+        from cabinets.application.config import SafetyConfigSchema, config_to_safety
+        from cabinets.domain.value_objects import (
+            MaterialCertification,
+            SeismicZone,
+            VOCCategory,
+        )
+
+        schema_config = SafetyConfigSchema(
+            safety_factor=4.0,
+            deflection_limit="L/240",
+            accessibility={"enabled": True, "standard": "ADA_2010"},  # type: ignore
+            child_safe_mode=True,
+            seismic_zone="D",  # type: ignore
+            check_clearances=True,
+            material_certification="carb_phase2",
+            finish_voc_category="compliant",
+            generate_labels=True,
+        )
+
+        domain_config = config_to_safety(schema_config)
+        assert domain_config.safety_factor == 4.0
+        assert domain_config.deflection_limit_ratio == 240
+        assert domain_config.accessibility_enabled is True
+        assert domain_config.child_safe_mode is True
+        assert domain_config.seismic_zone == SeismicZone.D
+        assert domain_config.check_clearances is True
+        assert domain_config.material_certification == MaterialCertification.CARB_PHASE2
+        assert domain_config.finish_voc_category == VOCCategory.COMPLIANT
+        assert domain_config.generate_labels is True
+
+    def test_config_to_safety_deflection_l200(self) -> None:
+        """config_to_safety should convert L/200 to 200."""
+        from cabinets.application.config import SafetyConfigSchema, config_to_safety
+
+        schema_config = SafetyConfigSchema(deflection_limit="L/200")
+        domain_config = config_to_safety(schema_config)
+        assert domain_config.deflection_limit_ratio == 200
+
+    def test_config_to_safety_deflection_l360(self) -> None:
+        """config_to_safety should convert L/360 to 360."""
+        from cabinets.application.config import SafetyConfigSchema, config_to_safety
+
+        schema_config = SafetyConfigSchema(deflection_limit="L/360")
+        domain_config = config_to_safety(schema_config)
+        assert domain_config.deflection_limit_ratio == 360
+
+    def test_config_to_safety_seismic_zones(self) -> None:
+        """config_to_safety should convert all seismic zones."""
+        from cabinets.application.config import SafetyConfigSchema, config_to_safety
+        from cabinets.domain.value_objects import SeismicZone
+
+        for zone_str in ["A", "B", "C", "D", "E", "F"]:
+            schema_config = SafetyConfigSchema(seismic_zone=zone_str)  # type: ignore
+            domain_config = config_to_safety(schema_config)
+            assert domain_config.seismic_zone == SeismicZone(zone_str)
+
+    def test_config_to_safety_material_certifications(self) -> None:
+        """config_to_safety should convert all material certifications."""
+        from cabinets.application.config import SafetyConfigSchema, config_to_safety
+        from cabinets.domain.value_objects import MaterialCertification
+
+        certification_map = {
+            "carb_phase2": MaterialCertification.CARB_PHASE2,
+            "naf": MaterialCertification.NAF,
+            "ulef": MaterialCertification.ULEF,
+            "none": MaterialCertification.NONE,
+            "unknown": MaterialCertification.UNKNOWN,
+        }
+
+        for cert_str, expected in certification_map.items():
+            schema_config = SafetyConfigSchema(material_certification=cert_str)  # type: ignore
+            domain_config = config_to_safety(schema_config)
+            assert domain_config.material_certification == expected
+
+    def test_config_to_safety_voc_categories(self) -> None:
+        """config_to_safety should convert all VOC categories."""
+        from cabinets.application.config import SafetyConfigSchema, config_to_safety
+        from cabinets.domain.value_objects import VOCCategory
+
+        voc_map = {
+            "super_compliant": VOCCategory.SUPER_COMPLIANT,
+            "compliant": VOCCategory.COMPLIANT,
+            "standard": VOCCategory.STANDARD,
+            "unknown": VOCCategory.UNKNOWN,
+        }
+
+        for voc_str, expected in voc_map.items():
+            schema_config = SafetyConfigSchema(finish_voc_category=voc_str)  # type: ignore
+            domain_config = config_to_safety(schema_config)
+            assert domain_config.finish_voc_category == expected
+
+    def test_config_to_safety_ansi_standard(self) -> None:
+        """config_to_safety should convert ANSI_A117.1 standard."""
+        from cabinets.application.config import (
+            AccessibilityConfigSchema,
+            SafetyConfigSchema,
+            config_to_safety,
+        )
+        from cabinets.domain.value_objects import ADAStandard
+
+        accessibility = AccessibilityConfigSchema(enabled=True, standard="ANSI_A117.1")
+        schema_config = SafetyConfigSchema(accessibility=accessibility)
+        domain_config = config_to_safety(schema_config)
+        assert domain_config.accessibility_standard == ADAStandard.ANSI_A117_1

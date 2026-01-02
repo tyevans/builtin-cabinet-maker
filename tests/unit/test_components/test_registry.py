@@ -7,7 +7,6 @@ from typing import Any
 import pytest
 
 from cabinets.domain.components import (
-    Component,
     ComponentContext,
     ComponentRegistry,
     GenerationResult,
@@ -131,7 +130,9 @@ class TestComponentRegistration:
             ) -> list[HardwareItem]:
                 return []
 
-        with pytest.raises(ValueError, match="Component 'shelf.adjustable' already registered"):
+        with pytest.raises(
+            ValueError, match="Component 'shelf.adjustable' already registered"
+        ):
 
             @component_registry.register("shelf.adjustable")
             class AnotherAdjustableShelf:

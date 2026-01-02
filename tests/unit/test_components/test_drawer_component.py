@@ -8,7 +8,6 @@ from cabinets.domain.components import (
     ComponentContext,
     GenerationResult,
     HardwareItem,
-    ValidationResult,
     component_registry,
 )
 from cabinets.domain.components.drawer import (
@@ -73,7 +72,9 @@ class TestDrawerComponentValidation:
     """Tests for StandardDrawerComponent.validate()."""
 
     def test_validate_returns_ok_for_valid_config(
-        self, drawer_component: StandardDrawerComponent, standard_context: ComponentContext
+        self,
+        drawer_component: StandardDrawerComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that validate returns ok for valid drawer config."""
         config = {"front_height": 6.0, "slide_type": "side_mount"}
@@ -84,7 +85,9 @@ class TestDrawerComponentValidation:
         assert len(result.errors) == 0
 
     def test_validate_returns_ok_for_default_config(
-        self, drawer_component: StandardDrawerComponent, standard_context: ComponentContext
+        self,
+        drawer_component: StandardDrawerComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that validate returns ok for empty config (uses defaults)."""
         config: dict = {}
@@ -118,7 +121,9 @@ class TestDrawerComponentValidation:
         assert any("exceeds section depth" in err for err in result.errors)
 
     def test_validate_v02_front_height_below_minimum_fails(
-        self, drawer_component: StandardDrawerComponent, standard_context: ComponentContext
+        self,
+        drawer_component: StandardDrawerComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test V-02: front_height < 3" fails validation."""
         config = {"front_height": 2.5}
@@ -129,7 +134,9 @@ class TestDrawerComponentValidation:
         assert any("below minimum" in err for err in result.errors)
 
     def test_validate_v03_front_height_exceeds_section_height_fails(
-        self, drawer_component: StandardDrawerComponent, standard_context: ComponentContext
+        self,
+        drawer_component: StandardDrawerComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test V-03: front_height > section_height fails validation."""
         config = {"front_height": 80.0}  # Exceeds 72" section height
@@ -163,7 +170,9 @@ class TestDrawerComponentValidation:
         assert any("too narrow" in err for err in result.errors)
 
     def test_validate_invalid_slide_type_fails(
-        self, drawer_component: StandardDrawerComponent, standard_context: ComponentContext
+        self,
+        drawer_component: StandardDrawerComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that invalid slide_type fails validation."""
         config = {"slide_type": "invalid_type"}
@@ -197,7 +206,9 @@ class TestDrawerComponentValidation:
         assert any("Invalid slide_length" in err for err in result.errors)
 
     def test_validate_front_height_exactly_minimum_passes(
-        self, drawer_component: StandardDrawerComponent, standard_context: ComponentContext
+        self,
+        drawer_component: StandardDrawerComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that front_height exactly at minimum (3") passes validation."""
         config = {"front_height": 3.0}
@@ -207,7 +218,9 @@ class TestDrawerComponentValidation:
         assert result.is_valid
 
     def test_validate_all_slide_types(
-        self, drawer_component: StandardDrawerComponent, standard_context: ComponentContext
+        self,
+        drawer_component: StandardDrawerComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that all valid slide types pass validation."""
         for slide_type in SLIDE_CLEARANCES.keys():
@@ -246,7 +259,9 @@ class TestDrawerComponentGeneration:
     """Tests for StandardDrawerComponent.generate()."""
 
     def test_generate_returns_generation_result(
-        self, drawer_component: StandardDrawerComponent, standard_context: ComponentContext
+        self,
+        drawer_component: StandardDrawerComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that generate returns a GenerationResult instance."""
         config = {"front_height": 6.0}
@@ -256,7 +271,9 @@ class TestDrawerComponentGeneration:
         assert isinstance(result, GenerationResult)
 
     def test_generate_creates_six_panels(
-        self, drawer_component: StandardDrawerComponent, standard_context: ComponentContext
+        self,
+        drawer_component: StandardDrawerComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that generate creates 6 panels (front, box front, 2 sides, bottom, top panel)."""
         config = {"front_height": 6.0}
@@ -267,63 +284,85 @@ class TestDrawerComponentGeneration:
         assert len(result.panels) == 6
 
     def test_generate_creates_drawer_front_panel(
-        self, drawer_component: StandardDrawerComponent, standard_context: ComponentContext
+        self,
+        drawer_component: StandardDrawerComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that generate creates a DRAWER_FRONT panel."""
         config = {"front_height": 6.0}
 
         result = drawer_component.generate(config, standard_context)
 
-        front_panels = [p for p in result.panels if p.panel_type == PanelType.DRAWER_FRONT]
+        front_panels = [
+            p for p in result.panels if p.panel_type == PanelType.DRAWER_FRONT
+        ]
         assert len(front_panels) == 1
 
     def test_generate_drawer_front_dimensions(
-        self, drawer_component: StandardDrawerComponent, standard_context: ComponentContext
+        self,
+        drawer_component: StandardDrawerComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that drawer front has correct dimensions."""
         config = {"front_height": 8.0}
 
         result = drawer_component.generate(config, standard_context)
 
-        front_panel = next(p for p in result.panels if p.panel_type == PanelType.DRAWER_FRONT)
+        front_panel = next(
+            p for p in result.panels if p.panel_type == PanelType.DRAWER_FRONT
+        )
         assert front_panel.width == standard_context.width  # 24.0
         assert front_panel.height == 8.0
 
     def test_generate_creates_drawer_box_front_panel(
-        self, drawer_component: StandardDrawerComponent, standard_context: ComponentContext
+        self,
+        drawer_component: StandardDrawerComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that generate creates a DRAWER_BOX_FRONT panel."""
         config = {"front_height": 6.0}
 
         result = drawer_component.generate(config, standard_context)
 
-        box_front_panels = [p for p in result.panels if p.panel_type == PanelType.DRAWER_BOX_FRONT]
+        box_front_panels = [
+            p for p in result.panels if p.panel_type == PanelType.DRAWER_BOX_FRONT
+        ]
         assert len(box_front_panels) == 1
 
     def test_generate_creates_two_drawer_side_panels(
-        self, drawer_component: StandardDrawerComponent, standard_context: ComponentContext
+        self,
+        drawer_component: StandardDrawerComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that generate creates 2 DRAWER_SIDE panels (left and right)."""
         config = {"front_height": 6.0}
 
         result = drawer_component.generate(config, standard_context)
 
-        side_panels = [p for p in result.panels if p.panel_type == PanelType.DRAWER_SIDE]
+        side_panels = [
+            p for p in result.panels if p.panel_type == PanelType.DRAWER_SIDE
+        ]
         assert len(side_panels) == 2
 
     def test_generate_creates_drawer_bottom_panel(
-        self, drawer_component: StandardDrawerComponent, standard_context: ComponentContext
+        self,
+        drawer_component: StandardDrawerComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that generate creates a DRAWER_BOTTOM panel."""
         config = {"front_height": 6.0}
 
         result = drawer_component.generate(config, standard_context)
 
-        bottom_panels = [p for p in result.panels if p.panel_type == PanelType.DRAWER_BOTTOM]
+        bottom_panels = [
+            p for p in result.panels if p.panel_type == PanelType.DRAWER_BOTTOM
+        ]
         assert len(bottom_panels) == 1
 
     def test_generate_box_height_calculation(
-        self, drawer_component: StandardDrawerComponent, standard_context: ComponentContext
+        self,
+        drawer_component: StandardDrawerComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that box height is front_height - 0.125" - 0.5"."""
         config = {"front_height": 6.0}
@@ -331,11 +370,15 @@ class TestDrawerComponentGeneration:
         result = drawer_component.generate(config, standard_context)
 
         expected_box_height = 6.0 - 0.125 - 0.5  # 5.375
-        side_panel = next(p for p in result.panels if p.panel_type == PanelType.DRAWER_SIDE)
+        side_panel = next(
+            p for p in result.panels if p.panel_type == PanelType.DRAWER_SIDE
+        )
         assert side_panel.height == pytest.approx(expected_box_height)
 
     def test_generate_box_width_calculation_side_mount(
-        self, drawer_component: StandardDrawerComponent, standard_context: ComponentContext
+        self,
+        drawer_component: StandardDrawerComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test box width for side mount slides (0.5" clearance per side)."""
         config = {"front_height": 6.0, "slide_type": "side_mount"}
@@ -345,10 +388,14 @@ class TestDrawerComponentGeneration:
         # box_width = section_width - (2 * 0.5) = 24.0 - 1.0 = 23.0
         expected_box_width = 23.0
         # Check via metadata
-        assert result.metadata["drawer_spec"].box_width == pytest.approx(expected_box_width)
+        assert result.metadata["drawer_spec"].box_width == pytest.approx(
+            expected_box_width
+        )
 
     def test_generate_box_width_calculation_undermount(
-        self, drawer_component: StandardDrawerComponent, standard_context: ComponentContext
+        self,
+        drawer_component: StandardDrawerComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test box width for undermount slides (0.1875" clearance per side)."""
         config = {"front_height": 6.0, "slide_type": "undermount"}
@@ -357,10 +404,14 @@ class TestDrawerComponentGeneration:
 
         # box_width = section_width - (2 * 0.1875) = 24.0 - 0.375 = 23.625
         expected_box_width = 24.0 - (2 * SLIDE_CLEARANCES["undermount"])
-        assert result.metadata["drawer_spec"].box_width == pytest.approx(expected_box_width)
+        assert result.metadata["drawer_spec"].box_width == pytest.approx(
+            expected_box_width
+        )
 
     def test_generate_box_width_calculation_center_mount(
-        self, drawer_component: StandardDrawerComponent, standard_context: ComponentContext
+        self,
+        drawer_component: StandardDrawerComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test box width for center mount slides (0" clearance per side)."""
         config = {"front_height": 6.0, "slide_type": "center_mount"}
@@ -369,7 +420,9 @@ class TestDrawerComponentGeneration:
 
         # box_width = section_width - 0 = 24.0
         expected_box_width = 24.0
-        assert result.metadata["drawer_spec"].box_width == pytest.approx(expected_box_width)
+        assert result.metadata["drawer_spec"].box_width == pytest.approx(
+            expected_box_width
+        )
 
     def test_generate_box_depth_calculation(
         self, drawer_component: StandardDrawerComponent
@@ -391,10 +444,14 @@ class TestDrawerComponentGeneration:
         result = drawer_component.generate(config, context)
 
         expected_box_depth = 18 - 1  # 17"
-        assert result.metadata["drawer_spec"].box_depth == pytest.approx(expected_box_depth)
+        assert result.metadata["drawer_spec"].box_depth == pytest.approx(
+            expected_box_depth
+        )
 
     def test_generate_auto_slide_length_selection(
-        self, drawer_component: StandardDrawerComponent, standard_context: ComponentContext
+        self,
+        drawer_component: StandardDrawerComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that auto slide length is correctly selected."""
         config = {"front_height": 6.0, "slide_length": "auto"}
@@ -407,19 +464,25 @@ class TestDrawerComponentGeneration:
         assert result.metadata["slide_length"] == expected_slide_length
 
     def test_generate_drawer_front_position(
-        self, drawer_component: StandardDrawerComponent, standard_context: ComponentContext
+        self,
+        drawer_component: StandardDrawerComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that drawer front is positioned at context position."""
         config = {"front_height": 6.0}
 
         result = drawer_component.generate(config, standard_context)
 
-        front_panel = next(p for p in result.panels if p.panel_type == PanelType.DRAWER_FRONT)
+        front_panel = next(
+            p for p in result.panels if p.panel_type == PanelType.DRAWER_FRONT
+        )
         assert front_panel.position.x == pytest.approx(standard_context.position.x)
         assert front_panel.position.y == pytest.approx(standard_context.position.y)
 
     def test_generate_metadata_includes_drawer_spec(
-        self, drawer_component: StandardDrawerComponent, standard_context: ComponentContext
+        self,
+        drawer_component: StandardDrawerComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that metadata includes drawer_spec."""
         config = {"front_height": 6.0}
@@ -430,7 +493,9 @@ class TestDrawerComponentGeneration:
         assert isinstance(result.metadata["drawer_spec"], DrawerBoxSpec)
 
     def test_generate_metadata_includes_slide_info(
-        self, drawer_component: StandardDrawerComponent, standard_context: ComponentContext
+        self,
+        drawer_component: StandardDrawerComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that metadata includes slide information."""
         config = {"front_height": 6.0, "slide_type": "undermount", "soft_close": False}
@@ -441,7 +506,9 @@ class TestDrawerComponentGeneration:
         assert result.metadata["soft_close"] is False
 
     def test_generate_with_custom_front_style(
-        self, drawer_component: StandardDrawerComponent, standard_context: ComponentContext
+        self,
+        drawer_component: StandardDrawerComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that custom front style is captured in metadata."""
         config = {"front_height": 6.0, "front_style": "inset"}
@@ -455,7 +522,9 @@ class TestDrawerComponentHardware:
     """Tests for StandardDrawerComponent.hardware() and generated hardware."""
 
     def test_generate_includes_hardware(
-        self, drawer_component: StandardDrawerComponent, standard_context: ComponentContext
+        self,
+        drawer_component: StandardDrawerComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that generate includes hardware items."""
         config = {"front_height": 6.0}
@@ -465,7 +534,9 @@ class TestDrawerComponentHardware:
         assert len(result.hardware) > 0
 
     def test_generate_includes_drawer_slides(
-        self, drawer_component: StandardDrawerComponent, standard_context: ComponentContext
+        self,
+        drawer_component: StandardDrawerComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that hardware includes drawer slides."""
         config = {"front_height": 6.0}
@@ -476,7 +547,9 @@ class TestDrawerComponentHardware:
         assert len(slide_items) == 1
 
     def test_generate_slide_quantity_side_mount(
-        self, drawer_component: StandardDrawerComponent, standard_context: ComponentContext
+        self,
+        drawer_component: StandardDrawerComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that side mount slides require quantity 2."""
         config = {"front_height": 6.0, "slide_type": "side_mount"}
@@ -487,7 +560,9 @@ class TestDrawerComponentHardware:
         assert slide_item.quantity == 2
 
     def test_generate_slide_quantity_center_mount(
-        self, drawer_component: StandardDrawerComponent, standard_context: ComponentContext
+        self,
+        drawer_component: StandardDrawerComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that center mount slides require quantity 1."""
         config = {"front_height": 6.0, "slide_type": "center_mount"}
@@ -498,7 +573,9 @@ class TestDrawerComponentHardware:
         assert slide_item.quantity == 1
 
     def test_generate_soft_close_in_slide_name(
-        self, drawer_component: StandardDrawerComponent, standard_context: ComponentContext
+        self,
+        drawer_component: StandardDrawerComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that soft close is reflected in slide name."""
         config = {"front_height": 6.0, "soft_close": True}
@@ -509,7 +586,9 @@ class TestDrawerComponentHardware:
         assert "Soft-Close" in slide_item.name
 
     def test_generate_non_soft_close_slide_name(
-        self, drawer_component: StandardDrawerComponent, standard_context: ComponentContext
+        self,
+        drawer_component: StandardDrawerComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that non-soft close slides don't have Soft-Close in name."""
         config = {"front_height": 6.0, "soft_close": False}
@@ -520,7 +599,9 @@ class TestDrawerComponentHardware:
         assert "Soft-Close" not in slide_item.name
 
     def test_generate_includes_mounting_screws(
-        self, drawer_component: StandardDrawerComponent, standard_context: ComponentContext
+        self,
+        drawer_component: StandardDrawerComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that hardware includes mounting screws."""
         config = {"front_height": 6.0}
@@ -531,7 +612,9 @@ class TestDrawerComponentHardware:
         assert len(screw_items) == 1
 
     def test_generate_screw_quantity_side_mount(
-        self, drawer_component: StandardDrawerComponent, standard_context: ComponentContext
+        self,
+        drawer_component: StandardDrawerComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that side mount needs 8 screws (4 per slide * 2 slides)."""
         config = {"front_height": 6.0, "slide_type": "side_mount"}
@@ -542,7 +625,9 @@ class TestDrawerComponentHardware:
         assert screw_item.quantity == 8
 
     def test_generate_screw_quantity_center_mount(
-        self, drawer_component: StandardDrawerComponent, standard_context: ComponentContext
+        self,
+        drawer_component: StandardDrawerComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that center mount needs 4 screws (4 per slide * 1 slide)."""
         config = {"front_height": 6.0, "slide_type": "center_mount"}
@@ -553,19 +638,25 @@ class TestDrawerComponentHardware:
         assert screw_item.quantity == 4
 
     def test_generate_includes_handle(
-        self, drawer_component: StandardDrawerComponent, standard_context: ComponentContext
+        self,
+        drawer_component: StandardDrawerComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that hardware includes handle/pull."""
         config = {"front_height": 6.0}
 
         result = drawer_component.generate(config, standard_context)
 
-        handle_items = [h for h in result.hardware if "Handle" in h.name or "Pull" in h.name]
+        handle_items = [
+            h for h in result.hardware if "Handle" in h.name or "Pull" in h.name
+        ]
         assert len(handle_items) == 1
         assert handle_items[0].quantity == 1
 
     def test_generate_includes_edge_banding(
-        self, drawer_component: StandardDrawerComponent, standard_context: ComponentContext
+        self,
+        drawer_component: StandardDrawerComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that hardware includes edge banding."""
         config = {"front_height": 6.0}
@@ -576,7 +667,9 @@ class TestDrawerComponentHardware:
         assert len(edge_items) == 1
 
     def test_generate_edge_banding_calculation(
-        self, drawer_component: StandardDrawerComponent, standard_context: ComponentContext
+        self,
+        drawer_component: StandardDrawerComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that edge banding linear inches is calculated correctly."""
         config = {"front_height": 8.0}
@@ -589,7 +682,9 @@ class TestDrawerComponentHardware:
         assert f"{expected:.2f}" in edge_item.notes
 
     def test_hardware_method_returns_list(
-        self, drawer_component: StandardDrawerComponent, standard_context: ComponentContext
+        self,
+        drawer_component: StandardDrawerComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that hardware() method returns a list."""
         config = {"front_height": 6.0}
@@ -600,7 +695,9 @@ class TestDrawerComponentHardware:
         assert all(isinstance(item, HardwareItem) for item in result)
 
     def test_hardware_method_matches_generate_hardware(
-        self, drawer_component: StandardDrawerComponent, standard_context: ComponentContext
+        self,
+        drawer_component: StandardDrawerComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that hardware() returns same items as generate().hardware."""
         config = {"front_height": 6.0}
@@ -833,27 +930,39 @@ class TestDrawerComponentIntegration:
         contexts = [
             # Standard cabinet (21" depth for 20" slides)
             ComponentContext(
-                width=24.0, height=72.0, depth=21.0,
+                width=24.0,
+                height=72.0,
+                depth=21.0,
                 material=MaterialSpec.standard_3_4(),
                 position=Position(0.75, 0.75),
                 section_index=0,
-                cabinet_width=48.0, cabinet_height=84.0, cabinet_depth=24.0,
+                cabinet_width=48.0,
+                cabinet_height=84.0,
+                cabinet_depth=24.0,
             ),
             # Wide cabinet (19" depth for 18" slides)
             ComponentContext(
-                width=36.0, height=36.0, depth=19.0,
+                width=36.0,
+                height=36.0,
+                depth=19.0,
                 material=MaterialSpec.standard_3_4(),
                 position=Position(0.75, 0.75),
                 section_index=0,
-                cabinet_width=72.0, cabinet_height=42.0, cabinet_depth=22.0,
+                cabinet_width=72.0,
+                cabinet_height=42.0,
+                cabinet_depth=22.0,
             ),
             # Narrow cabinet (17" depth for 16" slides)
             ComponentContext(
-                width=12.0, height=30.0, depth=17.0,
+                width=12.0,
+                height=30.0,
+                depth=17.0,
                 material=MaterialSpec.standard_3_4(),
                 position=Position(0.75, 0.75),
                 section_index=0,
-                cabinet_width=24.0, cabinet_height=36.0, cabinet_depth=20.0,
+                cabinet_width=24.0,
+                cabinet_height=36.0,
+                cabinet_depth=20.0,
             ),
         ]
 
@@ -872,7 +981,9 @@ class TestDrawerComponentEdgeCases:
     """Edge case tests for StandardDrawerComponent."""
 
     def test_minimum_front_height(
-        self, drawer_component: StandardDrawerComponent, standard_context: ComponentContext
+        self,
+        drawer_component: StandardDrawerComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test drawer with minimum front height (3")."""
         config = {"front_height": 3.0}
@@ -885,7 +996,9 @@ class TestDrawerComponentEdgeCases:
         assert len(generation.panels) == 6
 
     def test_large_front_height(
-        self, drawer_component: StandardDrawerComponent, standard_context: ComponentContext
+        self,
+        drawer_component: StandardDrawerComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test drawer with large front height."""
         config = {"front_height": 60.0}  # Within 72" section height
@@ -894,11 +1007,15 @@ class TestDrawerComponentEdgeCases:
         assert result.is_valid
 
         generation = drawer_component.generate(config, standard_context)
-        front_panel = next(p for p in generation.panels if p.panel_type == PanelType.DRAWER_FRONT)
+        front_panel = next(
+            p for p in generation.panels if p.panel_type == PanelType.DRAWER_FRONT
+        )
         assert front_panel.height == 60.0
 
     def test_all_slide_types_generate_correctly(
-        self, drawer_component: StandardDrawerComponent, standard_context: ComponentContext
+        self,
+        drawer_component: StandardDrawerComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that all slide types generate correct box widths."""
         for slide_type, clearance in SLIDE_CLEARANCES.items():
@@ -907,7 +1024,9 @@ class TestDrawerComponentEdgeCases:
             generation = drawer_component.generate(config, standard_context)
 
             expected_box_width = standard_context.width - (2 * clearance)
-            assert generation.metadata["drawer_spec"].box_width == pytest.approx(expected_box_width)
+            assert generation.metadata["drawer_spec"].box_width == pytest.approx(
+                expected_box_width
+            )
 
     def test_deepest_slide_length(
         self, drawer_component: StandardDrawerComponent
@@ -1117,7 +1236,10 @@ class TestFileDrawerComponentValidation:
 
         # Should have warning about center mount
         assert len(result.warnings) > 0
-        assert any("center_mount" in warn and "not recommended" in warn for warn in result.warnings)
+        assert any(
+            "center_mount" in warn and "not recommended" in warn
+            for warn in result.warnings
+        )
 
     def test_validate_side_mount_no_warning(
         self, file_drawer_component: FileDrawerComponent, deep_context: ComponentContext
@@ -1247,7 +1369,9 @@ class TestFileDrawerComponentGeneration:
 
         result = file_drawer_component.generate(config, deep_context)
 
-        front_panel = next(p for p in result.panels if p.panel_type == PanelType.DRAWER_FRONT)
+        front_panel = next(
+            p for p in result.panels if p.panel_type == PanelType.DRAWER_FRONT
+        )
         assert front_panel.height == 12.0
 
     def test_generate_box_height_sufficient_for_files(
@@ -1260,7 +1384,9 @@ class TestFileDrawerComponentGeneration:
 
         # box_height = 12.0 - 0.125 - 0.5 = 11.375"
         expected_box_height = 12.0 - 0.125 - 0.5
-        side_panel = next(p for p in result.panels if p.panel_type == PanelType.DRAWER_SIDE)
+        side_panel = next(
+            p for p in result.panels if p.panel_type == PanelType.DRAWER_SIDE
+        )
         assert side_panel.height == pytest.approx(expected_box_height)
         # Verify it meets letter file requirement
         assert side_panel.height >= FileDrawerComponent.MIN_FILE_HEIGHT["letter"]
@@ -1279,7 +1405,11 @@ class TestFileDrawerComponentGeneration:
         self, file_drawer_component: FileDrawerComponent, deep_context: ComponentContext
     ) -> None:
         """Test that metadata includes drawer specification."""
-        config = {"file_type": "legal", "front_height": 14.0, "slide_type": "undermount"}
+        config = {
+            "file_type": "legal",
+            "front_height": 14.0,
+            "slide_type": "undermount",
+        }
 
         result = file_drawer_component.generate(config, deep_context)
 
@@ -1331,7 +1461,7 @@ class TestFileDrawerComponentIntegration:
         """Test file drawer with both letter and legal file types."""
         file_types = [
             ("letter", 12.0),  # front_height gives 11.375" box (> 10.5")
-            ("legal", 14.0),   # front_height gives 13.375" box (> 12.0")
+            ("legal", 14.0),  # front_height gives 13.375" box (> 12.0")
         ]
 
         for file_type, front_height in file_types:
@@ -1342,7 +1472,9 @@ class TestFileDrawerComponentIntegration:
 
             generation = file_drawer_component.generate(config, deep_context)
             # 5 drawer panels + 1 top panel (horizontal divider)
-            assert len(generation.panels) == 6, f"Wrong panel count for file_type: {file_type}"
+            assert len(generation.panels) == 6, (
+                f"Wrong panel count for file_type: {file_type}"
+            )
 
 
 class TestFileDrawerComponentEdgeCases:

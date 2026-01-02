@@ -9,9 +9,9 @@ from __future__ import annotations
 
 import pytest
 
-from cabinets.application.commands import GenerateLayoutCommand
-from cabinets.application.config.adapter import config_to_section_specs
-from cabinets.application.config.schema import (
+from cabinets.application.factory import get_factory
+from cabinets.application.config import config_to_section_specs
+from cabinets.application.config.schemas import (
     CabinetConfig,
     CabinetConfiguration,
     SectionConfig,
@@ -19,9 +19,21 @@ from cabinets.application.config.schema import (
 from cabinets.application.dtos import LayoutParametersInput, WallInput
 from cabinets.domain import LayoutCalculator, LayoutParameters, Wall
 from cabinets.domain.components import component_registry
-from cabinets.domain.components.shelf import FixedShelfComponent
+from cabinets.domain.components.door import (
+    OverlayDoorComponent,
+    InsetDoorComponent,
+)
+from cabinets.domain.components.drawer import (
+    StandardDrawerComponent,
+    FileDrawerComponent,
+)
+from cabinets.domain.components.shelf import (
+    AdjustableShelfComponent,
+    FixedShelfComponent,
+)
 from cabinets.domain.section_resolver import SectionSpec, SectionWidthError
 from cabinets.domain.entities import Cabinet, Panel
+from cabinets.domain.services import Panel3DMapper
 from cabinets.domain.value_objects import MaterialSpec, PanelType, SectionType
 
 
@@ -192,7 +204,9 @@ class TestComponentValidationErrorRaised:
         # SectionSpec allows shelves=21, but component validation will fail
         specs = [SectionSpec(width="fill", shelves=21)]
 
-        with pytest.raises(SectionWidthError, match="shelf count exceeds maximum of 20"):
+        with pytest.raises(
+            SectionWidthError, match="shelf count exceeds maximum of 20"
+        ):
             calculator.generate_cabinet_from_specs(wall, params, specs)
 
 
@@ -220,7 +234,7 @@ class TestEndToEndConfigToComponent:
         )
 
         section_specs = config_to_section_specs(config)
-        command = GenerateLayoutCommand()
+        command = get_factory().create_generate_command()
         wall_input = WallInput(width=48.0, height=84.0, depth=12.0)
         params_input = LayoutParametersInput(num_sections=2, shelves_per_section=0)
 
@@ -247,7 +261,7 @@ class TestEndToEndConfigToComponent:
         )
 
         section_specs = config_to_section_specs(config)
-        command = GenerateLayoutCommand()
+        command = get_factory().create_generate_command()
         wall_input = WallInput(width=48.0, height=84.0, depth=12.0)
         params_input = LayoutParametersInput(num_sections=1, shelves_per_section=0)
 
@@ -284,7 +298,7 @@ class TestHardwareCollection:
         )
 
         section_specs = config_to_section_specs(config)
-        command = GenerateLayoutCommand()
+        command = get_factory().create_generate_command()
         wall_input = WallInput(width=48.0, height=84.0, depth=12.0)
         params_input = LayoutParametersInput(num_sections=1, shelves_per_section=0)
 
@@ -346,8 +360,6 @@ class TestComponentConfigPassthrough:
 # =============================================================================
 # Integration tests for AdjustableShelfComponent
 # =============================================================================
-
-from cabinets.domain.components.shelf import AdjustableShelfComponent
 
 
 @pytest.fixture
@@ -548,12 +560,6 @@ class TestAdjustableShelfValidation:
 # =============================================================================
 # Integration tests for Door Components
 # =============================================================================
-
-from cabinets.domain.components.door import (
-    OverlayDoorComponent,
-    InsetDoorComponent,
-)
-from cabinets.domain.services import Panel3DMapper
 
 
 @pytest.fixture
@@ -777,7 +783,6 @@ class TestDoorComponentIntegration:
         Verifies that Panel3DMapper.DOOR case correctly positions door panels
         at the front face (y=0) of the cabinet with correct dimensions.
         """
-        from cabinets.domain.components import ComponentContext
         from cabinets.domain.value_objects import Position
 
         # Create a simple cabinet with a door
@@ -823,11 +828,6 @@ class TestDoorComponentIntegration:
 # =============================================================================
 # Integration tests for Drawer Components
 # =============================================================================
-
-from cabinets.domain.components.drawer import (
-    StandardDrawerComponent,
-    FileDrawerComponent,
-)
 
 
 @pytest.fixture
@@ -1007,7 +1007,11 @@ class TestDrawerComponentIntegration:
         assert result.is_valid
 
         # Test letter file with insufficient height (box height would be 5.375")
-        invalid_config = {"front_height": 6.0, "file_type": "letter", "slide_length": 16}
+        invalid_config = {
+            "front_height": 6.0,
+            "file_type": "letter",
+            "slide_length": 16,
+        }
         result = component.validate(invalid_config, context)
         assert not result.is_valid
         assert any("below minimum" in err for err in result.errors)

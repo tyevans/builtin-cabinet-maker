@@ -7,18 +7,20 @@ These tests verify:
 - Room aggregate with geometry calculations
 """
 
-import math
-
 import pytest
 
-from cabinets.domain.entities import Cabinet, Room, Section, Wall, WallConstraints, WallSegment
+from cabinets.domain.entities import (
+    Cabinet,
+    Room,
+    Section,
+    Wall,
+    WallConstraints,
+    WallSegment,
+)
 from cabinets.domain.value_objects import (
-    GeometryError,
     MaterialSpec,
-    Point2D,
     Position,
     SectionType,
-    WallPosition,
 )
 
 
@@ -195,8 +197,8 @@ class TestWallSegment:
         # 10 foot wall, 8 foot ceiling, 90 degree turn, 12 inch depth
         segment = WallSegment(
             length=120.0,  # 10 feet in inches
-            height=96.0,   # 8 feet in inches
-            angle=90,      # right turn
+            height=96.0,  # 8 feet in inches
+            angle=90,  # right turn
             name="east_wall",
             depth=12.0,
         )
@@ -339,10 +341,10 @@ class TestRoom:
         """Rectangular room with 4 walls should form a closed rectangle."""
         # Create a 100x60 rectangle (clockwise: right turns)
         walls = [
-            WallSegment(length=100.0, height=96.0, angle=0),   # East
-            WallSegment(length=60.0, height=96.0, angle=90),   # South
+            WallSegment(length=100.0, height=96.0, angle=0),  # East
+            WallSegment(length=60.0, height=96.0, angle=90),  # South
             WallSegment(length=100.0, height=96.0, angle=90),  # West
-            WallSegment(length=60.0, height=96.0, angle=90),   # North
+            WallSegment(length=60.0, height=96.0, angle=90),  # North
         ]
         room = Room(name="rectangle", walls=walls, is_closed=True)
         positions = room.get_wall_positions()
@@ -417,9 +419,9 @@ class TestRoom:
         """Bounding box of U-shaped room."""
         # U-shape: right, right, straight, left, left
         walls = [
-            WallSegment(length=100.0, height=96.0, angle=0),   # East
-            WallSegment(length=60.0, height=96.0, angle=90),   # South
-            WallSegment(length=50.0, height=96.0, angle=90),   # West
+            WallSegment(length=100.0, height=96.0, angle=0),  # East
+            WallSegment(length=60.0, height=96.0, angle=90),  # South
+            WallSegment(length=50.0, height=96.0, angle=90),  # West
             WallSegment(length=60.0, height=96.0, angle=-90),  # South again
             WallSegment(length=50.0, height=96.0, angle=-90),  # East
         ]
@@ -489,10 +491,12 @@ class TestRoom:
         # Wall 2: (100,100) -> (50,100) horizontal left
         # Wall 3: (50,100) -> (50,-50) vertical down - crosses wall 0 at (50,0)
         walls = [
-            WallSegment(length=100.0, height=96.0, angle=0),    # Wall 0: East
+            WallSegment(length=100.0, height=96.0, angle=0),  # Wall 0: East
             WallSegment(length=100.0, height=96.0, angle=-90),  # Wall 1: North
-            WallSegment(length=50.0, height=96.0, angle=-90),   # Wall 2: West
-            WallSegment(length=150.0, height=96.0, angle=-90),  # Wall 3: South (crosses wall 0)
+            WallSegment(length=50.0, height=96.0, angle=-90),  # Wall 2: West
+            WallSegment(
+                length=150.0, height=96.0, angle=-90
+            ),  # Wall 3: South (crosses wall 0)
         ]
         room = Room(name="test", walls=walls)
         errors = room.validate_geometry()

@@ -10,8 +10,8 @@ These tests verify:
 import pytest
 from pydantic import ValidationError as PydanticValidationError
 
-from cabinets.application.config.adapter import config_to_installation
-from cabinets.application.config.schema import (
+from cabinets.application.config import config_to_installation
+from cabinets.application.config.schemas import (
     CabinetConfig,
     CabinetConfiguration,
     CleatConfigSchema,

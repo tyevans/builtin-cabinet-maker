@@ -7,13 +7,11 @@ Supports per-panel and combined output modes, with 32mm system shelf pin holes.
 from __future__ import annotations
 
 import logging
-import math
 from io import StringIO
 from pathlib import Path
-from typing import TYPE_CHECKING, ClassVar
+from typing import TYPE_CHECKING, ClassVar, cast
 
 import ezdxf
-from ezdxf.enums import TextEntityAlignment
 
 from cabinets.domain.value_objects import CutPiece, JointType, PanelType
 from cabinets.infrastructure.exporters.base import ExporterRegistry
@@ -22,7 +20,7 @@ if TYPE_CHECKING:
     from ezdxf.document import Drawing
     from ezdxf.layouts import Modelspace
 
-    from cabinets.application.dtos import LayoutOutput, RoomLayoutOutput
+    from cabinets.contracts.dtos import LayoutOutput, RoomLayoutOutput
 
 
 logger = logging.getLogger(__name__)
@@ -119,7 +117,7 @@ class DxfExporter:
             path: Path where the DXF file(s) will be saved.
         """
         # Import here to avoid circular imports at module level
-        from cabinets.application.dtos import LayoutOutput, RoomLayoutOutput
+        from cabinets.contracts.dtos import LayoutOutput, RoomLayoutOutput
 
         if isinstance(output, RoomLayoutOutput):
             cut_list = output.cut_list
@@ -152,7 +150,7 @@ class DxfExporter:
             DXF file content as a string.
         """
         # Import here to avoid circular imports at module level
-        from cabinets.application.dtos import LayoutOutput, RoomLayoutOutput
+        from cabinets.contracts.dtos import LayoutOutput, RoomLayoutOutput
 
         if isinstance(output, RoomLayoutOutput):
             cut_list = output.cut_list
@@ -175,6 +173,19 @@ class DxfExporter:
         doc.write(stream)
         return stream.getvalue()
 
+    def format_for_console(self, output: LayoutOutput | RoomLayoutOutput) -> str:
+        """DXF format does not support console output.
+
+        DXF is a CAD format not suitable for terminal display.
+
+        Raises:
+            NotImplementedError: Always raises this exception.
+        """
+        raise NotImplementedError(
+            "DXF format is not suitable for console display. "
+            "Use export() to write to a file instead."
+        )
+
     def _create_document(self) -> Drawing:
         """Create a new DXF document with layers configured.
 
@@ -192,7 +203,7 @@ class DxfExporter:
             doc: DXF document to add layers to.
         """
         for name, props in LAYERS.items():
-            layer = doc.layers.add(name, color=props["color"])
+            layer = doc.layers.add(name, color=cast(int, props["color"]))
             # Note: DASHED linetype needs to be loaded from standard linetypes
             if props["linetype"] == "DASHED":
                 # Load standard linetypes if not already present
@@ -256,7 +267,9 @@ class DxfExporter:
             cut_list: List of cut pieces to draw.
         """
         # First pass: expand cut list and calculate row assignments
-        expanded_panels: list[tuple[CutPiece, float, float]] = []  # (piece, width, height)
+        expanded_panels: list[
+            tuple[CutPiece, float, float]
+        ] = []  # (piece, width, height)
         for piece in cut_list:
             width = piece.width * self.scale
             height = piece.height * self.scale
@@ -375,7 +388,6 @@ class DxfExporter:
             # Get dado position and dimensions
             position = joint.get("position", 0.0) * self.scale
             dado_width = joint.get("width", 0.75) * self.scale
-            dado_depth = joint.get("depth", 0.375) * self.scale
             orientation = joint.get("orientation", "horizontal")
 
             if orientation == "horizontal":
@@ -503,7 +515,9 @@ class DxfExporter:
 
         # Format dimension text
         if self.units == "mm":
-            dim_text = f"{piece.width * self.scale:.1f} x {piece.height * self.scale:.1f} mm"
+            dim_text = (
+                f"{piece.width * self.scale:.1f} x {piece.height * self.scale:.1f} mm"
+            )
         else:
             dim_text = f'{piece.width:.3f}" x {piece.height:.3f}"'
 
@@ -513,7 +527,9 @@ class DxfExporter:
         # Use 5% of the smaller dimension, with min/max limits
         min_text_height = 0.15 * self.scale  # 0.15" or ~4mm minimum
         max_text_height = 1.0 * self.scale  # 1" or 25mm maximum
-        text_height = max(min_text_height, min(max_text_height, min(width, height) * 0.08))
+        text_height = max(
+            min_text_height, min(max_text_height, min(width, height) * 0.08)
+        )
 
         # Add multiline text centered in panel
         msp.add_mtext(

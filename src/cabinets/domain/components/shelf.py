@@ -172,26 +172,24 @@ class FixedShelfComponent:
         # FR-05.1: Validate positions are within section height bounds
         for i, pos in enumerate(positions):
             if pos < 0 or pos > context.height:
-                errors.append(f"Shelf {i + 1} position {pos}\" outside section height")
+                errors.append(f'Shelf {i + 1} position {pos}" outside section height')
 
         # FR-05.3: Validate minimum 2" spacing between adjacent shelves
         sorted_positions = sorted(positions)
         for i in range(len(sorted_positions) - 1):
             if sorted_positions[i + 1] - sorted_positions[i] < 2.0:
-                errors.append(f"Shelves {i + 1} and {i + 2} less than 2\" apart")
+                errors.append(f'Shelves {i + 1} and {i + 2} less than 2" apart')
 
         # FR-05.2: Validate depth does not exceed available depth
         available_depth = context.depth - setback
         if depth > available_depth:
-            errors.append(
-                f"Shelf depth {depth}\" exceeds available {available_depth}\""
-            )
+            errors.append(f'Shelf depth {depth}" exceeds available {available_depth}"')
 
         # FR-05.4: Advisory for wide shelves that may sag
         if context.width > 36 and context.material.thickness <= 0.75:
             warnings.append(
-                f"Shelf span {context.width:.1f}\" exceeds recommended 36\" "
-                "for 3/4\" material - consider center support"
+                f'Shelf span {context.width:.1f}" exceeds recommended 36" '
+                'for 3/4" material - consider center support'
             )
 
         return ValidationResult(errors=tuple(errors), warnings=tuple(warnings))
@@ -402,22 +400,20 @@ class AdjustableShelfComponent:
         for i, pos in enumerate(positions):
             if pos < pin_start or pos > pin_end:
                 warnings.append(
-                    f"Shelf {i + 1} at {pos}\" outside pin hole range "
-                    f"({pin_start}\" to {pin_end}\")"
+                    f'Shelf {i + 1} at {pos}" outside pin hole range '
+                    f'({pin_start}" to {pin_end}")'
                 )
 
         # Validate depth does not exceed available depth
         available_depth = context.depth - setback
         if depth > available_depth:
-            errors.append(
-                f"Shelf depth {depth}\" exceeds available {available_depth}\""
-            )
+            errors.append(f'Shelf depth {depth}" exceeds available {available_depth}"')
 
         # Wide span warning for potential sagging
         if context.width > 36 and context.material.thickness <= 0.75:
             warnings.append(
-                f"Shelf span {context.width:.1f}\" exceeds recommended 36\" "
-                "for 3/4\" material - consider center support"
+                f'Shelf span {context.width:.1f}" exceeds recommended 36" '
+                'for 3/4" material - consider center support'
             )
 
         return ValidationResult(errors=tuple(errors), warnings=tuple(warnings))

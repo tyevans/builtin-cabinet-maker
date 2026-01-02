@@ -77,7 +77,7 @@ def scallop_cut_piece(standard_material: MaterialSpec) -> CutPiece:
             "scallop_depth": 1.5,
             "scallop_width": 6.0,
             "scallop_count": 8,
-            "template_info": "8x 6.0\" x 1.5\"",
+            "template_info": '8x 6.0" x 1.5"',
         },
     )
 
@@ -168,7 +168,9 @@ def simple_cabinet() -> Cabinet:
 
 
 @pytest.fixture
-def simple_layout_output(simple_cabinet: Cabinet, mixed_cut_list: list[CutPiece]) -> LayoutOutput:
+def simple_layout_output(
+    simple_cabinet: Cabinet, mixed_cut_list: list[CutPiece]
+) -> LayoutOutput:
     """Create a simple LayoutOutput for JsonExporter testing."""
     return LayoutOutput(
         cabinet=simple_cabinet,
@@ -381,8 +383,6 @@ class TestCutListFormatterMixedContent:
         formatter = CutListFormatter()
         result = formatter.format(mixed_cut_list)
 
-        # Calculate expected total
-        expected_total = sum(p.area for p in mixed_cut_list)
         # Check that TOTAL line exists
         assert "TOTAL" in result
 
@@ -466,9 +466,7 @@ class TestJsonExporterBasic:
         assert data["cabinet"]["height"] == 84.0
         assert data["cabinet"]["depth"] == 12.0
 
-    def test_export_cut_list_pieces(
-        self, simple_layout_output: LayoutOutput
-    ) -> None:
+    def test_export_cut_list_pieces(self, simple_layout_output: LayoutOutput) -> None:
         """Test that cut list pieces are exported."""
         exporter = JsonExporter()
         result = exporter.export(simple_layout_output)
@@ -483,7 +481,9 @@ class TestJsonExporterBasic:
             cut_list=[],
             total_estimate=None,  # type: ignore
             material_estimates={},
-            errors=["Cabinet generation failed"],  # is_valid is a property based on errors
+            errors=[
+                "Cabinet generation failed"
+            ],  # is_valid is a property based on errors
         )
 
         exporter = JsonExporter()
@@ -582,7 +582,9 @@ class TestJsonExporterDecorativeMetadata:
         piece = data["cut_list"][0]
         assert "decorative_metadata" in piece
         assert "edge_profile" in piece["decorative_metadata"]
-        assert piece["decorative_metadata"]["edge_profile"]["profile_type"] == "roundover"
+        assert (
+            piece["decorative_metadata"]["edge_profile"]["profile_type"] == "roundover"
+        )
         assert piece["decorative_metadata"]["edge_profile"]["size"] == 0.25
 
     def test_export_joinery_metadata(
@@ -671,9 +673,7 @@ class TestJsonExporterDecorativeMetadata:
 class TestJsonExporterInternalMethods:
     """Tests for JsonExporter internal methods."""
 
-    def test_format_cut_piece_basic_fields(
-        self, simple_cut_piece: CutPiece
-    ) -> None:
+    def test_format_cut_piece_basic_fields(self, simple_cut_piece: CutPiece) -> None:
         """Test _format_cut_piece includes basic fields."""
         exporter = JsonExporter()
         result = exporter._format_cut_piece(simple_cut_piece)
@@ -1086,8 +1086,12 @@ class TestHardwareReportFormatterBasic:
         from cabinets.domain.services.woodworking import HardwareList
 
         items = (
-            HardwareItem(name='#8 x 1-1/4" wood screw', quantity=24, notes="Case assembly"),
-            HardwareItem(name='#6 x 5/8" pan head screw', quantity=40, notes="Back panel"),
+            HardwareItem(
+                name='#8 x 1-1/4" wood screw', quantity=24, notes="Case assembly"
+            ),
+            HardwareItem(
+                name='#6 x 5/8" pan head screw', quantity=40, notes="Back panel"
+            ),
         )
         return HardwareList(items=items)
 
@@ -1162,8 +1166,12 @@ class TestHardwareReportFormatterOverage:
         from cabinets.domain.services.woodworking import HardwareList
 
         items = (
-            HardwareItem(name='#8 x 1-1/4" wood screw', quantity=24, notes="Case assembly"),
-            HardwareItem(name='#6 x 5/8" pan head screw', quantity=40, notes="Back panel"),
+            HardwareItem(
+                name='#8 x 1-1/4" wood screw', quantity=24, notes="Case assembly"
+            ),
+            HardwareItem(
+                name='#6 x 5/8" pan head screw', quantity=40, notes="Back panel"
+            ),
         )
         return HardwareList(items=items)
 
@@ -1178,7 +1186,6 @@ class TestHardwareReportFormatterOverage:
 
     def test_format_overage_calculation(self, sample_hardware_list) -> None:
         """Test that overage is calculated correctly."""
-        import math
 
         formatter = HardwareReportFormatter()
         result = formatter.format(
@@ -1538,7 +1545,9 @@ class TestCutListFormatterCutouts:
         assert "Grain: length" in notes
         assert "Grommet:" in notes
 
-    def test_cutout_triggers_notes_column(self, standard_material: MaterialSpec) -> None:
+    def test_cutout_triggers_notes_column(
+        self, standard_material: MaterialSpec
+    ) -> None:
         """Test that cutouts trigger the Notes column in output."""
         piece = CutPiece(
             width=48.0,
@@ -1861,9 +1870,7 @@ class TestJsonExporterCutouts:
         # cutouts should NOT be in decorative_metadata
         assert "cutouts" not in piece_data["decorative_metadata"]
 
-    def test_format_cut_piece_no_cutouts(
-        self, standard_material: MaterialSpec
-    ) -> None:
+    def test_format_cut_piece_no_cutouts(self, standard_material: MaterialSpec) -> None:
         """Test _format_cut_piece without cutouts does not add cutouts field."""
         piece = CutPiece(
             width=48.0,

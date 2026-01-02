@@ -117,9 +117,7 @@ class TestCompleteDeskGeneration:
             "desk_height": 30.0,
             "depth": 24.0,
             "edge_treatment": "bullnose",
-            "grommets": [
-                {"x_position": 40.0, "y_position": 21.0, "diameter": 2.5}
-            ],
+            "grommets": [{"x_position": 40.0, "y_position": 21.0, "diameter": 2.5}],
         }
         surface_result = surface.generate(surface_config, standard_desk_context)
 
@@ -183,7 +181,9 @@ class TestCompleteDeskGeneration:
         assert any("LED" in name for name in hardware_names)
 
         # Check for European hinges (hutch doors)
-        assert any("European Hinge" in name or "Hinge" in name for name in hardware_names)
+        assert any(
+            "European Hinge" in name or "Hinge" in name for name in hardware_names
+        )
 
     def test_desk_surface_generates_correct_panels(
         self, standard_desk_context: ComponentContext
@@ -266,9 +266,7 @@ class TestDeskCabinetIntegration:
         assert PanelType.BACK in panel_types
 
         # Verify pedestal height = desktop_height - desktop_thickness
-        side_panels = [
-            p for p in result.panels if p.panel_type == PanelType.LEFT_SIDE
-        ]
+        side_panels = [p for p in result.panels if p.panel_type == PanelType.LEFT_SIDE]
         assert len(side_panels) == 1
         assert side_panels[0].height == pytest.approx(29.0)  # 30 - 1
 
@@ -285,10 +283,7 @@ class TestDeskCabinetIntegration:
 
         result = pedestal.generate(config, narrow_desk_context)
 
-        # Get left and right side panels
-        left_panel = next(
-            p for p in result.panels if p.panel_type == PanelType.LEFT_SIDE
-        )
+        # Get right side panel
         right_panel = next(
             p for p in result.panels if p.panel_type == PanelType.RIGHT_SIDE
         )
@@ -364,9 +359,7 @@ class TestLShapedDeskCorner:
 
         # Verify corner post (DIVIDER panel used for post)
         divider_panels = [p for p in result.panels if p.panel_type == PanelType.DIVIDER]
-        corner_posts = [
-            p for p in divider_panels if p.metadata.get("is_corner_post")
-        ]
+        corner_posts = [p for p in divider_panels if p.metadata.get("is_corner_post")]
         assert len(corner_posts) == 1
 
         # Verify butt joint hardware (corner brackets)
@@ -411,9 +404,7 @@ class TestLShapedDeskCorner:
 
         # Verify corner post is generated for diagonal type
         divider_panels = [p for p in result.panels if p.panel_type == PanelType.DIVIDER]
-        corner_posts = [
-            p for p in divider_panels if p.metadata.get("is_corner_post")
-        ]
+        corner_posts = [p for p in divider_panels if p.metadata.get("is_corner_post")]
         assert len(corner_posts) >= 1
 
     def test_corner_support_post_dimensions(
@@ -878,10 +869,10 @@ class TestSTLExportDesk:
             cabinet_depth=24.0,
         )
 
-        # Generate surface panels
+        # Generate surface panels (result used to verify component generates)
         surface = DeskSurfaceComponent()
         config = {"desk_height": 30.0, "depth": 24.0}
-        result = surface.generate(config, context)
+        surface.generate(config, context)
 
         # Export to STL
         exporter = StlExporter()
@@ -911,8 +902,8 @@ class TestEndToEndWorkflow:
 
         Layout: [Storage Cabinet] - [Desk with Pedestals] - [Storage Cabinet]
         """
-        # Left storage cabinet context
-        left_context = ComponentContext(
+        # Left storage cabinet context (defined for future use)
+        _left_context = ComponentContext(
             width=24.0,
             height=84.0,
             depth=24.0,
@@ -940,8 +931,8 @@ class TestEndToEndWorkflow:
             adjacent_right="storage",
         )
 
-        # Right storage cabinet context
-        right_context = ComponentContext(
+        # Right storage cabinet context (defined for future use)
+        _right_context = ComponentContext(
             width=36.0,
             height=84.0,
             depth=24.0,
@@ -991,7 +982,12 @@ class TestEndToEndWorkflow:
             cabinet_depth=24.0,
         )
         right_ped_result = left_pedestal.generate(
-            {"pedestal_type": "storage", "width": 18.0, "drawer_count": 3, "desktop_height": 30.0},
+            {
+                "pedestal_type": "storage",
+                "width": 18.0,
+                "drawer_count": 3,
+                "desktop_height": 30.0,
+            },
             right_ped_context,
         )
 
@@ -1211,7 +1207,10 @@ class TestDeskValidation:
         result = l_desk.validate(config, standard_desk_context)
 
         assert not result.is_valid
-        assert any("corner_type" in e and ("butt" in e or "diagonal" in e) for e in result.errors)
+        assert any(
+            "corner_type" in e and ("butt" in e or "diagonal" in e)
+            for e in result.errors
+        )
 
     def test_keyboard_tray_validates_knee_clearance(
         self, standard_desk_context: ComponentContext

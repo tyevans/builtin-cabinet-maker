@@ -8,10 +8,10 @@ from cabinets.domain.components import (
     ComponentContext,
     GenerationResult,
     HardwareItem,
-    ValidationResult,
     component_registry,
 )
 from cabinets.domain.components.shelf import (
+    AdjustableShelfComponent,
     DadoSpec,
     FixedShelfComponent,
     MM_TO_INCH,
@@ -169,7 +169,7 @@ class TestShelfComponentValidation:
 
         assert result.is_valid  # Warnings don't fail validation
         assert len(result.warnings) == 1
-        assert "exceeds recommended 36\"" in result.warnings[0]
+        assert 'exceeds recommended 36"' in result.warnings[0]
         assert "consider center support" in result.warnings[0]
 
     def test_validate_no_warning_for_narrow_shelf(
@@ -190,7 +190,9 @@ class TestShelfComponentValidation:
             width=40.0,
             height=72.0,
             depth=11.5,
-            material=MaterialSpec(thickness=1.0, material_type="plywood"),  # 1" material
+            material=MaterialSpec(
+                thickness=1.0, material_type="plywood"
+            ),  # 1" material
             position=Position(0.75, 0.75),
             section_index=0,
             cabinet_width=48.0,
@@ -264,7 +266,9 @@ class TestShelfComponentGeneration:
 
         for panel in result.panels:
             assert panel.width == standard_context.width  # 24.0
-            assert panel.height == expected_depth  # 10.5 (depth becomes height in panel)
+            assert (
+                panel.height == expected_depth
+            )  # 10.5 (depth becomes height in panel)
 
     def test_generate_panels_have_correct_material(
         self, shelf_component: FixedShelfComponent, standard_context: ComponentContext
@@ -295,9 +299,7 @@ class TestShelfComponentGeneration:
         result = shelf_component.generate(config, standard_context)
 
         expected_spacing = 72.0 / 4  # 18.0
-        expected_y_positions = [
-            0.75 + expected_spacing * (i + 1) for i in range(3)
-        ]
+        expected_y_positions = [0.75 + expected_spacing * (i + 1) for i in range(3)]
         # Shelf x is at section start - setback is for front edge (depth), not left edge
         expected_x = standard_context.position.x
 
@@ -495,9 +497,9 @@ class TestShelfComponentIntegration:
 
         # Expected spacing: 82.5 / 4 = 20.625
         expected_positions = [
-            0.75 + 20.625,   # 21.375
-            0.75 + 41.25,    # 42.0
-            0.75 + 61.875,   # 62.625
+            0.75 + 20.625,  # 21.375
+            0.75 + 41.25,  # 42.0
+            0.75 + 61.875,  # 62.625
         ]
 
         assert len(result.panels) == 3
@@ -771,7 +773,7 @@ class TestPositionsBasedConfiguration:
         result = shelf_component.validate(config, standard_context)
 
         assert not result.is_valid
-        assert "position 80.0\" outside section height" in result.errors[0]
+        assert 'position 80.0" outside section height' in result.errors[0]
 
     def test_validate_negative_position_fails(
         self, shelf_component: FixedShelfComponent, standard_context: ComponentContext
@@ -782,7 +784,7 @@ class TestPositionsBasedConfiguration:
         result = shelf_component.validate(config, standard_context)
 
         assert not result.is_valid
-        assert "position -5.0\" outside section height" in result.errors[0]
+        assert 'position -5.0" outside section height' in result.errors[0]
 
     def test_validate_minimum_spacing_between_shelves(
         self, shelf_component: FixedShelfComponent, standard_context: ComponentContext
@@ -793,7 +795,7 @@ class TestPositionsBasedConfiguration:
         result = shelf_component.validate(config, standard_context)
 
         assert not result.is_valid
-        assert "less than 2\" apart" in result.errors[0]
+        assert 'less than 2" apart' in result.errors[0]
 
     def test_validate_exactly_2_inch_spacing_passes(
         self, shelf_component: FixedShelfComponent, standard_context: ComponentContext
@@ -1095,14 +1097,12 @@ class TestBackwardCompatibility:
         result = shelf_component.validate(config, wide_context)
 
         assert len(result.warnings) == 1
-        assert "exceeds recommended 36\"" in result.warnings[0]
+        assert 'exceeds recommended 36"' in result.warnings[0]
 
 
 # =============================================================================
 # AdjustableShelfComponent Tests
 # =============================================================================
-
-from cabinets.domain.components.shelf import AdjustableShelfComponent
 
 
 @pytest.fixture
@@ -1134,7 +1134,9 @@ class TestAdjustableShelfComponentValidation:
     """Tests for AdjustableShelfComponent.validate()."""
 
     def test_validate_returns_ok_for_valid_config(
-        self, adjustable_shelf_component: AdjustableShelfComponent, standard_context: ComponentContext
+        self,
+        adjustable_shelf_component: AdjustableShelfComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that validate returns ok for valid shelf count."""
         config = {"count": 3}
@@ -1145,7 +1147,9 @@ class TestAdjustableShelfComponentValidation:
         assert len(result.errors) == 0
 
     def test_validate_returns_ok_for_zero_count(
-        self, adjustable_shelf_component: AdjustableShelfComponent, standard_context: ComponentContext
+        self,
+        adjustable_shelf_component: AdjustableShelfComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that validate returns ok for zero shelf count."""
         config = {"count": 0}
@@ -1156,7 +1160,9 @@ class TestAdjustableShelfComponentValidation:
         assert len(result.errors) == 0
 
     def test_validate_returns_ok_for_valid_positions(
-        self, adjustable_shelf_component: AdjustableShelfComponent, standard_context: ComponentContext
+        self,
+        adjustable_shelf_component: AdjustableShelfComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that validate returns ok for valid explicit positions."""
         config = {"positions": [12.0, 36.0, 60.0]}
@@ -1167,7 +1173,9 @@ class TestAdjustableShelfComponentValidation:
         assert len(result.errors) == 0
 
     def test_validate_warns_for_position_outside_pin_range(
-        self, adjustable_shelf_component: AdjustableShelfComponent, standard_context: ComponentContext
+        self,
+        adjustable_shelf_component: AdjustableShelfComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that validate warns when shelf position is outside pin hole range."""
         # Default pin range: 2.0" to (72.0 - 2.0) = 70.0"
@@ -1180,7 +1188,9 @@ class TestAdjustableShelfComponentValidation:
         assert "outside pin hole range" in result.warnings[0]
 
     def test_validate_warns_for_position_above_pin_end(
-        self, adjustable_shelf_component: AdjustableShelfComponent, standard_context: ComponentContext
+        self,
+        adjustable_shelf_component: AdjustableShelfComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that validate warns when shelf position is above pin end height."""
         # Default pin range: 2.0" to (72.0 - 2.0) = 70.0"
@@ -1193,7 +1203,9 @@ class TestAdjustableShelfComponentValidation:
         assert "outside pin hole range" in result.warnings[0]
 
     def test_validate_error_for_depth_exceeding_available(
-        self, adjustable_shelf_component: AdjustableShelfComponent, standard_context: ComponentContext
+        self,
+        adjustable_shelf_component: AdjustableShelfComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that validate errors when depth exceeds available depth."""
         # Available depth = 11.5 - 1.0 (default setback) = 10.5
@@ -1225,10 +1237,12 @@ class TestAdjustableShelfComponentValidation:
 
         assert result.is_valid
         assert len(result.warnings) == 1
-        assert "exceeds recommended 36\"" in result.warnings[0]
+        assert 'exceeds recommended 36"' in result.warnings[0]
 
     def test_validate_custom_pin_start_height(
-        self, adjustable_shelf_component: AdjustableShelfComponent, standard_context: ComponentContext
+        self,
+        adjustable_shelf_component: AdjustableShelfComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that validate respects custom pin_start_height."""
         config = {"positions": [4.0], "pin_start_height": 5.0}
@@ -1240,7 +1254,9 @@ class TestAdjustableShelfComponentValidation:
         assert "outside pin hole range" in result.warnings[0]
 
     def test_validate_custom_pin_end_offset(
-        self, adjustable_shelf_component: AdjustableShelfComponent, standard_context: ComponentContext
+        self,
+        adjustable_shelf_component: AdjustableShelfComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that validate respects custom pin_end_offset."""
         config = {"positions": [66.0], "pin_end_offset": 10.0}  # pin_end = 72 - 10 = 62
@@ -1256,7 +1272,9 @@ class TestAdjustableShelfComponentGeneration:
     """Tests for AdjustableShelfComponent.generate()."""
 
     def test_generate_returns_empty_for_zero_count(
-        self, adjustable_shelf_component: AdjustableShelfComponent, standard_context: ComponentContext
+        self,
+        adjustable_shelf_component: AdjustableShelfComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that generate returns empty result for count=0."""
         config = {"count": 0}
@@ -1266,7 +1284,9 @@ class TestAdjustableShelfComponentGeneration:
         assert len(result.panels) == 0
 
     def test_generate_returns_empty_for_missing_count(
-        self, adjustable_shelf_component: AdjustableShelfComponent, standard_context: ComponentContext
+        self,
+        adjustable_shelf_component: AdjustableShelfComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that generate returns empty result for missing count."""
         config: dict = {}
@@ -1276,7 +1296,9 @@ class TestAdjustableShelfComponentGeneration:
         assert len(result.panels) == 0
 
     def test_generate_creates_correct_number_of_panels(
-        self, adjustable_shelf_component: AdjustableShelfComponent, standard_context: ComponentContext
+        self,
+        adjustable_shelf_component: AdjustableShelfComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that generate creates the correct number of shelf panels."""
         config = {"count": 3}
@@ -1286,7 +1308,9 @@ class TestAdjustableShelfComponentGeneration:
         assert len(result.panels) == 3
 
     def test_generate_creates_panels_at_correct_positions(
-        self, adjustable_shelf_component: AdjustableShelfComponent, standard_context: ComponentContext
+        self,
+        adjustable_shelf_component: AdjustableShelfComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that shelves are evenly spaced within the section.
 
@@ -1307,7 +1331,9 @@ class TestAdjustableShelfComponentGeneration:
             assert panel.position.x == pytest.approx(expected_x)
 
     def test_generate_creates_panels_with_correct_dimensions(
-        self, adjustable_shelf_component: AdjustableShelfComponent, standard_context: ComponentContext
+        self,
+        adjustable_shelf_component: AdjustableShelfComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that generated panels have correct dimensions."""
         config = {"count": 2}
@@ -1322,7 +1348,9 @@ class TestAdjustableShelfComponentGeneration:
             assert panel.height == expected_depth
 
     def test_generate_creates_pin_hole_patterns_in_metadata(
-        self, adjustable_shelf_component: AdjustableShelfComponent, standard_context: ComponentContext
+        self,
+        adjustable_shelf_component: AdjustableShelfComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that generate creates pin_hole_patterns in metadata."""
         config = {"count": 2}
@@ -1334,7 +1362,9 @@ class TestAdjustableShelfComponentGeneration:
         assert len(patterns) == 2  # Left and right side
 
     def test_generate_pin_patterns_have_correct_panel_ids(
-        self, adjustable_shelf_component: AdjustableShelfComponent, standard_context: ComponentContext
+        self,
+        adjustable_shelf_component: AdjustableShelfComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that pin patterns are for left and right side panels."""
         config = {"count": 1}
@@ -1346,7 +1376,9 @@ class TestAdjustableShelfComponentGeneration:
         assert panel_ids == {"left_side", "right_side"}
 
     def test_generate_pin_patterns_have_correct_heights(
-        self, adjustable_shelf_component: AdjustableShelfComponent, standard_context: ComponentContext
+        self,
+        adjustable_shelf_component: AdjustableShelfComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that pin patterns have correct start and end heights."""
         config = {"count": 1}
@@ -1358,7 +1390,9 @@ class TestAdjustableShelfComponentGeneration:
             assert pattern.end_height == 70.0  # 72.0 - DEFAULT_PIN_END (2.0)
 
     def test_generate_pin_patterns_with_custom_heights(
-        self, adjustable_shelf_component: AdjustableShelfComponent, standard_context: ComponentContext
+        self,
+        adjustable_shelf_component: AdjustableShelfComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that custom pin heights are respected."""
         config = {"count": 1, "pin_start_height": 3.0, "pin_end_offset": 4.0}
@@ -1370,7 +1404,9 @@ class TestAdjustableShelfComponentGeneration:
             assert pattern.end_height == 68.0  # 72.0 - 4.0
 
     def test_generate_includes_shelf_pins_hardware(
-        self, adjustable_shelf_component: AdjustableShelfComponent, standard_context: ComponentContext
+        self,
+        adjustable_shelf_component: AdjustableShelfComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that generate includes shelf pins in hardware."""
         config = {"count": 3}
@@ -1383,7 +1419,9 @@ class TestAdjustableShelfComponentGeneration:
         assert pin_items[0].sku == "SP-5MM-BRASS"
 
     def test_generate_includes_edge_banding_by_default(
-        self, adjustable_shelf_component: AdjustableShelfComponent, standard_context: ComponentContext
+        self,
+        adjustable_shelf_component: AdjustableShelfComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that generate includes edge banding by default."""
         config = {"count": 3}
@@ -1395,7 +1433,9 @@ class TestAdjustableShelfComponentGeneration:
         assert "72.0 linear inches" in edge_items[0].notes
 
     def test_generate_excludes_edge_banding_when_disabled(
-        self, adjustable_shelf_component: AdjustableShelfComponent, standard_context: ComponentContext
+        self,
+        adjustable_shelf_component: AdjustableShelfComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that edge banding is excluded when edge_band_front is False."""
         config = {"count": 3, "edge_band_front": False}
@@ -1406,7 +1446,9 @@ class TestAdjustableShelfComponentGeneration:
         assert len(edge_items) == 0
 
     def test_generate_returns_generation_result_type(
-        self, adjustable_shelf_component: AdjustableShelfComponent, standard_context: ComponentContext
+        self,
+        adjustable_shelf_component: AdjustableShelfComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that generate returns a GenerationResult instance."""
         config = {"count": 2}
@@ -1416,7 +1458,9 @@ class TestAdjustableShelfComponentGeneration:
         assert isinstance(result, GenerationResult)
 
     def test_generate_with_explicit_positions(
-        self, adjustable_shelf_component: AdjustableShelfComponent, standard_context: ComponentContext
+        self,
+        adjustable_shelf_component: AdjustableShelfComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that generate creates shelves at explicit positions."""
         config = {"positions": [10.0, 40.0, 65.0]}
@@ -1433,7 +1477,9 @@ class TestAdjustableShelfComponentHardware:
     """Tests for AdjustableShelfComponent.hardware()."""
 
     def test_hardware_returns_shelf_pins(
-        self, adjustable_shelf_component: AdjustableShelfComponent, standard_context: ComponentContext
+        self,
+        adjustable_shelf_component: AdjustableShelfComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that hardware returns shelf pins."""
         config = {"count": 3}
@@ -1445,7 +1491,9 @@ class TestAdjustableShelfComponentHardware:
         assert pin_items[0].quantity == 12  # 3 * 4 pins
 
     def test_hardware_returns_correct_pin_details(
-        self, adjustable_shelf_component: AdjustableShelfComponent, standard_context: ComponentContext
+        self,
+        adjustable_shelf_component: AdjustableShelfComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that hardware returns correct pin SKU and notes."""
         config = {"count": 2}
@@ -1457,7 +1505,9 @@ class TestAdjustableShelfComponentHardware:
         assert pin_item.notes == "5mm brass shelf pins"
 
     def test_hardware_returns_edge_banding_by_default(
-        self, adjustable_shelf_component: AdjustableShelfComponent, standard_context: ComponentContext
+        self,
+        adjustable_shelf_component: AdjustableShelfComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that hardware returns edge banding by default."""
         config = {"count": 3}
@@ -1469,7 +1519,9 @@ class TestAdjustableShelfComponentHardware:
         assert "72.0 linear inches" in edge_items[0].notes
 
     def test_hardware_excludes_edge_banding_when_disabled(
-        self, adjustable_shelf_component: AdjustableShelfComponent, standard_context: ComponentContext
+        self,
+        adjustable_shelf_component: AdjustableShelfComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that hardware excludes edge banding when edge_band_front is False."""
         config = {"count": 3, "edge_band_front": False}
@@ -1480,7 +1532,9 @@ class TestAdjustableShelfComponentHardware:
         assert len(edge_items) == 0
 
     def test_hardware_returns_empty_for_zero_count(
-        self, adjustable_shelf_component: AdjustableShelfComponent, standard_context: ComponentContext
+        self,
+        adjustable_shelf_component: AdjustableShelfComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that hardware returns empty list for zero count."""
         config = {"count": 0}
@@ -1490,7 +1544,9 @@ class TestAdjustableShelfComponentHardware:
         assert result == []
 
     def test_hardware_returns_empty_for_missing_count(
-        self, adjustable_shelf_component: AdjustableShelfComponent, standard_context: ComponentContext
+        self,
+        adjustable_shelf_component: AdjustableShelfComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that hardware returns empty list for missing count."""
         config: dict = {}
@@ -1500,7 +1556,9 @@ class TestAdjustableShelfComponentHardware:
         assert result == []
 
     def test_hardware_with_explicit_positions(
-        self, adjustable_shelf_component: AdjustableShelfComponent, standard_context: ComponentContext
+        self,
+        adjustable_shelf_component: AdjustableShelfComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that hardware works with explicit positions."""
         config = {"positions": [10.0, 40.0]}
@@ -1576,7 +1634,9 @@ class TestAdjustableShelfComponentIntegration:
         assert len(fix_pins) == 0
 
         # Fixed with use_pins=True has pins
-        fix_hardware_pins = fixed.hardware({**config, "use_pins": True}, standard_context)
+        fix_hardware_pins = fixed.hardware(
+            {**config, "use_pins": True}, standard_context
+        )
         fix_pins_enabled = [h for h in fix_hardware_pins if h.name == "Shelf Pin"]
         assert len(fix_pins_enabled) == 1
 
@@ -1613,7 +1673,7 @@ class TestShelfComponentEdgeCases:
         config = {"positions": [10.0, 11.9]}  # 1.9" apart
         result = shelf_component.validate(config, standard_context)
         assert not result.is_valid
-        assert "less than 2\" apart" in result.errors[0]
+        assert 'less than 2" apart' in result.errors[0]
 
     def test_maximum_shelf_count_20(
         self, shelf_component: FixedShelfComponent, standard_context: ComponentContext
@@ -1716,7 +1776,9 @@ class TestAdjustableShelfComponentEdgeCases:
     """Edge case tests for AdjustableShelfComponent."""
 
     def test_position_exactly_at_pin_start(
-        self, adjustable_shelf_component: AdjustableShelfComponent, standard_context: ComponentContext
+        self,
+        adjustable_shelf_component: AdjustableShelfComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test position exactly at pin start height."""
         config = {"positions": [2.0]}  # Exactly at DEFAULT_PIN_START
@@ -1725,7 +1787,9 @@ class TestAdjustableShelfComponentEdgeCases:
         assert len(result.warnings) == 0
 
     def test_position_exactly_at_pin_end(
-        self, adjustable_shelf_component: AdjustableShelfComponent, standard_context: ComponentContext
+        self,
+        adjustable_shelf_component: AdjustableShelfComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test position exactly at pin end height."""
         # pin_end = 72.0 - 2.0 = 70.0
@@ -1735,7 +1799,9 @@ class TestAdjustableShelfComponentEdgeCases:
         assert len(result.warnings) == 0
 
     def test_position_just_below_pin_start(
-        self, adjustable_shelf_component: AdjustableShelfComponent, standard_context: ComponentContext
+        self,
+        adjustable_shelf_component: AdjustableShelfComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test position just below pin start height warns."""
         config = {"positions": [1.99]}  # Just below DEFAULT_PIN_START of 2.0
@@ -1744,7 +1810,9 @@ class TestAdjustableShelfComponentEdgeCases:
         assert len(result.warnings) == 1
 
     def test_position_just_above_pin_end(
-        self, adjustable_shelf_component: AdjustableShelfComponent, standard_context: ComponentContext
+        self,
+        adjustable_shelf_component: AdjustableShelfComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test position just above pin end height warns."""
         config = {"positions": [70.01]}  # Just above pin_end of 70.0
@@ -1773,7 +1841,9 @@ class TestAdjustableShelfComponentEdgeCases:
         assert result.is_valid
 
     def test_pin_patterns_have_32mm_system_defaults(
-        self, adjustable_shelf_component: AdjustableShelfComponent, standard_context: ComponentContext
+        self,
+        adjustable_shelf_component: AdjustableShelfComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that pin patterns use 32mm system defaults."""
         config = {"count": 1}
@@ -1789,7 +1859,9 @@ class TestAdjustableShelfComponentEdgeCases:
         assert pattern.hole_diameter == pytest.approx(5.0 * MM_TO_INCH)
 
     def test_empty_positions_list(
-        self, adjustable_shelf_component: AdjustableShelfComponent, standard_context: ComponentContext
+        self,
+        adjustable_shelf_component: AdjustableShelfComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test empty positions list returns empty result."""
         config = {"positions": []}
@@ -1797,7 +1869,9 @@ class TestAdjustableShelfComponentEdgeCases:
         assert len(result.panels) == 0
 
     def test_single_position_hardware_count(
-        self, adjustable_shelf_component: AdjustableShelfComponent, standard_context: ComponentContext
+        self,
+        adjustable_shelf_component: AdjustableShelfComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test single position has correct hardware count."""
         config = {"positions": [36.0]}
@@ -1807,7 +1881,9 @@ class TestAdjustableShelfComponentEdgeCases:
         assert pin_items[0].quantity == 4  # 1 shelf * 4 pins
 
     def test_many_positions_hardware_count(
-        self, adjustable_shelf_component: AdjustableShelfComponent, standard_context: ComponentContext
+        self,
+        adjustable_shelf_component: AdjustableShelfComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test many positions have correct hardware count."""
         config = {"positions": [10.0, 20.0, 30.0, 40.0, 50.0, 60.0]}  # 6 shelves
@@ -1817,7 +1893,9 @@ class TestAdjustableShelfComponentEdgeCases:
         assert pin_items[0].quantity == 24  # 6 shelves * 4 pins
 
     def test_both_edge_banding_and_pins_returned(
-        self, adjustable_shelf_component: AdjustableShelfComponent, standard_context: ComponentContext
+        self,
+        adjustable_shelf_component: AdjustableShelfComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test both edge banding and pins are in hardware."""
         config = {"count": 3}
@@ -1883,7 +1961,9 @@ class TestMetadataFieldEdgeCases:
         assert set(result.metadata.keys()) == {"dado_specs"}
 
     def test_adjustable_shelf_metadata_contains_only_pin_patterns(
-        self, adjustable_shelf_component: AdjustableShelfComponent, standard_context: ComponentContext
+        self,
+        adjustable_shelf_component: AdjustableShelfComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that adjustable shelf metadata only contains pin_hole_patterns."""
         config = {"count": 2}
@@ -1912,7 +1992,9 @@ class TestMetadataFieldEdgeCases:
             assert isinstance(spec, DadoSpec)
 
     def test_pin_patterns_are_pin_hole_pattern_instances(
-        self, adjustable_shelf_component: AdjustableShelfComponent, standard_context: ComponentContext
+        self,
+        adjustable_shelf_component: AdjustableShelfComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that pin_hole_patterns contains PinHolePattern instances."""
         config = {"count": 1}

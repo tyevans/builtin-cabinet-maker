@@ -20,11 +20,11 @@ from datetime import datetime
 from pathlib import Path
 from typing import TYPE_CHECKING, ClassVar
 
-from cabinets.domain.value_objects import CutPiece, JointType, PanelType
+from cabinets.domain.value_objects import CutPiece, PanelType
 from cabinets.infrastructure.exporters.base import ExporterRegistry
 
 if TYPE_CHECKING:
-    from cabinets.application.dtos import LayoutOutput, RoomLayoutOutput
+    from cabinets.contracts.dtos import LayoutOutput, RoomLayoutOutput
     from cabinets.domain.services.woodworking import ConnectionJoinery
 
 
@@ -63,13 +63,13 @@ BUILD_PHASES: list[tuple[str, str, list[PanelType]]] = [
 
 # Joinery instructions by type (FR-02.4)
 JOINERY_INSTRUCTIONS: dict[str, str] = {
-    "dado": "Cut dado groove {depth:.3f}\" deep x {width:.3f}\" wide at {position}",
-    "rabbet": "Cut rabbet {depth:.3f}\" deep x {width:.3f}\" wide along edge",
+    "dado": 'Cut dado groove {depth:.3f}" deep x {width:.3f}" wide at {position}',
+    "rabbet": 'Cut rabbet {depth:.3f}" deep x {width:.3f}" wide along edge',
     "butt": "Apply glue and use pocket screws or dowels for alignment",
     "biscuit": "Cut biscuit slots at marked positions and insert #20 biscuits",
-    "pocket_hole": "Drill pocket holes at {spacing:.1f}\" spacing and secure with 1-1/4\" pocket screws",
-    "pocket_screw": "Drill pocket holes at {spacing:.1f}\" spacing and secure with 1-1/4\" pocket screws",
-    "dowel": "Drill dowel holes at {spacing:.1f}\" spacing and insert 5/16\" x 1-1/2\" fluted dowels",
+    "pocket_hole": 'Drill pocket holes at {spacing:.1f}" spacing and secure with 1-1/4" pocket screws',
+    "pocket_screw": 'Drill pocket holes at {spacing:.1f}" spacing and secure with 1-1/4" pocket screws',
+    "dowel": 'Drill dowel holes at {spacing:.1f}" spacing and insert 5/16" x 1-1/2" fluted dowels',
 }
 
 
@@ -82,7 +82,7 @@ PHASE_NOTES: dict[str, dict[str, str]] = {
     },
     "horizontal": {
         "glue": "Apply thin, even coat of wood glue to all mating surfaces",
-        "fasteners": "Use #8 x 1-1/4\" wood screws, pre-drill to prevent splitting",
+        "fasteners": 'Use #8 x 1-1/4" wood screws, pre-drill to prevent splitting',
         "tips": "Check for square using diagonal measurements",
         "clamp_time": "Clamp for minimum 30 minutes before proceeding",
     },
@@ -93,7 +93,7 @@ PHASE_NOTES: dict[str, dict[str, str]] = {
     },
     "back": {
         "glue": "Apply light bead of glue in rabbet before attaching back",
-        "fasteners": "Use #6 x 5/8\" pan head screws at 6\" intervals around perimeter",
+        "fasteners": 'Use #6 x 5/8" pan head screws at 6" intervals around perimeter',
         "tips": "Back panel squares up the entire cabinet - measure diagonals",
     },
     "fixed_shelves": {
@@ -108,12 +108,12 @@ PHASE_NOTES: dict[str, dict[str, str]] = {
     },
     "doors": {
         "glue": "No glue required for door installation",
-        "fasteners": "Use European cup hinges (35mm) - 2 per door under 40\", 3 for taller",
+        "fasteners": 'Use European cup hinges (35mm) - 2 per door under 40", 3 for taller',
         "tips": "Install hinges on doors before mounting to cabinet",
     },
     "drawers": {
         "glue": "Apply glue to drawer box joints during assembly",
-        "fasteners": "Use #6 x 1\" screws to attach drawer front to drawer box",
+        "fasteners": 'Use #6 x 1" screws to attach drawer front to drawer box',
         "tips": "Install drawer slides before attaching drawer front for proper alignment",
     },
 }
@@ -127,9 +127,9 @@ TOOLS_LIST: list[str] = [
     "Drill with countersink bit",
     "Square (combination square and framing square)",
     "Measuring tape and marking pencil",
-    "Clamps (4+ bar clamps, 24-48\" recommended)",
+    'Clamps (4+ bar clamps, 24-48" recommended)',
     "Rubber mallet",
-    "Level (24\" or longer)",
+    'Level (24" or longer)',
     "Safety glasses and hearing protection",
 ]
 
@@ -188,7 +188,6 @@ class AssemblyInstructionGenerator:
             Complete markdown-formatted assembly instructions.
         """
         # Import here to avoid circular imports at module level
-        from cabinets.application.dtos import LayoutOutput, RoomLayoutOutput
 
         lines: list[str] = []
         lines.extend(self._header(output))
@@ -203,6 +202,20 @@ class AssemblyInstructionGenerator:
 
         return "\n".join(lines)
 
+    def format_for_console(self, output: LayoutOutput | RoomLayoutOutput) -> str:
+        """Format assembly instructions for console display.
+
+        The markdown format is already suitable for terminal display,
+        so this delegates directly to export_string().
+
+        Args:
+            output: The layout output to generate instructions for.
+
+        Returns:
+            Complete markdown-formatted assembly instructions.
+        """
+        return self.export_string(output)
+
     def _header(self, output: LayoutOutput | RoomLayoutOutput) -> list[str]:
         """Generate document header.
 
@@ -212,7 +225,7 @@ class AssemblyInstructionGenerator:
         Returns:
             List of header lines.
         """
-        from cabinets.application.dtos import LayoutOutput, RoomLayoutOutput
+        from cabinets.contracts.dtos import LayoutOutput, RoomLayoutOutput
 
         lines: list[str] = []
 
@@ -238,7 +251,9 @@ class AssemblyInstructionGenerator:
 
         return lines
 
-    def _materials_checklist(self, output: LayoutOutput | RoomLayoutOutput) -> list[str]:
+    def _materials_checklist(
+        self, output: LayoutOutput | RoomLayoutOutput
+    ) -> list[str]:
         """Generate materials verification checklist.
 
         Args:
@@ -247,7 +262,7 @@ class AssemblyInstructionGenerator:
         Returns:
             List of checklist lines.
         """
-        from cabinets.application.dtos import LayoutOutput, RoomLayoutOutput
+        from cabinets.contracts.dtos import LayoutOutput, RoomLayoutOutput
 
         lines: list[str] = []
         lines.append("## Materials Checklist")
@@ -288,9 +303,9 @@ class AssemblyInstructionGenerator:
                 lines.append(f"- [ ] {item.name} (qty: {item.quantity}){note}")
         else:
             lines.append("- [ ] Wood screws (assorted sizes)")
-            lines.append("- [ ] Pocket hole screws (1-1/4\")")
+            lines.append('- [ ] Pocket hole screws (1-1/4")')
             lines.append("- [ ] Shelf pins (5mm)")
-            lines.append("- [ ] Back panel screws (#6 x 5/8\")")
+            lines.append('- [ ] Back panel screws (#6 x 5/8")')
         lines.append("")
 
         # Consumables
@@ -346,7 +361,7 @@ class AssemblyInstructionGenerator:
         Returns:
             List of instruction step lines.
         """
-        from cabinets.application.dtos import LayoutOutput, RoomLayoutOutput
+        from cabinets.contracts.dtos import LayoutOutput, RoomLayoutOutput
 
         lines: list[str] = []
         lines.append("## Assembly Steps")
@@ -532,9 +547,15 @@ class AssemblyInstructionGenerator:
         if phase_id == "carcase_prep":
             lines.append("**Instructions:**")
             lines.append("1. Lay out side panels with inside faces up")
-            lines.append("2. Mark dado positions for top, bottom, and fixed shelf locations")
-            lines.append("3. Cut all dados using router with straight bit or table saw with dado blade")
-            lines.append("4. Test fit top and bottom panels in dados - should be snug but not forced")
+            lines.append(
+                "2. Mark dado positions for top, bottom, and fixed shelf locations"
+            )
+            lines.append(
+                "3. Cut all dados using router with straight bit or table saw with dado blade"
+            )
+            lines.append(
+                "4. Test fit top and bottom panels in dados - should be snug but not forced"
+            )
             lines.append("")
 
         elif phase_id == "horizontal":
@@ -542,14 +563,20 @@ class AssemblyInstructionGenerator:
             lines.append("1. Apply glue to all dado grooves in side panels")
             lines.append("2. Insert bottom panel into dados in both side panels")
             lines.append("3. Insert top panel into dados in both side panels")
-            lines.append("4. Square the assembly using clamps and diagonal measurements")
-            lines.append("5. Pre-drill and drive screws through sides into top and bottom")
+            lines.append(
+                "4. Square the assembly using clamps and diagonal measurements"
+            )
+            lines.append(
+                "5. Pre-drill and drive screws through sides into top and bottom"
+            )
             lines.append("")
 
         elif phase_id == "dividers":
             if pieces:
                 lines.append("**Instructions:**")
-                lines.append("1. Apply glue to vertical dado grooves in top and bottom panels")
+                lines.append(
+                    "1. Apply glue to vertical dado grooves in top and bottom panels"
+                )
                 lines.append("2. Slide dividers into place from the front")
                 lines.append("3. Ensure dividers are plumb using a level")
                 lines.append("4. Wipe away excess glue with damp rag")
@@ -560,7 +587,7 @@ class AssemblyInstructionGenerator:
             lines.append("1. Verify cabinet is square by measuring diagonals")
             lines.append("2. Apply thin bead of glue in rabbet around perimeter")
             lines.append("3. Position back panel in rabbet")
-            lines.append("4. Drive screws around perimeter at 6\" intervals")
+            lines.append('4. Drive screws around perimeter at 6" intervals')
             lines.append("5. Add screws along dividers if present")
             lines.append("")
 
@@ -585,7 +612,9 @@ class AssemblyInstructionGenerator:
         elif phase_id == "doors":
             if pieces:
                 lines.append("**Instructions:**")
-                lines.append("1. Mark hinge cup locations on doors (typically 3\" from top and bottom)")
+                lines.append(
+                    '1. Mark hinge cup locations on doors (typically 3" from top and bottom)'
+                )
                 lines.append("2. Drill 35mm hinge cup holes using Forstner bit")
                 lines.append("3. Install hinge cups in doors")
                 lines.append("4. Mark mounting plate positions on cabinet sides")
@@ -597,7 +626,9 @@ class AssemblyInstructionGenerator:
             if pieces:
                 lines.append("**Instructions:**")
                 lines.append("1. Assemble drawer boxes with glue and fasteners")
-                lines.append("2. Install drawer slides on cabinet (follow manufacturer spacing)")
+                lines.append(
+                    "2. Install drawer slides on cabinet (follow manufacturer spacing)"
+                )
                 lines.append("3. Attach slide members to drawer boxes")
                 lines.append("4. Insert drawers and test operation")
                 lines.append("5. Attach drawer fronts with proper reveals")
@@ -616,11 +647,15 @@ class AssemblyInstructionGenerator:
         lines.append("")
         lines.append("After assembly is complete:")
         lines.append("")
-        lines.append("1. **Inspect all joints** - Check for gaps, squeeze-out, or loose fits")
+        lines.append(
+            "1. **Inspect all joints** - Check for gaps, squeeze-out, or loose fits"
+        )
         lines.append("2. **Sand all surfaces** - Progress through 120, 180, 220 grit")
         lines.append("3. **Fill any holes** - Use wood filler matching final finish")
         lines.append("4. **Remove dust** - Vacuum and wipe with tack cloth")
-        lines.append("5. **Apply finish** - Follow manufacturer instructions for chosen finish")
+        lines.append(
+            "5. **Apply finish** - Follow manufacturer instructions for chosen finish"
+        )
         lines.append("")
         lines.append("---")
         lines.append("")

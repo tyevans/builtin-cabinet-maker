@@ -16,7 +16,6 @@ import pytest
 from cabinets.domain.components import (
     ComponentContext,
     GenerationResult,
-    ValidationResult,
     component_registry,
 )
 from cabinets.domain.components.media import (
@@ -1709,7 +1708,6 @@ class TestSoundbarShelfHardwareMethod:
         self, component: SoundbarShelfComponent, standard_context: ComponentContext
     ) -> None:
         """Test that hardware() returns bracket when include_mount=True."""
-        from cabinets.domain.components.results import HardwareItem
 
         config = {"soundbar_type": "standard", "include_mount": True}
         hardware = component.hardware(config, standard_context)
@@ -1818,7 +1816,10 @@ class TestSpeakerCenterChannelHeightValidation:
     ) -> None:
         """Test center_channel at 36-42 inches generates no warning."""
         for height in [36.0, 40.0, 42.0]:
-            config = {"speaker_type": "center_channel", "alcove_height_from_floor": height}
+            config = {
+                "speaker_type": "center_channel",
+                "alcove_height_from_floor": height,
+            }
             result = component.validate(config, standard_context)
             assert not any("ear level" in warn for warn in result.warnings)
 
@@ -1895,7 +1896,9 @@ class TestSpeakerAlcoveGenerationPanels:
         """Test that RIGHT_SIDE panel is generated with speaker_type metadata."""
         config = {"speaker_type": "bookshelf"}
         result = component.generate(config, standard_context)
-        right_panels = [p for p in result.panels if p.panel_type == PanelType.RIGHT_SIDE]
+        right_panels = [
+            p for p in result.panels if p.panel_type == PanelType.RIGHT_SIDE
+        ]
         assert len(right_panels) == 1
         assert right_panels[0].metadata["component"] == "media.speaker_alcove"
         assert right_panels[0].metadata["speaker_type"] == "bookshelf"
@@ -1930,12 +1933,16 @@ class TestSpeakerAlcoveGenerationPanels:
         result = component.generate(config, standard_context)
 
         # Side panels: width = depth + 2, height = speaker_height + 2
-        left_panel = next(p for p in result.panels if p.panel_type == PanelType.LEFT_SIDE)
+        left_panel = next(
+            p for p in result.panels if p.panel_type == PanelType.LEFT_SIDE
+        )
         assert left_panel.width == 12.0 + 2.0  # depth + 2
         assert left_panel.height == 8.0 + 2.0  # height + 2
 
         # Bottom panel: width = speaker_width + 2, height = depth + 2
-        bottom_panel = next(p for p in result.panels if p.panel_type == PanelType.BOTTOM)
+        bottom_panel = next(
+            p for p in result.panels if p.panel_type == PanelType.BOTTOM
+        )
         assert bottom_panel.width == 24.0 + 2.0  # width + 2
         assert bottom_panel.height == 12.0 + 2.0  # depth + 2
 

@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import tempfile
 from pathlib import Path
-from typing import ClassVar
 
 import pytest
 from typer.testing import CliRunner
@@ -24,7 +23,8 @@ class TestOutputFormatsOption:
         result = runner.invoke(app, ["generate", "--help"])
         assert result.exit_code == 0
         assert "--output-formats" in result.output
-        assert "Comma-separated export formats" in result.output
+        # Check for partial text to handle word-wrapping in different terminal widths
+        assert "Comma-separated" in result.output
 
     def test_help_shows_output_dir_option(self) -> None:
         """Generate command help includes --output-dir option."""
@@ -51,12 +51,18 @@ class TestFormatParsing:
                 app,
                 [
                     "generate",
-                    "--width", "48",
-                    "--height", "84",
-                    "--depth", "12",
-                    "--output-formats", "stl",
-                    "--output-dir", tmpdir,
-                    "--project-name", "test_cabinet",
+                    "--width",
+                    "48",
+                    "--height",
+                    "84",
+                    "--depth",
+                    "12",
+                    "--output-formats",
+                    "stl",
+                    "--output-dir",
+                    tmpdir,
+                    "--project-name",
+                    "test_cabinet",
                 ],
             )
             assert result.exit_code == 0
@@ -73,12 +79,18 @@ class TestFormatParsing:
                 app,
                 [
                     "generate",
-                    "--width", "48",
-                    "--height", "84",
-                    "--depth", "12",
-                    "--output-formats", "stl,json",
-                    "--output-dir", tmpdir,
-                    "--project-name", "multi",
+                    "--width",
+                    "48",
+                    "--height",
+                    "84",
+                    "--depth",
+                    "12",
+                    "--output-formats",
+                    "stl,json",
+                    "--output-dir",
+                    tmpdir,
+                    "--project-name",
+                    "multi",
                 ],
             )
             assert result.exit_code == 0
@@ -95,11 +107,16 @@ class TestFormatParsing:
                 app,
                 [
                     "generate",
-                    "--width", "48",
-                    "--height", "84",
-                    "--depth", "12",
-                    "--output-formats", "stl , json",  # Spaces around comma
-                    "--output-dir", tmpdir,
+                    "--width",
+                    "48",
+                    "--height",
+                    "84",
+                    "--depth",
+                    "12",
+                    "--output-formats",
+                    "stl , json",  # Spaces around comma
+                    "--output-dir",
+                    tmpdir,
                 ],
             )
             assert result.exit_code == 0
@@ -113,11 +130,16 @@ class TestFormatParsing:
                 app,
                 [
                     "generate",
-                    "--width", "48",
-                    "--height", "84",
-                    "--depth", "12",
-                    "--output-formats", "all",
-                    "--output-dir", tmpdir,
+                    "--width",
+                    "48",
+                    "--height",
+                    "84",
+                    "--depth",
+                    "12",
+                    "--output-formats",
+                    "all",
+                    "--output-dir",
+                    tmpdir,
                 ],
             )
             # Should export all formats (except svg which requires --optimize)
@@ -134,11 +156,16 @@ class TestFormatParsing:
                 app,
                 [
                     "generate",
-                    "--width", "48",
-                    "--height", "84",
-                    "--depth", "12",
-                    "--output-formats", "ALL",
-                    "--output-dir", tmpdir,
+                    "--width",
+                    "48",
+                    "--height",
+                    "84",
+                    "--depth",
+                    "12",
+                    "--output-formats",
+                    "ALL",
+                    "--output-dir",
+                    tmpdir,
                 ],
             )
             assert result.exit_code == 0
@@ -155,11 +182,16 @@ class TestInvalidFormatHandling:
                 app,
                 [
                     "generate",
-                    "--width", "48",
-                    "--height", "84",
-                    "--depth", "12",
-                    "--output-formats", "unknown_format",
-                    "--output-dir", tmpdir,
+                    "--width",
+                    "48",
+                    "--height",
+                    "84",
+                    "--depth",
+                    "12",
+                    "--output-formats",
+                    "unknown_format",
+                    "--output-dir",
+                    tmpdir,
                 ],
             )
             assert result.exit_code == 1
@@ -173,11 +205,16 @@ class TestInvalidFormatHandling:
                 app,
                 [
                     "generate",
-                    "--width", "48",
-                    "--height", "84",
-                    "--depth", "12",
-                    "--output-formats", "stl,invalid_format",
-                    "--output-dir", tmpdir,
+                    "--width",
+                    "48",
+                    "--height",
+                    "84",
+                    "--depth",
+                    "12",
+                    "--output-formats",
+                    "stl,invalid_format",
+                    "--output-dir",
+                    tmpdir,
                 ],
             )
             assert result.exit_code == 1
@@ -195,11 +232,16 @@ class TestOutputDirectoryHandling:
                 app,
                 [
                     "generate",
-                    "--width", "48",
-                    "--height", "84",
-                    "--depth", "12",
-                    "--output-formats", "stl",
-                    "--output-dir", str(nested_dir),
+                    "--width",
+                    "48",
+                    "--height",
+                    "84",
+                    "--depth",
+                    "12",
+                    "--output-formats",
+                    "stl",
+                    "--output-dir",
+                    str(nested_dir),
                 ],
             )
             assert result.exit_code == 0
@@ -213,10 +255,14 @@ class TestOutputDirectoryHandling:
             app,
             [
                 "generate",
-                "--width", "48",
-                "--height", "84",
-                "--depth", "12",
-                "--output-formats", "json",
+                "--width",
+                "48",
+                "--height",
+                "84",
+                "--depth",
+                "12",
+                "--output-formats",
+                "json",
             ],
         )
         # Should succeed, output to current directory
@@ -233,12 +279,18 @@ class TestFileNamingConvention:
                 app,
                 [
                     "generate",
-                    "--width", "48",
-                    "--height", "84",
-                    "--depth", "12",
-                    "--output-formats", "stl,json",
-                    "--output-dir", tmpdir,
-                    "--project-name", "my_project",
+                    "--width",
+                    "48",
+                    "--height",
+                    "84",
+                    "--depth",
+                    "12",
+                    "--output-formats",
+                    "stl,json",
+                    "--output-dir",
+                    tmpdir,
+                    "--project-name",
+                    "my_project",
                 ],
             )
             assert result.exit_code == 0
@@ -253,11 +305,16 @@ class TestFileNamingConvention:
                 app,
                 [
                     "generate",
-                    "--width", "48",
-                    "--height", "84",
-                    "--depth", "12",
-                    "--output-formats", "stl",
-                    "--output-dir", tmpdir,
+                    "--width",
+                    "48",
+                    "--height",
+                    "84",
+                    "--depth",
+                    "12",
+                    "--output-formats",
+                    "stl",
+                    "--output-dir",
+                    tmpdir,
                 ],
             )
             assert result.exit_code == 0
@@ -274,11 +331,16 @@ class TestSvgExportRequiresOptimize:
                 app,
                 [
                     "generate",
-                    "--width", "48",
-                    "--height", "84",
-                    "--depth", "12",
-                    "--output-formats", "svg",
-                    "--output-dir", tmpdir,
+                    "--width",
+                    "48",
+                    "--height",
+                    "84",
+                    "--depth",
+                    "12",
+                    "--output-formats",
+                    "svg",
+                    "--output-dir",
+                    tmpdir,
                 ],
             )
             # Should show warning about SVG requiring --optimize
@@ -291,11 +353,16 @@ class TestSvgExportRequiresOptimize:
                 app,
                 [
                     "generate",
-                    "--width", "48",
-                    "--height", "84",
-                    "--depth", "12",
-                    "--output-formats", "svg",
-                    "--output-dir", tmpdir,
+                    "--width",
+                    "48",
+                    "--height",
+                    "84",
+                    "--depth",
+                    "12",
+                    "--output-formats",
+                    "svg",
+                    "--output-dir",
+                    tmpdir,
                     "--optimize",
                 ],
             )
@@ -310,11 +377,16 @@ class TestSvgExportRequiresOptimize:
                 app,
                 [
                     "generate",
-                    "--width", "48",
-                    "--height", "84",
-                    "--depth", "12",
-                    "--output-formats", "stl,svg,json",
-                    "--output-dir", tmpdir,
+                    "--width",
+                    "48",
+                    "--height",
+                    "84",
+                    "--depth",
+                    "12",
+                    "--output-formats",
+                    "stl,svg,json",
+                    "--output-dir",
+                    tmpdir,
                     "--optimize",
                 ],
             )
@@ -333,10 +405,14 @@ class TestBackwardCompatibility:
             app,
             [
                 "generate",
-                "--width", "48",
-                "--height", "84",
-                "--depth", "12",
-                "--format", "cutlist",
+                "--width",
+                "48",
+                "--height",
+                "84",
+                "--depth",
+                "12",
+                "--format",
+                "cutlist",
             ],
         )
         assert result.exit_code == 0
@@ -349,12 +425,18 @@ class TestBackwardCompatibility:
                 app,
                 [
                     "generate",
-                    "--width", "48",
-                    "--height", "84",
-                    "--depth", "12",
-                    "--format", "cutlist",  # This should be ignored
-                    "--output-formats", "stl",
-                    "--output-dir", tmpdir,
+                    "--width",
+                    "48",
+                    "--height",
+                    "84",
+                    "--depth",
+                    "12",
+                    "--format",
+                    "cutlist",  # This should be ignored
+                    "--output-formats",
+                    "stl",
+                    "--output-dir",
+                    tmpdir,
                 ],
             )
             assert result.exit_code == 0
@@ -443,9 +525,12 @@ class TestMultiFormatWithConfig:
                 app,
                 [
                     "generate",
-                    "--config", str(config_path),
-                    "--output-formats", "stl,json",
-                    "--output-dir", str(output_dir),
+                    "--config",
+                    str(config_path),
+                    "--output-formats",
+                    "stl,json",
+                    "--output-dir",
+                    str(output_dir),
                 ],
             )
             assert result.exit_code == 0

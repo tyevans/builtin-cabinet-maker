@@ -28,8 +28,6 @@ from cabinets.domain.components.infrastructure import (
     WireRouteSpec,
 )
 from cabinets.domain.value_objects import (
-    CutoutShape,
-    GrommetSize,
     LightingLocation,
     LightingType,
     MaterialSpec,
@@ -516,9 +514,7 @@ class TestCableManagementComponent:
         assert not result.is_valid
         assert any("size" in e.lower() for e in result.errors)
 
-    def test_validate_all_valid_sizes(
-        self, standard_context: ComponentContext
-    ) -> None:
+    def test_validate_all_valid_sizes(self, standard_context: ComponentContext) -> None:
         """Test that all valid grommet sizes pass validation."""
         component = CableManagementComponent()
 
@@ -531,9 +527,7 @@ class TestCableManagementComponent:
             result = component.validate(config, standard_context)
             assert result.is_valid, f"Size {size} should be valid"
 
-    def test_generate_grommet_cutouts(
-        self, standard_context: ComponentContext
-    ) -> None:
+    def test_generate_grommet_cutouts(self, standard_context: ComponentContext) -> None:
         """Test generation of grommet cutouts."""
         component = CableManagementComponent()
         config = {
@@ -623,9 +617,7 @@ class TestVentilationComponent:
         result = component.validate(config, standard_context)
         assert result.is_valid
 
-    def test_validate_invalid_pattern(
-        self, standard_context: ComponentContext
-    ) -> None:
+    def test_validate_invalid_pattern(self, standard_context: ComponentContext) -> None:
         """Test validation error for invalid pattern."""
         component = VentilationComponent()
         config = {
@@ -727,9 +719,7 @@ class TestVentilationComponent:
 class TestInfrastructureBase:
     """Tests for _InfrastructureBase validation helpers."""
 
-    def test_edge_distance_validation(
-        self, standard_context: ComponentContext
-    ) -> None:
+    def test_edge_distance_validation(self, standard_context: ComponentContext) -> None:
         """Test edge distance validation catches violations."""
         # Use electrical component as test subject
         component = ElectricalComponent()
@@ -745,9 +735,7 @@ class TestInfrastructureBase:
         assert not result.is_valid
         assert any("edge" in e.lower() for e in result.errors)
 
-    def test_cutout_overlap_detection(
-        self, standard_context: ComponentContext
-    ) -> None:
+    def test_cutout_overlap_detection(self, standard_context: ComponentContext) -> None:
         """Test that overlapping cutouts are detected."""
         component = CableManagementComponent()
 

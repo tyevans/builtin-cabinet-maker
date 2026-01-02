@@ -8,12 +8,15 @@ from pathlib import Path
 import numpy as np
 from stl import mesh
 
-from cabinets.application.dtos import RoomLayoutOutput
+from cabinets.contracts.dtos import RoomLayoutOutput
 from cabinets.domain import BoundingBox3D, Cabinet, Panel, Panel3DMapper, PanelType
-from cabinets.domain.services import RoomPanel3DMapper
+from cabinets.domain.services import RoomPanel3DMapper, ZoneStackLayoutResult
+from cabinets.domain.value_objects import Position3D
 
 
-def _random_ajar_angle(box: BoundingBox3D, min_angle: float = 30.0, max_angle: float = 60.0) -> float:
+def _random_ajar_angle(
+    box: BoundingBox3D, min_angle: float = 30.0, max_angle: float = 60.0
+) -> float:
     """Generate a deterministic 'random' ajar angle based on door position.
 
     Uses the door's position as a seed so the same door always gets the same
@@ -465,7 +468,9 @@ class StlMeshBuilder:
         sin_w = math.sin(wall_angle_rad)
         tx, ty, tz = wall_position
 
-        def transform_vertex(v: tuple[float, float, float]) -> tuple[float, float, float]:
+        def transform_vertex(
+            v: tuple[float, float, float],
+        ) -> tuple[float, float, float]:
             vx, vy, vz = v
             # Rotate around Z axis
             rx = vx * cos_w - vy * sin_w
@@ -588,7 +593,9 @@ class StlMeshBuilder:
         sin_w = math.sin(wall_angle_rad)
         tx, ty, tz = wall_position
 
-        def transform_vertex(v: tuple[float, float, float]) -> tuple[float, float, float]:
+        def transform_vertex(
+            v: tuple[float, float, float],
+        ) -> tuple[float, float, float]:
             vx, vy, vz = v
             rx = vx * cos_w - vy * sin_w
             ry = vx * sin_w + vy * cos_w
@@ -604,6 +611,81 @@ class StlMeshBuilder:
             ]
 
         return scallop_mesh
+
+    def build_stepped_side_mesh(
+        self,
+        box: BoundingBox3D,
+        step_height: float,
+        step_depth_change: float,
+        wall_rotation: float = 0.0,
+        wall_position: tuple[float, float, float] = (0.0, 0.0, 0.0),
+    ) -> mesh.Mesh:
+        """Create mesh for side panel that steps inward at a height transition.
+
+        Creates an L-shaped panel by combining two rectangular boxes:
+        - Bottom box: full depth, from floor to step_height
+        - Top box: reduced depth, from step_height to full height
+
+        Used when base zone is deeper than upper zone (e.g., base 24", upper 12").
+        Panel is full depth below step_height, reduced depth above.
+
+        The stepped panel has an L-shape when viewed from the side:
+
+            +-----+      <- top (reduced depth)
+            |     |
+            |     +----+ <- step_height (full depth starts here)
+            |          |
+            |          |
+            +----------+ <- bottom (full depth)
+
+        Args:
+            box: Bounding box for the full panel (max dimensions).
+                 size_x = thickness, size_y = full depth, size_z = full height
+            step_height: Height from bottom where the step occurs.
+            step_depth_change: How much the depth reduces at the step (positive value).
+            wall_rotation: Rotation around Z axis in degrees.
+            wall_position: Translation (x, y, z) after rotation.
+
+        Returns:
+            mesh.Mesh with L-shaped geometry (combined from two boxes).
+        """
+        from cabinets.domain import BoundingBox3D, Position3D
+
+        # Create bottom box (full depth, from floor to step_height)
+        bottom_box = BoundingBox3D(
+            origin=Position3D(
+                x=box.origin.x,
+                y=box.origin.y,
+                z=box.origin.z,
+            ),
+            size_x=box.size_x,  # Panel thickness
+            size_y=box.size_y,  # Full depth
+            size_z=step_height,  # From floor to step
+        )
+
+        # Create top box (reduced depth, from step_height to full height)
+        reduced_depth = box.size_y - step_depth_change
+        top_box = BoundingBox3D(
+            origin=Position3D(
+                x=box.origin.x,
+                y=box.origin.y,  # Same front position
+                z=box.origin.z + step_height,  # Start at step height
+            ),
+            size_x=box.size_x,  # Same panel thickness
+            size_y=reduced_depth,  # Reduced depth
+            size_z=box.size_z - step_height,  # Remaining height
+        )
+
+        # Build meshes for both boxes with transform applied
+        bottom_mesh = self.build_box_mesh_with_transform(
+            bottom_box, wall_rotation, wall_position
+        )
+        top_mesh = self.build_box_mesh_with_transform(
+            top_box, wall_rotation, wall_position
+        )
+
+        # Combine meshes
+        return self.combine_meshes([bottom_mesh, top_mesh])
 
     def combine_meshes(self, meshes: list[mesh.Mesh]) -> mesh.Mesh:
         """Combine multiple meshes into a single mesh.
@@ -647,9 +729,7 @@ class StlExporter:
         """
         self.mesh_builder = mesh_builder or StlMeshBuilder()
 
-    def export(
-        self, cabinet: Cabinet, door_ajar_angle: float = 45.0
-    ) -> mesh.Mesh:
+    def export(self, cabinet: Cabinet, door_ajar_angle: float = 45.0) -> mesh.Mesh:
         """Export a cabinet to an STL mesh object.
 
         Doors are rendered slightly ajar (open) to make them visually
@@ -712,9 +792,26 @@ class StlExporter:
                 scallop_points = panel.metadata.get("scallop_points")
                 if scallop_points:
                     meshes.append(
-                        self.mesh_builder.build_scalloped_panel_mesh(box, scallop_points)
+                        self.mesh_builder.build_scalloped_panel_mesh(
+                            box, scallop_points
+                        )
                     )
                 else:
+                    meshes.append(self.mesh_builder.build_box_mesh(box))
+            elif panel.panel_type == PanelType.STEPPED_SIDE:
+                # Render stepped side panel with L-shaped geometry
+                step_height = panel.metadata.get("step_height", box.size_z / 2)
+                step_depth_change = panel.metadata.get("step_depth_change", 0.0)
+                if step_depth_change > 0:
+                    meshes.append(
+                        self.mesh_builder.build_stepped_side_mesh(
+                            box,
+                            step_height=step_height,
+                            step_depth_change=step_depth_change,
+                        )
+                    )
+                else:
+                    # No depth change, render as regular box
                     meshes.append(self.mesh_builder.build_box_mesh(box))
             else:
                 meshes.append(self.mesh_builder.build_box_mesh(box))
@@ -870,6 +967,29 @@ class StlExporter:
                             wall_position=wall_position,
                         )
                     )
+            elif panel.panel_type == PanelType.STEPPED_SIDE:
+                # Render stepped side panel with L-shaped geometry
+                step_height = panel.metadata.get("step_height", box.size_z / 2)
+                step_depth_change = panel.metadata.get("step_depth_change", 0.0)
+                if step_depth_change > 0:
+                    meshes.append(
+                        self.mesh_builder.build_stepped_side_mesh(
+                            box,
+                            step_height=step_height,
+                            step_depth_change=step_depth_change,
+                            wall_rotation=wall_rotation,
+                            wall_position=wall_position,
+                        )
+                    )
+                else:
+                    # No depth change, render as regular box
+                    meshes.append(
+                        self.mesh_builder.build_box_mesh_with_transform(
+                            box,
+                            wall_rotation=wall_rotation,
+                            wall_position=wall_position,
+                        )
+                    )
             else:
                 # Regular panel - just apply transform
                 meshes.append(
@@ -881,3 +1001,231 @@ class StlExporter:
                 )
 
         return self.mesh_builder.combine_meshes(meshes)
+
+    def export_zone_stack(
+        self,
+        result: ZoneStackLayoutResult,
+        output_path: Path | str,
+        door_ajar_angle: float = 45.0,
+    ) -> None:
+        """Export a complete zone stack to an STL file.
+
+        Positions all zones correctly:
+        - Base cabinet at floor level
+        - Countertop panels on top of base cabinet
+        - Upper cabinet at mounting height
+
+        Args:
+            result: Zone stack layout result from ZoneLayoutService.
+            output_path: Path where the STL file will be saved.
+            door_ajar_angle: Angle in degrees to open doors (default 45).
+        """
+        zone_mesh = self.export_zone_stack_mesh(result, door_ajar_angle)
+        zone_mesh.save(str(output_path))
+
+    def export_zone_stack_mesh(
+        self,
+        result: ZoneStackLayoutResult,
+        door_ajar_angle: float = 45.0,
+    ) -> mesh.Mesh:
+        """Export a zone stack to an STL mesh object.
+
+        Positions all zones correctly:
+        - Base cabinet at floor level
+        - Countertop panels on top of base cabinet
+        - Upper cabinet at mounting height
+
+        Args:
+            result: Zone stack layout result from ZoneLayoutService.
+            door_ajar_angle: Angle in degrees to open doors (default 45).
+
+        Returns:
+            A numpy-stl Mesh object representing the entire zone stack.
+        """
+        meshes: list[mesh.Mesh] = []
+
+        # Export base cabinet at floor level
+        if result.base_cabinet:
+            base_mesh = self.export(result.base_cabinet, door_ajar_angle)
+            meshes.append(base_mesh)
+
+        # Export countertop panels
+        if result.countertop_panels:
+            countertop_meshes = self._export_panels_as_meshes(
+                list(result.countertop_panels),
+                cabinet_depth=result.base_cabinet.depth
+                if result.base_cabinet
+                else 24.0,
+            )
+            meshes.extend(countertop_meshes)
+
+        # Export upper cabinet at mounting height
+        if result.upper_cabinet:
+            # Get mounting height (default to 54" if not specified)
+            # The upper cabinet needs to be positioned above the base cabinet
+            mounting_height = 54.0  # Standard upper cabinet mounting height
+            upper_mesh = self._export_cabinet_with_offset(
+                result.upper_cabinet,
+                z_offset=mounting_height,
+                door_ajar_angle=door_ajar_angle,
+            )
+            meshes.append(upper_mesh)
+
+        # Export full-height side panels
+        if result.full_height_side_panels:
+            side_meshes = self._export_panels_as_meshes(
+                list(result.full_height_side_panels),
+                cabinet_depth=result.base_cabinet.depth
+                if result.base_cabinet
+                else 24.0,
+            )
+            meshes.extend(side_meshes)
+
+        # Export wall nailer panels
+        if result.wall_nailer_panels:
+            nailer_meshes = self._export_panels_as_meshes(
+                list(result.wall_nailer_panels),
+                cabinet_depth=result.base_cabinet.depth
+                if result.base_cabinet
+                else 24.0,
+            )
+            meshes.extend(nailer_meshes)
+
+        # Combine all meshes
+        if meshes:
+            return self.mesh_builder.combine_meshes(meshes)
+        else:
+            return mesh.Mesh(np.zeros(0, dtype=mesh.Mesh.dtype))
+
+    def _export_panels_as_meshes(
+        self,
+        panels: list[Panel],
+        cabinet_depth: float = 24.0,
+    ) -> list[mesh.Mesh]:
+        """Export a list of panels to meshes.
+
+        Args:
+            panels: List of panels to export.
+            cabinet_depth: Cabinet depth for positioning calculations.
+
+        Returns:
+            List of mesh objects for the panels.
+        """
+        meshes: list[mesh.Mesh] = []
+        back_thickness = 0.25  # Standard back panel thickness
+
+        for panel in panels:
+            thickness = panel.material.thickness
+
+            # Determine the bounding box based on panel type
+            if panel.panel_type == PanelType.COUNTERTOP:
+                # Horizontal countertop panel
+                box = BoundingBox3D(
+                    origin=Position3D(
+                        x=panel.position.x,
+                        y=back_thickness,
+                        z=panel.position.y,  # position.y is the height
+                    ),
+                    size_x=panel.width,
+                    size_y=panel.height,  # panel.height is depth for horizontal
+                    size_z=thickness,
+                )
+            elif panel.panel_type in (
+                PanelType.LEFT_SIDE,
+                PanelType.RIGHT_SIDE,
+                PanelType.STEPPED_SIDE,
+            ):
+                # Vertical side panel
+                box = BoundingBox3D(
+                    origin=Position3D(
+                        x=panel.position.x,
+                        y=back_thickness,
+                        z=panel.position.y,
+                    ),
+                    size_x=thickness,
+                    size_y=panel.width,  # panel.width is depth for vertical
+                    size_z=panel.height,
+                )
+                # Handle stepped side panels
+                if panel.panel_type == PanelType.STEPPED_SIDE:
+                    step_height = panel.metadata.get("step_height", box.size_z / 2)
+                    step_depth_change = panel.metadata.get("step_depth_change", 0.0)
+                    if step_depth_change > 0:
+                        stepped_mesh = self.mesh_builder.build_stepped_side_mesh(
+                            box,
+                            step_height=step_height,
+                            step_depth_change=step_depth_change,
+                        )
+                        meshes.append(stepped_mesh)
+                        continue
+            elif panel.panel_type == PanelType.NAILER:
+                # Horizontal nailer panel
+                box = BoundingBox3D(
+                    origin=Position3D(
+                        x=panel.position.x,
+                        y=back_thickness,
+                        z=panel.position.y,
+                    ),
+                    size_x=panel.width,
+                    size_y=panel.height,  # nailer depth
+                    size_z=thickness,
+                )
+            elif panel.panel_type == PanelType.SUPPORT_BRACKET:
+                # Support bracket for countertop
+                box = BoundingBox3D(
+                    origin=Position3D(
+                        x=panel.position.x,
+                        y=cabinet_depth - thickness,
+                        z=panel.position.y,
+                    ),
+                    size_x=panel.width,
+                    size_y=thickness,
+                    size_z=panel.height,
+                )
+            else:
+                # Default: horizontal panel
+                box = BoundingBox3D(
+                    origin=Position3D(
+                        x=panel.position.x,
+                        y=back_thickness,
+                        z=panel.position.y,
+                    ),
+                    size_x=panel.width,
+                    size_y=panel.height,
+                    size_z=thickness,
+                )
+
+            meshes.append(self.mesh_builder.build_box_mesh(box))
+
+        return meshes
+
+    def _export_cabinet_with_offset(
+        self,
+        cabinet: Cabinet,
+        z_offset: float,
+        door_ajar_angle: float = 45.0,
+    ) -> mesh.Mesh:
+        """Export a cabinet with a vertical offset.
+
+        Args:
+            cabinet: The cabinet to export.
+            z_offset: Vertical offset in inches (height from floor).
+            door_ajar_angle: Angle in degrees to open doors.
+
+        Returns:
+            A numpy-stl Mesh object representing the offset cabinet.
+        """
+        # Export the cabinet normally
+        cabinet_mesh = self.export(cabinet, door_ajar_angle)
+
+        # Apply the z offset to all vertices
+        # In our coordinate system: Y-up after transform
+        # Domain Z becomes viewer Y after transform
+        # So we need to offset Y in the mesh (which represents height)
+        for i in range(len(cabinet_mesh.vectors)):
+            for j in range(3):
+                # The coordinate transform is (x, z, y) -> (x, y, z)
+                # So domain Z (height) becomes mesh Y
+                cabinet_mesh.vectors[i][j][1] += z_offset
+
+        return cabinet_mesh

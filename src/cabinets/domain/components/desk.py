@@ -14,7 +14,7 @@ and follow the same component protocol patterns.
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from enum import Enum
 from typing import Any, Literal
 
@@ -29,6 +29,7 @@ from ..value_objects import (
     Position,
 )
 from .context import ComponentContext
+from .drawer import _auto_select_slide_length
 from .registry import component_registry
 from .results import GenerationResult, HardwareItem, ValidationResult
 
@@ -47,7 +48,11 @@ MIN_KNEE_CLEARANCE_DEPTH = 15.0
 ADA_KNEE_CLEARANCE_WIDTH = 30.0
 
 # Standard grommet sizes (reuse GrommetSize enum values)
-GROMMET_SIZES = [GrommetSize.SMALL.value, GrommetSize.MEDIUM.value, GrommetSize.LARGE.value]
+GROMMET_SIZES = [
+    GrommetSize.SMALL.value,
+    GrommetSize.MEDIUM.value,
+    GrommetSize.LARGE.value,
+]
 
 
 class CornerConnectionType(str, Enum):
@@ -85,7 +90,7 @@ class GrommetSpec:
 
     x_position: float  # From left edge of desktop
     y_position: float  # From front edge of desktop
-    diameter: float    # Grommet diameter in inches
+    diameter: float  # Grommet diameter in inches
 
     def __post_init__(self) -> None:
         """Validate grommet specification values."""
@@ -206,33 +211,34 @@ class DeskSurfaceComponent:
 
         # Height validation
         if height < 26 or height > 50:
-            errors.append(f"Desk height {height}\" outside standard range (26-50\")")
-        elif (
-            height < SITTING_DESK_HEIGHT_MIN
-            or (height > SITTING_DESK_HEIGHT_MAX and height < STANDING_DESK_HEIGHT_MIN)
+            errors.append(f'Desk height {height}" outside standard range (26-50")')
+        elif height < SITTING_DESK_HEIGHT_MIN or (
+            height > SITTING_DESK_HEIGHT_MAX and height < STANDING_DESK_HEIGHT_MIN
         ):
-            warnings.append(f"Desk height {height}\" between sitting and standing ranges")
+            warnings.append(
+                f'Desk height {height}" between sitting and standing ranges'
+            )
 
         # Depth validation
         if depth < 18:
-            errors.append(f"Desk depth {depth}\" too shallow for workspace")
+            errors.append(f'Desk depth {depth}" too shallow for workspace')
         elif depth > 36:
-            errors.append(f"Desk depth {depth}\" exceeds maximum (36\")")
+            errors.append(f'Desk depth {depth}" exceeds maximum (36")')
         elif depth not in self.STANDARD_DEPTHS:
-            warnings.append(f"Desk depth {depth}\" is non-standard")
+            warnings.append(f'Desk depth {depth}" is non-standard')
 
         # Thickness validation
         if thickness < 0.75:
-            errors.append("Desktop thickness must be at least 0.75\"")
+            errors.append('Desktop thickness must be at least 0.75"')
         elif thickness < 1.0:
-            warnings.append("3/4\" desktop may flex under heavy loads")
+            warnings.append('3/4" desktop may flex under heavy loads')
 
         # Grommet validation
         grommets = config.get("grommets", [])
         for i, grommet in enumerate(grommets):
             diameter = grommet.get("diameter", GrommetSize.MEDIUM.value)
             if diameter not in GROMMET_SIZES and diameter > 3.5:
-                errors.append(f"Grommet {i + 1} diameter {diameter}\" not standard")
+                errors.append(f'Grommet {i + 1} diameter {diameter}" not standard')
 
         # Edge treatment validation
         edge = config.get("edge_treatment", "square")
@@ -309,16 +315,16 @@ class DeskSurfaceComponent:
                     height=diameter,
                     shape=CutoutShape.CIRCULAR,
                     diameter=diameter,
-                    notes=f"Cable grommet {diameter}\" diameter",
+                    notes=f'Cable grommet {diameter}" diameter',
                 )
             )
 
             hardware.append(
                 HardwareItem(
-                    name=f"Cable Grommet {diameter}\"",
+                    name=f'Cable Grommet {diameter}"',
                     quantity=1,
                     sku=f"GROMMET-{diameter:.0f}",
-                    notes=f"Desk cable grommet, {diameter}\" diameter",
+                    notes=f'Desk cable grommet, {diameter}" diameter',
                 )
             )
 
@@ -377,7 +383,7 @@ class DeskSurfaceComponent:
             )
             hardware.append(
                 HardwareItem(
-                    name="Lag Screw 3/8\" x 4\"",
+                    name='Lag Screw 3/8" x 4"',
                     quantity=cleat_count * 4,
                     notes="For wall cleat mounting into studs",
                 )
@@ -412,10 +418,6 @@ class DeskSurfaceComponent:
         """
         result = self.generate(config, context)
         return list(result.hardware)
-
-
-# Import drawer infrastructure for slide length selection
-from .drawer import SLIDE_CLEARANCES, VALID_SLIDE_LENGTHS, _auto_select_slide_length
 
 
 @component_registry.register("desk.pedestal")
@@ -475,13 +477,13 @@ class DeskPedestalComponent:
 
         # Width validation
         if width < 12:
-            warnings.append(f"Pedestal width {width}\" may limit drawer options")
+            warnings.append(f'Pedestal width {width}" may limit drawer options')
         elif width not in self.STANDARD_WIDTHS:
-            warnings.append(f"Pedestal width {width}\" is non-standard")
+            warnings.append(f'Pedestal width {width}" is non-standard')
 
         # File pedestal needs minimum width for file folders
         if pedestal_type == "file" and width < 15:
-            errors.append("File pedestal requires minimum 15\" width for file folders")
+            errors.append('File pedestal requires minimum 15" width for file folders')
 
         return ValidationResult(errors=tuple(errors), warnings=tuple(warnings))
 
@@ -565,9 +567,7 @@ class DeskPedestalComponent:
                 width=inner_width,
                 height=depth,
                 material=context.material,
-                position=Position(
-                    context.position.x + context.material.thickness, 0
-                ),
+                position=Position(context.position.x + context.material.thickness, 0),
                 metadata={"component": "desk.pedestal"},
             )
         )
@@ -610,43 +610,47 @@ class DeskPedestalComponent:
         if pedestal_type == "file":
             # File pedestal: pencil drawer (top) + file drawer (bottom)
             file_type = config.get("file_type", "letter")
-            hardware.extend([
-                HardwareItem(
-                    name="Drawer Slide 18\"",
-                    quantity=4,  # 2 pair for 2 drawers
-                    sku="SLIDE-18-FULL",
-                    notes="Full extension slides for file pedestal",
-                ),
-                HardwareItem(
-                    name="Hanging File Frame",
-                    quantity=1,
-                    sku=f"FILE-FRAME-{file_type.upper()}",
-                    notes=f"{file_type.capitalize()}-size hanging file frame",
-                ),
-                HardwareItem(
-                    name="Handle/Pull",
-                    quantity=2,
-                    sku="HANDLE-DRAWER",
-                    notes="Drawer pulls for pencil and file drawers",
-                ),
-            ])
+            hardware.extend(
+                [
+                    HardwareItem(
+                        name='Drawer Slide 18"',
+                        quantity=4,  # 2 pair for 2 drawers
+                        sku="SLIDE-18-FULL",
+                        notes="Full extension slides for file pedestal",
+                    ),
+                    HardwareItem(
+                        name="Hanging File Frame",
+                        quantity=1,
+                        sku=f"FILE-FRAME-{file_type.upper()}",
+                        notes=f"{file_type.capitalize()}-size hanging file frame",
+                    ),
+                    HardwareItem(
+                        name="Handle/Pull",
+                        quantity=2,
+                        sku="HANDLE-DRAWER",
+                        notes="Drawer pulls for pencil and file drawers",
+                    ),
+                ]
+            )
         elif pedestal_type == "storage":
             drawer_count = config.get("drawer_count", 3)
             slide_length = _auto_select_slide_length(depth)
-            hardware.extend([
-                HardwareItem(
-                    name=f"Drawer Slide {slide_length}\"",
-                    quantity=drawer_count * 2,
-                    sku=f"SLIDE-{slide_length}-FULL",
-                    notes=f"Full extension slides for {drawer_count} drawers",
-                ),
-                HardwareItem(
-                    name="Handle/Pull",
-                    quantity=drawer_count,
-                    sku="HANDLE-DRAWER",
-                    notes=f"Drawer pulls for {drawer_count} drawers",
-                ),
-            ])
+            hardware.extend(
+                [
+                    HardwareItem(
+                        name=f'Drawer Slide {slide_length}"',
+                        quantity=drawer_count * 2,
+                        sku=f"SLIDE-{slide_length}-FULL",
+                        notes=f"Full extension slides for {drawer_count} drawers",
+                    ),
+                    HardwareItem(
+                        name="Handle/Pull",
+                        quantity=drawer_count,
+                        sku="HANDLE-DRAWER",
+                        notes=f"Drawer pulls for {drawer_count} drawers",
+                    ),
+                ]
+            )
         else:  # pedestal_type == "open"
             shelf_count = config.get("shelf_count", 2)
             hardware.append(
@@ -755,26 +759,26 @@ class KeyboardTrayComponent:
         effective_knee_height = knee_height - tray_clearance - self.TRAY_THICKNESS
         if effective_knee_height < self.MIN_EFFECTIVE_KNEE_HEIGHT:
             errors.append(
-                f"Keyboard tray reduces knee clearance to {effective_knee_height:.1f}\" "
-                f"(minimum {self.MIN_EFFECTIVE_KNEE_HEIGHT}\")"
+                f'Keyboard tray reduces knee clearance to {effective_knee_height:.1f}" '
+                f'(minimum {self.MIN_EFFECTIVE_KNEE_HEIGHT}")'
             )
 
         # Check tray width
         if tray_width > context.width:
             errors.append(
-                f"Keyboard tray width {tray_width}\" exceeds desk width {context.width}\""
+                f'Keyboard tray width {tray_width}" exceeds desk width {context.width}"'
             )
 
         # Validate depth range
         if tray_depth < 8:
-            warnings.append(f"Keyboard tray depth {tray_depth}\" may be too shallow")
+            warnings.append(f'Keyboard tray depth {tray_depth}" may be too shallow')
         elif tray_depth > 14:
-            warnings.append(f"Keyboard tray depth {tray_depth}\" unusually deep")
+            warnings.append(f'Keyboard tray depth {tray_depth}" unusually deep')
 
         # Validate slide length
         if slide_length not in self.VALID_SLIDE_LENGTHS:
             errors.append(
-                f"Invalid slide_length {slide_length}\". "
+                f'Invalid slide_length {slide_length}". '
                 f"Valid lengths: {self.VALID_SLIDE_LENGTHS}"
             )
 
@@ -830,7 +834,7 @@ class KeyboardTrayComponent:
         # Keyboard slide hardware
         hardware.append(
             HardwareItem(
-                name=f"Keyboard Slide {slide_length}\"",
+                name=f'Keyboard Slide {slide_length}"',
                 quantity=1,
                 sku=f"KB-SLIDE-{slide_length}",
                 notes="Undermount keyboard tray slides (pair)",
@@ -974,27 +978,27 @@ class MonitorShelfComponent:
         # Height warning for non-standard
         if riser_height not in self.STANDARD_HEIGHTS:
             warnings.append(
-                f"Monitor shelf height {riser_height}\" is non-standard "
+                f'Monitor shelf height {riser_height}" is non-standard '
                 f"(standard: {self.STANDARD_HEIGHTS})"
             )
 
         # Width validation
         if riser_width > context.width:
             errors.append(
-                f"Monitor shelf width {riser_width}\" exceeds desk width {context.width}\""
+                f'Monitor shelf width {riser_width}" exceeds desk width {context.width}"'
             )
 
         # Depth validation
         if riser_depth < 6:
-            errors.append(f"Monitor shelf depth {riser_depth}\" too shallow")
+            errors.append(f'Monitor shelf depth {riser_depth}" too shallow')
         elif riser_depth > 14:
-            warnings.append(f"Monitor shelf depth {riser_depth}\" unusually deep")
+            warnings.append(f'Monitor shelf depth {riser_depth}" unusually deep')
 
         # Height range check
         if riser_height < 2:
-            errors.append(f"Monitor shelf height {riser_height}\" too short")
+            errors.append(f'Monitor shelf height {riser_height}" too short')
         elif riser_height > 12:
-            warnings.append(f"Monitor shelf height {riser_height}\" unusually tall")
+            warnings.append(f'Monitor shelf height {riser_height}" unusually tall')
 
         return ValidationResult(errors=tuple(errors), warnings=tuple(warnings))
 
@@ -1125,7 +1129,7 @@ class MonitorShelfComponent:
                     name="Monitor Arm Reinforcement Plate",
                     quantity=1,
                     sku="ARM-PLATE-6X6",
-                    notes="6\" x 6\" steel plate for arm mounting point",
+                    notes='6" x 6" steel plate for arm mounting point',
                 )
             )
 
@@ -1229,23 +1233,23 @@ class DeskHutchComponent:
         # Head clearance warning
         if head_clearance < self.MIN_HEAD_CLEARANCE:
             warnings.append(
-                f"Hutch head clearance {head_clearance}\" may obstruct user "
-                f"(minimum recommended: {self.MIN_HEAD_CLEARANCE}\")"
+                f'Hutch head clearance {head_clearance}" may obstruct user '
+                f'(minimum recommended: {self.MIN_HEAD_CLEARANCE}")'
             )
 
         # Depth validation
         if hutch_depth < self.MIN_DEPTH:
-            errors.append(f"Hutch depth must be at least {self.MIN_DEPTH}\"")
+            errors.append(f'Hutch depth must be at least {self.MIN_DEPTH}"')
         elif hutch_depth > self.MAX_DEPTH:
             warnings.append(
-                f"Deep hutch ({hutch_depth}\") may interfere with monitor placement"
+                f'Deep hutch ({hutch_depth}") may interfere with monitor placement'
             )
 
         # Height validation
         if hutch_height < self.MIN_HEIGHT:
-            errors.append(f"Hutch height {hutch_height}\" too short")
+            errors.append(f'Hutch height {hutch_height}" too short')
         elif hutch_height > self.MAX_HEIGHT:
-            warnings.append(f"Hutch height {hutch_height}\" unusually tall")
+            warnings.append(f'Hutch height {hutch_height}" unusually tall')
 
         return ValidationResult(errors=tuple(errors), warnings=tuple(warnings))
 
@@ -1581,50 +1585,47 @@ class LShapedDeskComponent:
         # Validate main surface dimensions
         if l_config.main_surface_width < L_SHAPED_MIN_SURFACE_WIDTH:
             warnings.append(
-                f"Main surface width {l_config.main_surface_width}\" is narrow. "
-                f"Minimum recommended: {L_SHAPED_MIN_SURFACE_WIDTH}\""
+                f'Main surface width {l_config.main_surface_width}" is narrow. '
+                f'Minimum recommended: {L_SHAPED_MIN_SURFACE_WIDTH}"'
             )
 
         if l_config.main_surface_depth < 18:
             errors.append(
-                f"Main surface depth {l_config.main_surface_depth}\" too shallow. "
-                "Minimum depth: 18\""
+                f'Main surface depth {l_config.main_surface_depth}" too shallow. '
+                'Minimum depth: 18"'
             )
 
         # Validate return surface dimensions
         if l_config.return_surface_width < L_SHAPED_MIN_SURFACE_WIDTH:
             warnings.append(
-                f"Return surface width {l_config.return_surface_width}\" is narrow. "
-                f"Minimum recommended: {L_SHAPED_MIN_SURFACE_WIDTH}\""
+                f'Return surface width {l_config.return_surface_width}" is narrow. '
+                f'Minimum recommended: {L_SHAPED_MIN_SURFACE_WIDTH}"'
             )
 
         if l_config.return_surface_depth < 18:
             errors.append(
-                f"Return surface depth {l_config.return_surface_depth}\" too shallow. "
-                "Minimum depth: 18\""
+                f'Return surface depth {l_config.return_surface_depth}" too shallow. '
+                'Minimum depth: 18"'
             )
 
         # Validate desk height
         if l_config.desk_height < 26 or l_config.desk_height > 50:
             errors.append(
-                f"Desk height {l_config.desk_height}\" outside standard range (26-50\")"
+                f'Desk height {l_config.desk_height}" outside standard range (26-50")'
             )
-        elif (
-            l_config.desk_height < SITTING_DESK_HEIGHT_MIN
-            or (
-                l_config.desk_height > SITTING_DESK_HEIGHT_MAX
-                and l_config.desk_height < STANDING_DESK_HEIGHT_MIN
-            )
+        elif l_config.desk_height < SITTING_DESK_HEIGHT_MIN or (
+            l_config.desk_height > SITTING_DESK_HEIGHT_MAX
+            and l_config.desk_height < STANDING_DESK_HEIGHT_MIN
         ):
             warnings.append(
-                f"Desk height {l_config.desk_height}\" between sitting and standing ranges"
+                f'Desk height {l_config.desk_height}" between sitting and standing ranges'
             )
 
         # Warning for large L-shaped without corner support
         total_span = l_config.main_surface_width + l_config.return_surface_width
         if total_span > L_SHAPED_WARNING_THRESHOLD * 2 and not l_config.corner_post:
             warnings.append(
-                f"Large L-shaped desk (total span {total_span:.0f}\") without corner "
+                f'Large L-shaped desk (total span {total_span:.0f}") without corner '
                 "support may flex. Consider enabling corner_post."
             )
 
@@ -1769,9 +1770,7 @@ class LShapedDeskComponent:
                     width=post_width,
                     height=post_height,
                     material=context.material,
-                    position=Position(
-                        l_config.main_surface_width - post_width / 2, 0
-                    ),
+                    position=Position(l_config.main_surface_width - post_width / 2, 0),
                     metadata={
                         "component": "desk.l_shaped",
                         "is_corner_post": True,
@@ -1834,7 +1833,7 @@ class LShapedDeskComponent:
         # Cable routing accommodation at corner
         hardware.append(
             HardwareItem(
-                name="Cable Grommet 2\"",
+                name='Cable Grommet 2"',
                 quantity=1,
                 sku="GROMMET-2",
                 notes="Corner cable routing grommet between surfaces",

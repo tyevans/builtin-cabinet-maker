@@ -6,7 +6,12 @@ import xml.etree.ElementTree as ET
 
 import pytest
 
-from cabinets.domain.value_objects import CutPiece, MaterialSpec, MaterialType, PanelType
+from cabinets.domain.value_objects import (
+    CutPiece,
+    MaterialSpec,
+    MaterialType,
+    PanelType,
+)
 from cabinets.infrastructure.bin_packing import (
     PackingResult,
     PlacedPiece,
@@ -134,9 +139,7 @@ class TestSvgValidStructure:
         assert width == 480.0
         assert height == 990.0  # 96 * 10 + 30 header
 
-    def test_custom_scale_affects_dimensions(
-        self, sample_layout: SheetLayout
-    ) -> None:
+    def test_custom_scale_affects_dimensions(self, sample_layout: SheetLayout) -> None:
         """Custom scale changes SVG dimensions."""
         # Create renderer without panel colors to avoid legend
         renderer = CutDiagramRenderer(scale=5.0, use_panel_colors=False)
@@ -267,9 +270,7 @@ class TestWasteRendering:
         # Default waste fill is #D3D3D3
         assert renderer.waste_fill in svg
 
-    def test_custom_waste_fill_color(
-        self, sample_layout: SheetLayout
-    ) -> None:
+    def test_custom_waste_fill_color(self, sample_layout: SheetLayout) -> None:
         """Custom waste fill color is applied."""
         custom_color = "#FF0000"
         renderer = CutDiagramRenderer(waste_fill=custom_color)
@@ -286,9 +287,7 @@ class TestWasteRendering:
         root = ET.fromstring(svg)
         rects = root.findall(".//{http://www.w3.org/2000/svg}rect")
         # Should include waste rectangles
-        waste_rects = [
-            r for r in rects if r.get("fill") == renderer.waste_fill
-        ]
+        waste_rects = [r for r in rects if r.get("fill") == renderer.waste_fill]
         assert len(waste_rects) > 0
 
 
@@ -378,9 +377,7 @@ class TestRenderAllSvg:
             root = ET.fromstring(svg)
             assert root.tag == "{http://www.w3.org/2000/svg}svg"
 
-    def test_render_all_empty_result(
-        self, renderer: CutDiagramRenderer
-    ) -> None:
+    def test_render_all_empty_result(self, renderer: CutDiagramRenderer) -> None:
         """render_all_svg handles empty result."""
         result = PackingResult(
             layouts=(),
@@ -395,9 +392,7 @@ class TestRenderAllSvg:
 class TestRenderCombinedSvg:
     """Tests for render_combined_svg method."""
 
-    def test_combined_empty_result(
-        self, renderer: CutDiagramRenderer
-    ) -> None:
+    def test_combined_empty_result(self, renderer: CutDiagramRenderer) -> None:
         """render_combined_svg handles empty result."""
         result = PackingResult(
             layouts=(),
@@ -460,9 +455,7 @@ class TestRenderCombinedSvg:
 class TestCustomStyling:
     """Tests for custom styling options."""
 
-    def test_custom_piece_fill(
-        self, sample_layout: SheetLayout
-    ) -> None:
+    def test_custom_piece_fill(self, sample_layout: SheetLayout) -> None:
         """Custom piece fill color is applied when use_panel_colors is False."""
         custom_fill = "#FF5733"
         # Disable panel colors to use custom piece fill
@@ -470,18 +463,14 @@ class TestCustomStyling:
         svg = renderer.render_svg(sample_layout)
         assert custom_fill in svg
 
-    def test_custom_piece_stroke(
-        self, sample_layout: SheetLayout
-    ) -> None:
+    def test_custom_piece_stroke(self, sample_layout: SheetLayout) -> None:
         """Custom piece stroke color is applied."""
         custom_stroke = "#0000FF"
         renderer = CutDiagramRenderer(piece_stroke=custom_stroke)
         svg = renderer.render_svg(sample_layout)
         assert custom_stroke in svg
 
-    def test_custom_text_color(
-        self, sample_layout: SheetLayout
-    ) -> None:
+    def test_custom_text_color(self, sample_layout: SheetLayout) -> None:
         """Custom text color is applied."""
         custom_text = "#00FF00"
         renderer = CutDiagramRenderer(text_color=custom_text)
@@ -626,9 +615,7 @@ class TestAsciiRendering:
 class TestRenderAllAscii:
     """Tests for render_all_ascii method."""
 
-    def test_render_all_ascii_empty_result(
-        self, renderer: CutDiagramRenderer
-    ) -> None:
+    def test_render_all_ascii_empty_result(self, renderer: CutDiagramRenderer) -> None:
         """render_all_ascii handles empty result."""
         result = PackingResult(
             layouts=(),
@@ -1173,9 +1160,7 @@ class TestRendererManyPieces:
                     material=standard_material,
                 )
                 placements.append(
-                    PlacedPiece(
-                        piece=piece, x=col * 10.0, y=row * 10.0, rotated=False
-                    )
+                    PlacedPiece(piece=piece, x=col * 10.0, y=row * 10.0, rotated=False)
                 )
                 idx += 1
 

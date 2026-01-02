@@ -8,7 +8,6 @@ section widths and shelf counts.
 import json
 import pytest
 from pathlib import Path
-from tempfile import NamedTemporaryFile
 
 from cabinets.application.config import (
     CabinetConfiguration,
@@ -17,8 +16,7 @@ from cabinets.application.config import (
     has_section_specs,
     load_config,
 )
-from cabinets.application.commands import GenerateLayoutCommand
-from cabinets.domain import SectionSpec
+from cabinets.application.factory import get_factory
 
 
 class TestConfigToSectionSpecs:
@@ -115,7 +113,7 @@ class TestEndToEndSectionGeneration:
         wall_input, params_input = config_to_dtos(config)
         section_specs = config_to_section_specs(config)
 
-        command = GenerateLayoutCommand()
+        command = get_factory().create_generate_command()
         result = command.execute(wall_input, params_input, section_specs=section_specs)
 
         assert result.is_valid
@@ -152,7 +150,7 @@ class TestEndToEndSectionGeneration:
         wall_input, params_input = config_to_dtos(config)
         section_specs = config_to_section_specs(config)
 
-        command = GenerateLayoutCommand()
+        command = get_factory().create_generate_command()
         result = command.execute(wall_input, params_input, section_specs=section_specs)
 
         assert result.is_valid
@@ -185,7 +183,7 @@ class TestEndToEndSectionGeneration:
         wall_input, params_input = config_to_dtos(config)
         section_specs = config_to_section_specs(config)
 
-        command = GenerateLayoutCommand()
+        command = get_factory().create_generate_command()
         result = command.execute(wall_input, params_input, section_specs=section_specs)
 
         assert result.is_valid
@@ -247,7 +245,7 @@ class TestSectionSpecsWithCutList:
         wall_input, params_input = config_to_dtos(config)
         section_specs = config_to_section_specs(config)
 
-        command = GenerateLayoutCommand()
+        command = get_factory().create_generate_command()
         result = command.execute(wall_input, params_input, section_specs=section_specs)
 
         assert result.is_valid
@@ -279,15 +277,13 @@ class TestSectionSpecsWithCutList:
         wall_input, params_input = config_to_dtos(config)
         section_specs = config_to_section_specs(config)
 
-        command = GenerateLayoutCommand()
+        command = get_factory().create_generate_command()
         result = command.execute(wall_input, params_input, section_specs=section_specs)
 
         assert result.is_valid
 
         # Count total shelves
-        total_shelves = sum(
-            p.quantity for p in result.cut_list if "Shelf" in p.label
-        )
+        total_shelves = sum(p.quantity for p in result.cut_list if "Shelf" in p.label)
         assert total_shelves == 8  # 3 + 5 shelves
 
 
@@ -313,7 +309,7 @@ class TestSectionSpecsErrorHandling:
         wall_input, params_input = config_to_dtos(config)
         section_specs = config_to_section_specs(config)
 
-        command = GenerateLayoutCommand()
+        command = get_factory().create_generate_command()
         result = command.execute(wall_input, params_input, section_specs=section_specs)
 
         assert not result.is_valid
@@ -341,7 +337,7 @@ class TestLegacyCompatibility:
         params_input.num_sections = 3
         params_input.shelves_per_section = 4
 
-        command = GenerateLayoutCommand()
+        command = get_factory().create_generate_command()
         # Not providing section_specs should use legacy method
         result = command.execute(wall_input, params_input)
 
@@ -370,7 +366,7 @@ class TestLegacyCompatibility:
         params_input.num_sections = 2
         params_input.shelves_per_section = 3
 
-        command = GenerateLayoutCommand()
+        command = get_factory().create_generate_command()
         result = command.execute(wall_input, params_input, section_specs=None)
 
         assert result.is_valid
@@ -418,7 +414,7 @@ class TestFRDExampleConfigurations:
         wall_input, params_input = config_to_dtos(config)
         section_specs = config_to_section_specs(config)
 
-        command = GenerateLayoutCommand()
+        command = get_factory().create_generate_command()
         result = command.execute(wall_input, params_input, section_specs=section_specs)
 
         assert result.is_valid

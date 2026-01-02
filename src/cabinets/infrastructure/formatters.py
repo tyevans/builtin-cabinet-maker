@@ -4,14 +4,17 @@ from __future__ import annotations
 
 import json
 import math
-from dataclasses import asdict
 from typing import TYPE_CHECKING, Any
 
-from cabinets.application import LayoutOutput
-from cabinets.application.dtos import RoomLayoutOutput
+from cabinets.contracts.dtos import LayoutOutput, RoomLayoutOutput
 from cabinets.domain import Cabinet, CutPiece, MaterialEstimate, MaterialSpec
+from cabinets.domain.entities import Room
 
 if TYPE_CHECKING:
+    from cabinets.domain.services.safety import (
+        SafetyAssessment,
+        SafetyCheckResult,
+    )
     from cabinets.domain.services.woodworking import HardwareList
 
 
@@ -198,10 +201,6 @@ class LayoutDiagramFormatter:
             "",
         ]
 
-        # Calculate scale
-        scale_x = (width - 4) / cabinet.width
-        scale_y = (height - 2) / cabinet.height
-
         # Create grid
         grid = [[" " for _ in range(width)] for _ in range(height)]
 
@@ -230,7 +229,9 @@ class LayoutDiagramFormatter:
                     for j in range(num_shelves):
                         shelf_y = height - 2 - shelf_spacing * (j + 1)
                         if 1 < shelf_y < height - 1:
-                            for x in range(section_x, section_x + section_display_width - 1):
+                            for x in range(
+                                section_x, section_x + section_display_width - 1
+                            ):
                                 if x < width - 1:
                                     grid[shelf_y][x] = "-"
 
@@ -240,7 +241,9 @@ class LayoutDiagramFormatter:
 
         # Add dimensions
         lines.append("")
-        lines.append(f"Dimensions: {cabinet.width}\" W x {cabinet.height}\" H x {cabinet.depth}\" D")
+        lines.append(
+            f'Dimensions: {cabinet.width}" W x {cabinet.height}" H x {cabinet.depth}" D'
+        )
         lines.append(f"Sections: {len(cabinet.sections)}")
         total_shelves = sum(len(s.shelves) for s in cabinet.sections)
         lines.append(f"Total shelves: {total_shelves}")
@@ -284,9 +287,13 @@ class MaterialReportFormatter:
         ]
 
         for material, estimate in estimates.items():
-            lines.append(f"{material.material_type.value.title()} ({material.thickness}\" thick)")
+            lines.append(
+                f'{material.material_type.value.title()} ({material.thickness}" thick)'
+            )
             lines.append(f"  Area needed: {estimate.total_area_sqft:.2f} sq ft")
-            lines.append(f"  4x8 sheets:  {estimate.sheet_count_4x8} (with {estimate.waste_percentage:.0%} waste)")
+            lines.append(
+                f"  4x8 sheets:  {estimate.sheet_count_4x8} (with {estimate.waste_percentage:.0%} waste)"
+            )
             lines.append("")
 
         lines.append("-" * 60)
@@ -320,9 +327,7 @@ class JsonExporter:
                 "sections": len(output.cabinet.sections),
                 "total_shelves": sum(len(s.shelves) for s in output.cabinet.sections),
             },
-            "cut_list": [
-                self._format_cut_piece(p) for p in output.cut_list
-            ],
+            "cut_list": [self._format_cut_piece(p) for p in output.cut_list],
             "material_estimate": {
                 "total_area_sqft": output.total_estimate.total_area_sqft,
                 "sheet_count_4x8": output.total_estimate.sheet_count_4x8,
@@ -498,7 +503,7 @@ class RoomLayoutDiagramFormatter:
 
     def _render_l_shaped(
         self,
-        room: "RoomLayoutOutput.room.__class__",
+        room: Room,
         cabinets: list[Cabinet],
         cabinet_height: int,
     ) -> list[str]:
@@ -527,7 +532,7 @@ class RoomLayoutDiagramFormatter:
         is_right_turn = wall2.angle == 90
 
         # Render Wall 1 (horizontal)
-        lines.append(f"Wall 1 ({wall1.length}\")")
+        lines.append(f'Wall 1 ({wall1.length}")')
 
         # Get cabinet for wall 1 (if exists)
         cab1 = cabinets[0] if len(cabinets) > 0 else None
@@ -540,7 +545,7 @@ class RoomLayoutDiagramFormatter:
             # Right turn: Wall 2 goes down-right
             indent = " " * (wall1_chars - 1)
             lines.append(f"{indent}|")
-            lines.append(f"{indent}| Wall 2 ({wall2.length}\")")
+            lines.append(f'{indent}| Wall 2 ({wall2.length}")')
 
             # Get cabinet for wall 2 (if exists)
             cab2 = cabinets[1] if len(cabinets) > 1 else None
@@ -550,7 +555,7 @@ class RoomLayoutDiagramFormatter:
         else:
             # Left turn: Wall 2 goes down-left
             lines.append("|")
-            lines.append(f"| Wall 2 ({wall2.length}\")")
+            lines.append(f'| Wall 2 ({wall2.length}")')
 
             cab2 = cabinets[1] if len(cabinets) > 1 else None
             wall2_box = self._render_cabinet_box(cab2, wall2_chars, cabinet_height)
@@ -560,7 +565,7 @@ class RoomLayoutDiagramFormatter:
 
     def _render_sequential_walls(
         self,
-        room: "RoomLayoutOutput.room.__class__",
+        room: Room,
         cabinets: list[Cabinet],
         cabinet_height: int,
     ) -> list[str]:
@@ -587,11 +592,13 @@ class RoomLayoutDiagramFormatter:
                     lines.append(f"  ({abs(wall.angle)} degree {angle_desc} turn)")
                 lines.append("")
 
-            wall_chars = max(self.min_wall_chars, int(wall.length * self.chars_per_inch))
+            wall_chars = max(
+                self.min_wall_chars, int(wall.length * self.chars_per_inch)
+            )
 
             # Wall header
             wall_name = wall.name or f"Wall {i + 1}"
-            lines.append(f"{wall_name} ({wall.length}\")")
+            lines.append(f'{wall_name} ({wall.length}")')
 
             # Get cabinet for this wall (if exists)
             cabinet = cabinets[i] if i < len(cabinets) else None
@@ -636,7 +643,7 @@ class RoomLayoutDiagramFormatter:
             top_line += "-" * sec_width + "+"
         # Ensure we don't exceed width
         if len(top_line) > width:
-            top_line = top_line[:width-1] + "+"
+            top_line = top_line[: width - 1] + "+"
         lines.append(top_line)
 
         # Section labels row
@@ -645,9 +652,9 @@ class RoomLayoutDiagramFormatter:
             if i < len(cabinet.sections):
                 section = cabinet.sections[i]
                 shelf_count = len(section.shelves)
-                label = f"S{i+1}({shelf_count})"
+                label = f"S{i + 1}({shelf_count})"
             else:
-                label = f"S{i+1}"
+                label = f"S{i + 1}"
             # Center the label in the section width
             label = label[:sec_width]  # Truncate if too long
             padding = sec_width - len(label)
@@ -655,7 +662,7 @@ class RoomLayoutDiagramFormatter:
             right_pad = padding - left_pad
             label_line += " " * left_pad + label + " " * right_pad + "|"
         if len(label_line) > width:
-            label_line = label_line[:width-1] + "|"
+            label_line = label_line[: width - 1] + "|"
         lines.append(label_line)
 
         # Divider row
@@ -663,7 +670,7 @@ class RoomLayoutDiagramFormatter:
         for sec_width in section_chars:
             div_line += "-" * sec_width + "|"
         if len(div_line) > width:
-            div_line = div_line[:width-1] + "|"
+            div_line = div_line[: width - 1] + "|"
         lines.append(div_line)
 
         # Content rows
@@ -672,7 +679,7 @@ class RoomLayoutDiagramFormatter:
             for sec_width in section_chars:
                 content_line += " " * sec_width + "|"
             if len(content_line) > width:
-                content_line = content_line[:width-1] + "|"
+                content_line = content_line[: width - 1] + "|"
             lines.append(content_line)
 
         # Bottom border
@@ -680,12 +687,14 @@ class RoomLayoutDiagramFormatter:
         for sec_width in section_chars:
             bottom_line += "-" * sec_width + "+"
         if len(bottom_line) > width:
-            bottom_line = bottom_line[:width-1] + "+"
+            bottom_line = bottom_line[: width - 1] + "+"
         lines.append(bottom_line)
 
         return lines
 
-    def _calculate_section_widths(self, cabinet: Cabinet, available_chars: int) -> list[int]:
+    def _calculate_section_widths(
+        self, cabinet: Cabinet, available_chars: int
+    ) -> list[int]:
         """Calculate proportional character widths for cabinet sections.
 
         Args:
@@ -720,7 +729,7 @@ class RoomLayoutDiagramFormatter:
             return widths
 
         # Proportional widths
-        widths: list[int] = []
+        widths = []
         remaining_chars = content_chars
         for i, section in enumerate(cabinet.sections):
             if i == num_sections - 1:
@@ -775,7 +784,9 @@ class HardwareReportFormatter:
 
         # Format header
         if show_overage:
-            lines.append(f"{'Item':<35} {'Qty':>6} {'w/' + str(int(overage_percent)) + '%':>8}")
+            lines.append(
+                f"{'Item':<35} {'Qty':>6} {'w/' + str(int(overage_percent)) + '%':>8}"
+            )
         else:
             lines.append(f"{'Item':<35} {'Qty':>8}")
         lines.append("-" * 60)
@@ -868,17 +879,19 @@ class InstallationFormatter:
         if output.stud_analysis:
             lines.append("\n## Stud Analysis Summary\n")
             lines.append(
-                f"Cabinet position: {output.stud_analysis['cabinet_left_edge']}\" from wall start"
+                f'Cabinet position: {output.stud_analysis["cabinet_left_edge"]}" from wall start'
             )
-            lines.append(f"Cabinet width: {output.stud_analysis['cabinet_width']}\"")
+            lines.append(f'Cabinet width: {output.stud_analysis["cabinet_width"]}"')
             lines.append(f"Studs hit: {output.stud_analysis['stud_hit_count']}")
             if output.stud_analysis.get("stud_positions"):
                 positions = ", ".join(
-                    f"{p}\"" for p in output.stud_analysis["stud_positions"]
+                    f'{p}"' for p in output.stud_analysis["stud_positions"]
                 )
                 lines.append(f"Stud positions within cabinet: {positions}")
             if output.stud_analysis.get("recommendation"):
-                lines.append(f"\nRecommendation: {output.stud_analysis['recommendation']}")
+                lines.append(
+                    f"\nRecommendation: {output.stud_analysis['recommendation']}"
+                )
 
         return "\n".join(lines)
 
@@ -930,8 +943,8 @@ class InstallationFormatter:
             "STUD ALIGNMENT ANALYSIS",
             "=" * 50,
             "",
-            f"Cabinet left edge: {analysis['cabinet_left_edge']}\" from wall start",
-            f"Cabinet width: {analysis['cabinet_width']}\"",
+            f'Cabinet left edge: {analysis["cabinet_left_edge"]}" from wall start',
+            f'Cabinet width: {analysis["cabinet_width"]}"',
             "",
         ]
 
@@ -948,18 +961,407 @@ class InstallationFormatter:
             lines.append("Stud positions within cabinet span:")
             for pos in analysis["stud_positions"]:
                 relative_pos = pos - analysis["cabinet_left_edge"]
-                lines.append(f"  - {pos}\" from wall start ({relative_pos:.1f}\" from cabinet left)")
+                lines.append(
+                    f'  - {pos}" from wall start ({relative_pos:.1f}" from cabinet left)'
+                )
 
         if analysis.get("non_stud_positions"):
             lines.append("")
             lines.append("Mounting points that miss studs:")
             for pos in analysis["non_stud_positions"]:
                 relative_pos = pos - analysis["cabinet_left_edge"]
-                lines.append(f"  - {pos}\" from wall start ({relative_pos:.1f}\" from cabinet left)")
+                lines.append(
+                    f'  - {pos}" from wall start ({relative_pos:.1f}" from cabinet left)'
+                )
 
         if analysis.get("recommendation"):
             lines.append("")
             lines.append("-" * 50)
             lines.append(f"RECOMMENDATION: {analysis['recommendation']}")
+
+        return "\n".join(lines)
+
+
+class SafetyReportFormatter:
+    """Formatter for generating safety report in markdown format.
+
+    Generates a comprehensive safety report from a SafetyAssessment,
+    including all check results, weight capacities, accessibility
+    analysis, and recommendations.
+
+    Example:
+        ```python
+        formatter = SafetyReportFormatter()
+        assessment = safety_service.analyze(cabinet, obstacles)
+        report = formatter.format(assessment)
+        print(report)
+        ```
+    """
+
+    def __init__(self) -> None:
+        """Initialize the SafetyReportFormatter."""
+        # Import here to avoid circular imports at module level
+        from cabinets.domain.value_objects import SafetyCheckStatus
+
+        self._status_icons = {
+            SafetyCheckStatus.PASS: "[PASS]",
+            SafetyCheckStatus.WARNING: "[WARN]",
+            SafetyCheckStatus.ERROR: "[FAIL]",
+            SafetyCheckStatus.NOT_APPLICABLE: "[N/A]",
+        }
+
+    def format(self, assessment: "SafetyAssessment") -> str:
+        """Generate markdown safety report from assessment.
+
+        Args:
+            assessment: Completed SafetyAssessment.
+
+        Returns:
+            Markdown-formatted safety report string.
+        """
+        from cabinets.domain.value_objects import SafetyCategory
+
+        sections: list[str] = []
+
+        # Header
+        sections.append(self._format_header(assessment))
+
+        # Summary
+        sections.append(self._format_summary(assessment))
+
+        # Weight Capacity
+        if assessment.weight_capacities:
+            sections.append(self._format_weight_capacity(assessment))
+
+        # Stability
+        stability_results = assessment.get_results_by_category(SafetyCategory.STABILITY)
+        if stability_results:
+            sections.append(self._format_stability(assessment, stability_results))
+
+        # Accessibility
+        if (
+            assessment.accessibility_report
+            and assessment.accessibility_report.total_storage_volume > 0
+        ):
+            sections.append(self._format_accessibility(assessment))
+
+        # Clearances
+        clearance_results = assessment.get_results_by_category(SafetyCategory.CLEARANCE)
+        if clearance_results:
+            sections.append(self._format_clearances(clearance_results))
+
+        # Material Safety
+        material_results = assessment.get_results_by_category(SafetyCategory.MATERIAL)
+        if material_results:
+            sections.append(self._format_material_safety(material_results))
+
+        # Seismic
+        seismic_results = assessment.get_results_by_category(SafetyCategory.SEISMIC)
+        if seismic_results or assessment.seismic_hardware:
+            sections.append(self._format_seismic(assessment, seismic_results))
+
+        # Child Safety
+        child_results = assessment.get_results_by_category(SafetyCategory.CHILD_SAFETY)
+        if child_results or assessment.child_safety_notes:
+            sections.append(self._format_child_safety(assessment, child_results))
+
+        # Safety Labels (if present)
+        if assessment.safety_labels:
+            sections.append(self._format_safety_labels(assessment))
+
+        # Disclaimers
+        sections.append(self._format_disclaimers())
+
+        return "\n\n".join(sections)
+
+    def _format_header(self, assessment: "SafetyAssessment") -> str:
+        """Format report header.
+
+        Args:
+            assessment: The safety assessment.
+
+        Returns:
+            Markdown header string.
+        """
+        return "# Safety Assessment Report\n\nGenerated by Cabinet Layout Generator"
+
+    def _format_summary(self, assessment: "SafetyAssessment") -> str:
+        """Format summary section.
+
+        Args:
+            assessment: The safety assessment.
+
+        Returns:
+            Markdown summary section.
+        """
+        lines: list[str] = ["## Summary"]
+
+        # Status badge
+        if assessment.has_errors:
+            status = "**FAILED** - Safety issues require attention"
+        elif assessment.has_warnings:
+            status = "**PASSED with WARNINGS** - Review recommended"
+        else:
+            status = "**PASSED** - All safety checks passed"
+
+        lines.append(f"\nStatus: {status}")
+        lines.append(f"\n- Errors: {assessment.errors_count}")
+        lines.append(f"- Warnings: {assessment.warnings_count}")
+
+        if assessment.anti_tip_required:
+            lines.append("\n**Anti-tip restraint is required for this cabinet.**")
+
+        return "\n".join(lines)
+
+    def _format_weight_capacity(self, assessment: "SafetyAssessment") -> str:
+        """Format weight capacity section.
+
+        Args:
+            assessment: The safety assessment.
+
+        Returns:
+            Markdown weight capacity section with table.
+        """
+        from cabinets.domain.value_objects import SafetyCategory
+
+        lines: list[str] = ["## Weight Capacity"]
+
+        lines.append("\n| Shelf | Capacity | Material | Span | Safety Factor |")
+        lines.append("|-------|----------|----------|------|---------------|")
+
+        for cap in assessment.weight_capacities:
+            lines.append(
+                f"| {cap.panel_id} | {cap.safe_load_lbs:.0f} lbs | "
+                f'{cap.material} | {cap.span_inches:.1f}" | {cap.safety_factor:.0f}:1 |'
+            )
+
+        # Structural check results
+        structural_results = assessment.get_results_by_category(
+            SafetyCategory.STRUCTURAL
+        )
+        if structural_results:
+            lines.append("\n### Structural Analysis")
+            for result in structural_results:
+                lines.append(f"\n{self._status_icons[result.status]} {result.message}")
+                if result.remediation:
+                    lines.append(f"  - *Suggestion: {result.remediation}*")
+                if result.standard_reference:
+                    lines.append(f"  - Standard: {result.standard_reference}")
+
+        return "\n".join(lines)
+
+    def _format_stability(
+        self,
+        assessment: "SafetyAssessment",
+        results: list["SafetyCheckResult"],
+    ) -> str:
+        """Format stability section.
+
+        Args:
+            assessment: The safety assessment.
+            results: Stability check results.
+
+        Returns:
+            Markdown stability section.
+        """
+        lines: list[str] = ["## Stability"]
+
+        for result in results:
+            lines.append(f"\n{self._status_icons[result.status]} {result.message}")
+            if result.remediation:
+                lines.append(f"  - *Suggestion: {result.remediation}*")
+            if result.standard_reference:
+                lines.append(f"  - Standard: {result.standard_reference}")
+
+        if assessment.anti_tip_required:
+            lines.append("\n### Anti-Tip Hardware Required")
+            lines.append(
+                "\n**WARNING:** To reduce the risk of tip-over, this furniture"
+            )
+            lines.append("must be anchored to the wall. See installation instructions.")
+
+        return "\n".join(lines)
+
+    def _format_accessibility(self, assessment: "SafetyAssessment") -> str:
+        """Format accessibility section.
+
+        Args:
+            assessment: The safety assessment.
+
+        Returns:
+            Markdown accessibility section.
+        """
+        report = assessment.accessibility_report
+        if not report:
+            return ""
+
+        lines: list[str] = ["## Accessibility (ADA)"]
+
+        status = "COMPLIANT" if report.is_compliant else "NON-COMPLIANT"
+        lines.append(f"\nStatus: **{status}**")
+        lines.append(f"\n- Accessible Storage: {report.accessible_percentage:.1f}%")
+        lines.append("- Required Minimum: 50%")
+        lines.append(f"- Standard: {report.standard.value}")
+
+        if report.reach_violations:
+            lines.append("\n### Reach Range Violations")
+            for violation in report.reach_violations:
+                lines.append(f"- {violation}")
+
+        if report.non_compliant_areas:
+            lines.append("\n### Non-Compliant Areas")
+            for area in report.non_compliant_areas:
+                lines.append(f"- {area}")
+
+        if report.hardware_notes:
+            lines.append("\n### Hardware Recommendations")
+            for note in report.hardware_notes:
+                lines.append(f"- {note}")
+
+        return "\n".join(lines)
+
+    def _format_clearances(self, results: list["SafetyCheckResult"]) -> str:
+        """Format clearances section.
+
+        Args:
+            results: Clearance check results.
+
+        Returns:
+            Markdown clearances section.
+        """
+        lines: list[str] = ["## Building Code Clearances"]
+
+        for result in results:
+            lines.append(f"\n{self._status_icons[result.status]} {result.message}")
+            if result.remediation:
+                lines.append(f"  - *Suggestion: {result.remediation}*")
+            if result.standard_reference:
+                lines.append(f"  - Standard: {result.standard_reference}")
+
+        return "\n".join(lines)
+
+    def _format_material_safety(self, results: list["SafetyCheckResult"]) -> str:
+        """Format material safety section.
+
+        Args:
+            results: Material safety check results.
+
+        Returns:
+            Markdown material safety section.
+        """
+        lines: list[str] = ["## Material Safety"]
+
+        for result in results:
+            lines.append(f"\n{self._status_icons[result.status]} {result.message}")
+            if result.remediation:
+                lines.append(f"  - *Suggestion: {result.remediation}*")
+            if result.standard_reference:
+                lines.append(f"  - Standard: {result.standard_reference}")
+
+        return "\n".join(lines)
+
+    def _format_seismic(
+        self,
+        assessment: "SafetyAssessment",
+        results: list["SafetyCheckResult"],
+    ) -> str:
+        """Format seismic section.
+
+        Args:
+            assessment: The safety assessment.
+            results: Seismic check results.
+
+        Returns:
+            Markdown seismic section.
+        """
+        lines: list[str] = ["## Seismic Requirements"]
+
+        for result in results:
+            lines.append(f"\n{self._status_icons[result.status]} {result.message}")
+            if result.remediation:
+                lines.append(f"  - *Suggestion: {result.remediation}*")
+            if result.standard_reference:
+                lines.append(f"  - Standard: {result.standard_reference}")
+
+        if assessment.seismic_hardware:
+            lines.append("\n### Required Hardware")
+            for hw in assessment.seismic_hardware:
+                lines.append(f"- {hw}")
+
+        return "\n".join(lines)
+
+    def _format_child_safety(
+        self,
+        assessment: "SafetyAssessment",
+        results: list["SafetyCheckResult"],
+    ) -> str:
+        """Format child safety section.
+
+        Args:
+            assessment: The safety assessment.
+            results: Child safety check results.
+
+        Returns:
+            Markdown child safety section.
+        """
+        lines: list[str] = ["## Child Safety"]
+
+        for result in results:
+            lines.append(f"\n{self._status_icons[result.status]} {result.message}")
+            if result.remediation:
+                lines.append(f"  - *Suggestion: {result.remediation}*")
+
+        if assessment.child_safety_notes:
+            lines.append("\n### Recommendations")
+            for note in assessment.child_safety_notes:
+                lines.append(f"- {note}")
+
+        return "\n".join(lines)
+
+    def _format_safety_labels(self, assessment: "SafetyAssessment") -> str:
+        """Format safety labels section.
+
+        Args:
+            assessment: The safety assessment.
+
+        Returns:
+            Markdown safety labels section.
+        """
+        lines: list[str] = ["## Safety Labels"]
+        lines.append(
+            "\nThe following safety labels should be attached to this cabinet:"
+        )
+
+        for label in assessment.safety_labels:
+            lines.append(f"\n### {label.title}")
+            lines.append(f"- Type: {label.label_type}")
+            lines.append(f'- Size: {label.width_inches}" x {label.height_inches}"')
+            if label.warning_icon:
+                lines.append("- Includes warning icon")
+            # Show first line of body text as preview
+            preview = label.body_text.split("\n")[0]
+            if len(preview) > 60:
+                preview = preview[:60] + "..."
+            lines.append(f'- Content: "{preview}"')
+
+        return "\n".join(lines)
+
+    def _format_disclaimers(self) -> str:
+        """Format disclaimers section.
+
+        Returns:
+            Markdown disclaimers section.
+        """
+        from cabinets.domain.services.safety import (
+            ADA_DISCLAIMER,
+            MATERIAL_DISCLAIMER,
+            SAFETY_GENERAL_DISCLAIMER,
+        )
+
+        lines: list[str] = ["## Disclaimers"]
+
+        lines.append(f"\n**General:** {SAFETY_GENERAL_DISCLAIMER}")
+        lines.append(f"\n**Accessibility:** {ADA_DISCLAIMER}")
+        lines.append(f"\n**Materials:** {MATERIAL_DISCLAIMER}")
 
         return "\n".join(lines)

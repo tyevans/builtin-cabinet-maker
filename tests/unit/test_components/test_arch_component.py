@@ -227,9 +227,7 @@ class TestArchServiceFullRound:
         extension = arch_service.calculate_upright_extension(config, 24.0, x)
         assert extension == pytest.approx(expected_y)
 
-    def test_curve_points_full_round_symmetry(
-        self, arch_service: ArchService
-    ) -> None:
+    def test_curve_points_full_round_symmetry(self, arch_service: ArchService) -> None:
         """Test that curve points are symmetric for full round."""
         config = ArchConfig(arch_type=ArchType.FULL_ROUND, radius="auto")
 
@@ -905,9 +903,7 @@ class TestArchComponentHardware:
 class TestArchComponentIntegration:
     """Integration tests for ArchComponent with the registry."""
 
-    def test_full_workflow_full_round(
-        self, standard_context: ComponentContext
-    ) -> None:
+    def test_full_workflow_full_round(self, standard_context: ComponentContext) -> None:
         """Test complete workflow for full_round arch."""
         component_class = component_registry.get("decorative.arch")
         component = component_class()
@@ -954,9 +950,7 @@ class TestArchComponentIntegration:
         assert panel.metadata["arch_type"] == "segmental"
         assert panel.metadata["radius"] == pytest.approx(18.0)
 
-    def test_full_workflow_elliptical(
-        self, standard_context: ComponentContext
-    ) -> None:
+    def test_full_workflow_elliptical(self, standard_context: ComponentContext) -> None:
         """Test complete workflow for elliptical arch."""
         component = ArchComponent()
 

@@ -7,7 +7,12 @@ from pathlib import Path
 
 import pytest
 
-from cabinets.domain.value_objects import CutPiece, MaterialSpec, MaterialType, PanelType
+from cabinets.domain.value_objects import (
+    CutPiece,
+    MaterialSpec,
+    MaterialType,
+    PanelType,
+)
 from cabinets.infrastructure.bin_packing import (
     PackingResult,
     PlacedPiece,
@@ -135,9 +140,7 @@ class TestSvgExporterConfiguration:
 class TestSvgExporterExport:
     """Tests for SVG export functionality."""
 
-    def test_export_creates_file(
-        self, sample_packing_result: PackingResult
-    ) -> None:
+    def test_export_creates_file(self, sample_packing_result: PackingResult) -> None:
         """export() creates SVG file."""
         from dataclasses import dataclass
 
@@ -157,9 +160,7 @@ class TestSvgExporterExport:
             assert content.startswith("<svg")
             assert content.endswith("</svg>")
 
-    def test_export_valid_svg(
-        self, sample_packing_result: PackingResult
-    ) -> None:
+    def test_export_valid_svg(self, sample_packing_result: PackingResult) -> None:
         """Exported SVG is valid XML."""
         import xml.etree.ElementTree as ET
         from dataclasses import dataclass
@@ -345,9 +346,7 @@ class TestSvgExporterIndividualSheets:
 class TestSvgExporterContent:
     """Tests for SVG content generation."""
 
-    def test_contains_piece_label(
-        self, sample_packing_result: PackingResult
-    ) -> None:
+    def test_contains_piece_label(self, sample_packing_result: PackingResult) -> None:
         """Generated SVG contains piece labels."""
         from dataclasses import dataclass
 
@@ -379,9 +378,7 @@ class TestSvgExporterContent:
 
         assert '24.0" x 48.0"' in svg
 
-    def test_contains_sheet_header(
-        self, sample_packing_result: PackingResult
-    ) -> None:
+    def test_contains_sheet_header(self, sample_packing_result: PackingResult) -> None:
         """Generated SVG contains sheet header information."""
         from dataclasses import dataclass
 

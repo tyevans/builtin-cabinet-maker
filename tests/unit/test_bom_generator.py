@@ -17,13 +17,17 @@ from __future__ import annotations
 import json
 import tempfile
 from pathlib import Path
-from typing import TYPE_CHECKING
 from unittest.mock import MagicMock
 
 import pytest
 
 from cabinets.domain.components.results import HardwareItem
-from cabinets.domain.value_objects import CutPiece, MaterialSpec, MaterialType, PanelType
+from cabinets.domain.value_objects import (
+    CutPiece,
+    MaterialSpec,
+    MaterialType,
+    PanelType,
+)
 from cabinets.infrastructure.exporters.bom import (
     BillOfMaterials,
     BomGenerator,
@@ -50,7 +54,9 @@ def sample_back_material() -> MaterialSpec:
 
 
 @pytest.fixture
-def sample_cut_list(sample_material: MaterialSpec, sample_back_material: MaterialSpec) -> list[CutPiece]:
+def sample_cut_list(
+    sample_material: MaterialSpec, sample_back_material: MaterialSpec
+) -> list[CutPiece]:
     """Create a sample cut list with various panel types."""
     return [
         CutPiece(
@@ -93,13 +99,13 @@ def sample_hardware() -> list[HardwareItem]:
     """Create a sample hardware list."""
     return [
         HardwareItem(
-            name="#8 x 1-1/4\" wood screw",
+            name='#8 x 1-1/4" wood screw',
             quantity=24,
             sku="WS-812",
             notes="Case assembly",
         ),
         HardwareItem(
-            name="#6 x 5/8\" pan head screw",
+            name='#6 x 5/8" pan head screw',
             quantity=36,
             sku="PS-658",
             notes="Back panel attachment",
@@ -765,7 +771,7 @@ class TestBomGeneratorEdgeCases:
 
         # Test various size formats
         test_cases = [
-            ("#8 x 1-1/4\" wood screw", "#8 x 1-1/4\""),
+            ('#8 x 1-1/4" wood screw', '#8 x 1-1/4"'),
             ("1-1/4 inch pocket screw", "1-1/4 inch"),
             ("35mm European hinge", "35mm"),
             ("Wood screw", ""),  # No size in name
@@ -792,19 +798,19 @@ class TestBomGeneratorEdgeCases:
         # Create hardware list with duplicates
         hardware_with_duplicates = [
             HardwareItem(
-                name="#8 x 1-1/4\" wood screw",
+                name='#8 x 1-1/4" wood screw',
                 quantity=24,
                 sku="WS-812",
                 notes="Cabinet 1",
             ),
             HardwareItem(
-                name="#8 x 1-1/4\" wood screw",
+                name='#8 x 1-1/4" wood screw',
                 quantity=24,
                 sku="WS-812",
                 notes="Cabinet 2",
             ),
             HardwareItem(
-                name="#8 x 1-1/4\" wood screw",
+                name='#8 x 1-1/4" wood screw',
                 quantity=12,
                 sku="WS-812",
                 notes="Cabinet 3",

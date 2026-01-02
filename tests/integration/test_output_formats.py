@@ -3,19 +3,19 @@
 Tests all exporters work with real cabinet layouts, multi-format export via
 ExportManager, CLI multi-format export, and per-format config options.
 """
+
 from __future__ import annotations
 
 import json
-import tempfile
 from pathlib import Path
 
 import pytest
 
-from cabinets.application.commands import GenerateLayoutCommand
 from cabinets.application.dtos import LayoutOutput, LayoutParametersInput, WallInput
-from cabinets.domain.entities import Cabinet, Section
+from cabinets.application.factory import get_factory
+from cabinets.domain.entities import Cabinet
 from cabinets.domain.services import MaterialEstimate
-from cabinets.domain.value_objects import MaterialSpec, Position
+from cabinets.domain.value_objects import MaterialSpec
 from cabinets.infrastructure import BinPackingConfig, BinPackingService
 from cabinets.infrastructure.exporters import (
     AssemblyInstructionGenerator,
@@ -37,7 +37,7 @@ from cabinets.infrastructure.exporters import (
 @pytest.fixture
 def sample_layout() -> LayoutOutput:
     """Generate a sample layout for testing."""
-    command = GenerateLayoutCommand()
+    command = get_factory().create_generate_command()
     wall_input = WallInput(width=48.0, height=84.0, depth=12.0)
     params_input = LayoutParametersInput(
         num_sections=2,
@@ -50,7 +50,7 @@ def sample_layout() -> LayoutOutput:
 @pytest.fixture
 def single_section_layout() -> LayoutOutput:
     """Generate a single-section layout for testing."""
-    command = GenerateLayoutCommand()
+    command = get_factory().create_generate_command()
     wall_input = WallInput(width=24.0, height=60.0, depth=12.0)
     params_input = LayoutParametersInput(
         num_sections=1,
@@ -63,7 +63,7 @@ def single_section_layout() -> LayoutOutput:
 @pytest.fixture
 def large_layout() -> LayoutOutput:
     """Generate a large layout with many pieces for edge case testing."""
-    command = GenerateLayoutCommand()
+    command = get_factory().create_generate_command()
     wall_input = WallInput(width=96.0, height=84.0, depth=12.0)
     params_input = LayoutParametersInput(
         num_sections=4,
@@ -76,7 +76,7 @@ def large_layout() -> LayoutOutput:
 @pytest.fixture
 def optimized_layout() -> LayoutOutput:
     """Generate a layout with bin packing for SVG tests."""
-    command = GenerateLayoutCommand()
+    command = get_factory().create_generate_command()
     wall_input = WallInput(width=48.0, height=84.0, depth=12.0)
     params_input = LayoutParametersInput(
         num_sections=2,
@@ -507,9 +507,7 @@ class TestAssemblyInstructions:
         assert "## Assembly Steps" in content
         assert "## Finishing" in content
 
-    def test_assembly_includes_cut_pieces_checklist(
-        self, sample_layout: LayoutOutput
-    ):
+    def test_assembly_includes_cut_pieces_checklist(self, sample_layout: LayoutOutput):
         """Test assembly instructions include cut pieces checklist."""
         generator = AssemblyInstructionGenerator()
         content = generator.export_string(sample_layout)
@@ -549,9 +547,7 @@ class TestAssemblyInstructions:
 
         assert "## Safety Warnings" not in content
 
-    def test_assembly_export_to_file(
-        self, sample_layout: LayoutOutput, tmp_path: Path
-    ):
+    def test_assembly_export_to_file(self, sample_layout: LayoutOutput, tmp_path: Path):
         """Test assembly instructions export to file."""
         generator = AssemblyInstructionGenerator()
         path = tmp_path / "assembly.md"
@@ -585,9 +581,7 @@ class TestSvgExporter:
         with pytest.raises(ValueError, match="bin packing"):
             exporter.export_string(sample_layout)
 
-    def test_svg_export_to_file(
-        self, optimized_layout: LayoutOutput, tmp_path: Path
-    ):
+    def test_svg_export_to_file(self, optimized_layout: LayoutOutput, tmp_path: Path):
         """Test SVG export to file."""
         exporter = SvgExporter()
         path = tmp_path / "test.svg"
@@ -626,9 +620,7 @@ class TestSvgExporter:
 class TestStlExporter:
     """Integration tests for STL export."""
 
-    def test_stl_export_to_file(
-        self, sample_layout: LayoutOutput, tmp_path: Path
-    ):
+    def test_stl_export_to_file(self, sample_layout: LayoutOutput, tmp_path: Path):
         """Test STL export to file."""
         exporter = StlLayoutExporter()
         path = tmp_path / "test.stl"
@@ -668,12 +660,18 @@ class TestCliMultiFormat:
             app,
             [
                 "generate",
-                "--width", "48",
-                "--height", "84",
-                "--depth", "12",
-                "--output-formats", "json,bom",
-                "--output-dir", str(tmp_path),
-                "--project-name", "test_cabinet",
+                "--width",
+                "48",
+                "--height",
+                "84",
+                "--depth",
+                "12",
+                "--output-formats",
+                "json,bom",
+                "--output-dir",
+                str(tmp_path),
+                "--project-name",
+                "test_cabinet",
             ],
         )
 
@@ -691,12 +689,18 @@ class TestCliMultiFormat:
             app,
             [
                 "generate",
-                "--width", "48",
-                "--height", "84",
-                "--depth", "12",
-                "--output-formats", "stl,dxf,json,bom,assembly",
-                "--output-dir", str(tmp_path),
-                "--project-name", "all_formats",
+                "--width",
+                "48",
+                "--height",
+                "84",
+                "--depth",
+                "12",
+                "--output-formats",
+                "stl,dxf,json,bom,assembly",
+                "--output-dir",
+                str(tmp_path),
+                "--project-name",
+                "all_formats",
             ],
         )
 
@@ -717,12 +721,18 @@ class TestCliMultiFormat:
             app,
             [
                 "generate",
-                "--width", "48",
-                "--height", "84",
-                "--depth", "12",
-                "--output-formats", "svg",
-                "--output-dir", str(tmp_path),
-                "--project-name", "test",
+                "--width",
+                "48",
+                "--height",
+                "84",
+                "--depth",
+                "12",
+                "--output-formats",
+                "svg",
+                "--output-dir",
+                str(tmp_path),
+                "--project-name",
+                "test",
             ],
         )
 
@@ -739,13 +749,19 @@ class TestCliMultiFormat:
             app,
             [
                 "generate",
-                "--width", "48",
-                "--height", "84",
-                "--depth", "12",
+                "--width",
+                "48",
+                "--height",
+                "84",
+                "--depth",
+                "12",
                 "--optimize",
-                "--output-formats", "svg",
-                "--output-dir", str(tmp_path),
-                "--project-name", "optimized",
+                "--output-formats",
+                "svg",
+                "--output-dir",
+                str(tmp_path),
+                "--project-name",
+                "optimized",
             ],
         )
 
@@ -762,12 +778,18 @@ class TestCliMultiFormat:
             app,
             [
                 "generate",
-                "--width", "48",
-                "--height", "84",
-                "--depth", "12",
-                "--output-formats", "invalid_format",
-                "--output-dir", str(tmp_path),
-                "--project-name", "test",
+                "--width",
+                "48",
+                "--height",
+                "84",
+                "--depth",
+                "12",
+                "--output-formats",
+                "invalid_format",
+                "--output-dir",
+                str(tmp_path),
+                "--project-name",
+                "test",
             ],
         )
 
@@ -830,9 +852,7 @@ class TestExporterEdgeCases:
 class TestOutputFileValidation:
     """Tests that verify output files are valid and usable."""
 
-    def test_json_file_is_valid_json(
-        self, sample_layout: LayoutOutput, tmp_path: Path
-    ):
+    def test_json_file_is_valid_json(self, sample_layout: LayoutOutput, tmp_path: Path):
         """Test JSON output is valid JSON."""
         exporter = EnhancedJsonExporter()
         path = tmp_path / "test.json"
@@ -877,9 +897,7 @@ class TestOutputFileValidation:
         assert content.count("# ") >= 1  # At least one H1
         assert content.count("## ") >= 1  # At least one H2
 
-    def test_svg_has_valid_xml(
-        self, optimized_layout: LayoutOutput, tmp_path: Path
-    ):
+    def test_svg_has_valid_xml(self, optimized_layout: LayoutOutput, tmp_path: Path):
         """Test SVG output is valid XML."""
         import xml.etree.ElementTree as ET
 
@@ -903,9 +921,7 @@ class TestOutputFileValidation:
 class TestPerFormatConfigOptions:
     """Test per-format configuration options are properly passed through."""
 
-    def test_dxf_mode_combined(
-        self, sample_layout: LayoutOutput, tmp_path: Path
-    ):
+    def test_dxf_mode_combined(self, sample_layout: LayoutOutput, tmp_path: Path):
         """Test DXF combined mode creates single file."""
         exporter = DxfExporter(mode="combined")
         path = tmp_path / "combined.dxf"
@@ -914,9 +930,7 @@ class TestPerFormatConfigOptions:
         # Should create just one file at the specified path
         assert path.exists()
 
-    def test_dxf_mode_per_panel(
-        self, sample_layout: LayoutOutput, tmp_path: Path
-    ):
+    def test_dxf_mode_per_panel(self, sample_layout: LayoutOutput, tmp_path: Path):
         """Test DXF per_panel mode creates multiple files."""
         exporter = DxfExporter(mode="per_panel")
         base_path = tmp_path / "panel.dxf"
@@ -926,9 +940,7 @@ class TestPerFormatConfigOptions:
         dxf_files = list(tmp_path.glob("panel_*.dxf"))
         assert len(dxf_files) > 0
 
-    def test_dxf_hole_pattern_none(
-        self, sample_layout: LayoutOutput, tmp_path: Path
-    ):
+    def test_dxf_hole_pattern_none(self, sample_layout: LayoutOutput, tmp_path: Path):
         """Test DXF without hole pattern."""
         exporter = DxfExporter(hole_pattern="none")
         path = tmp_path / "no_holes.dxf"
@@ -943,7 +955,7 @@ class TestPerFormatConfigOptions:
 
         # With indent=4, lines should have 4-space indentation
         lines = content.split("\n")
-        indented_lines = [l for l in lines if l.startswith("    ")]
+        indented_lines = [line for line in lines if line.startswith("    ")]
         assert len(indented_lines) > 0
 
     def test_bom_with_costs(self, sample_layout: LayoutOutput):
@@ -992,7 +1004,7 @@ class TestConfigFileIntegration:
 
     def test_export_from_config_generated_layout(self, tmp_path: Path):
         """Test exporting a layout generated from dimensions."""
-        command = GenerateLayoutCommand()
+        command = get_factory().create_generate_command()
         wall_input = WallInput(width=60.0, height=96.0, depth=14.0)
         params_input = LayoutParametersInput(
             num_sections=3,

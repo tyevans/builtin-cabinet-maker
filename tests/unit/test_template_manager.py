@@ -24,7 +24,9 @@ class TestTemplateManager:
         """Create a TemplateManager instance for testing."""
         return TemplateManager()
 
-    def test_list_templates_returns_all_templates(self, manager: TemplateManager) -> None:
+    def test_list_templates_returns_all_templates(
+        self, manager: TemplateManager
+    ) -> None:
         """Test that list_templates returns all available templates."""
         templates = manager.list_templates()
 
@@ -34,7 +36,9 @@ class TestTemplateManager:
         assert "bookcase" in names
         assert "cabinet-doors" in names
 
-    def test_list_templates_returns_descriptions(self, manager: TemplateManager) -> None:
+    def test_list_templates_returns_descriptions(
+        self, manager: TemplateManager
+    ) -> None:
         """Test that list_templates includes descriptions."""
         templates = manager.list_templates()
         templates_dict = dict(templates)

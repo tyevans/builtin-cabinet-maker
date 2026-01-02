@@ -8,8 +8,6 @@ These tests verify:
 - Edge cases and boundary conditions
 """
 
-import pytest
-
 from cabinets.domain.entities import Obstacle
 from cabinets.domain.services import ObstacleCollisionService
 from cabinets.domain.value_objects import (
@@ -479,7 +477,9 @@ class TestFindValidRegions:
 
         # Should have: full region left (0-40), lower region (40-80, 0-30),
         # upper region (40-80, 70-96), full region right (80-120)
-        region_types = {(r.region_type, r.left, r.right, r.bottom, r.top) for r in regions}
+        region_types = {
+            (r.region_type, r.left, r.right, r.bottom, r.top) for r in regions
+        }
 
         # Check full region on left
         assert ("full", 0.0, 40.0, 0.0, 96.0) in region_types
@@ -505,7 +505,9 @@ class TestFindValidRegions:
         )
 
         # Should have: upper region over door (0-40, 80-96), full region after (40-120)
-        region_types = {(r.region_type, r.left, r.right, r.bottom, r.top) for r in regions}
+        region_types = {
+            (r.region_type, r.left, r.right, r.bottom, r.top) for r in regions
+        }
 
         assert ("upper", 0.0, 40.0, 80.0, 96.0) in region_types
         assert ("full", 40.0, 120.0, 0.0, 96.0) in region_types
@@ -524,7 +526,9 @@ class TestFindValidRegions:
             min_height=12.0,
         )
 
-        region_types = {(r.region_type, r.left, r.right, r.bottom, r.top) for r in regions}
+        region_types = {
+            (r.region_type, r.left, r.right, r.bottom, r.top) for r in regions
+        }
 
         assert ("full", 0.0, 80.0, 0.0, 96.0) in region_types
         assert ("upper", 80.0, 120.0, 80.0, 96.0) in region_types
@@ -583,7 +587,9 @@ class TestFindValidRegions:
         )
 
         # Lower region (0-8 height) should be excluded
-        lower_regions = [r for r in regions if r.region_type == "lower" and r.left == 40.0]
+        lower_regions = [
+            r for r in regions if r.region_type == "lower" and r.left == 40.0
+        ]
         assert len(lower_regions) == 0
 
     def test_upper_and_lower_region_detection(self) -> None:
@@ -705,7 +711,9 @@ class TestFindValidRegions:
         assert len(full_regions) == 2
 
         # No lower or upper regions for this zone (floor to ceiling)
-        lower_upper_regions = [r for r in regions if r.region_type in ("lower", "upper")]
+        lower_upper_regions = [
+            r for r in regions if r.region_type in ("lower", "upper")
+        ]
         assert len(lower_upper_regions) == 0
 
     def test_custom_minimum_dimensions(self) -> None:

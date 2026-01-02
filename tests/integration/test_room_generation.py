@@ -9,24 +9,18 @@ These tests verify end-to-end room layout generation including:
 """
 
 import json
-import tempfile
 from pathlib import Path
 
 import pytest
 
-from cabinets.application.commands import GenerateLayoutCommand
+from cabinets.application.factory import get_factory
 from cabinets.application.config import (
-    CabinetConfiguration,
     config_to_dtos,
     config_to_room,
     config_to_section_specs,
-    has_section_specs,
     load_config,
 )
-from cabinets.application.dtos import LayoutParametersInput
-from cabinets.domain.entities import Cabinet, Room, WallSegment
-from cabinets.domain.section_resolver import SectionSpec
-from cabinets.domain.services import RoomLayoutService
+from cabinets.domain.services import PanelGenerationService, RoomLayoutService
 from cabinets.infrastructure.stl_exporter import StlExporter
 
 
@@ -170,7 +164,7 @@ class TestRoomLayoutGeneration:
         section_specs = config_to_section_specs(config)
         _, params_input = config_to_dtos(config)
 
-        command = GenerateLayoutCommand()
+        command = get_factory().create_generate_command()
         result = command.execute_room_layout(room, section_specs, params_input)
 
         assert result.is_valid
@@ -189,7 +183,7 @@ class TestRoomLayoutGeneration:
         section_specs = config_to_section_specs(config)
         _, params_input = config_to_dtos(config)
 
-        command = GenerateLayoutCommand()
+        command = get_factory().create_generate_command()
         result = command.execute_room_layout(room, section_specs, params_input)
 
         assert result.is_valid
@@ -221,7 +215,7 @@ class TestRoomLayoutGeneration:
         section_specs = config_to_section_specs(config)
         _, params_input = config_to_dtos(config)
 
-        command = GenerateLayoutCommand()
+        command = get_factory().create_generate_command()
         result = command.execute_room_layout(room, section_specs, params_input)
 
         assert result.is_valid
@@ -249,7 +243,7 @@ class TestBackwardCompatibility:
         wall_input, params_input = config_to_dtos(config)
         section_specs = config_to_section_specs(config)
 
-        command = GenerateLayoutCommand()
+        command = get_factory().create_generate_command()
         result = command.execute(wall_input, params_input, section_specs=section_specs)
 
         assert result.is_valid
@@ -264,7 +258,7 @@ class TestBackwardCompatibility:
         wall_input, params_input = config_to_dtos(config)
         section_specs = config_to_section_specs(config)
 
-        command = GenerateLayoutCommand()
+        command = get_factory().create_generate_command()
         result = command.execute(wall_input, params_input, section_specs=section_specs)
 
         assert result.is_valid
@@ -285,7 +279,7 @@ class TestBackwardCompatibility:
         wall_input, params_input = config_to_dtos(config)
         section_specs = config_to_section_specs(config)
 
-        command = GenerateLayoutCommand()
+        command = get_factory().create_generate_command()
         result = command.execute(wall_input, params_input, section_specs=section_specs)
 
         assert result.is_valid
@@ -311,7 +305,7 @@ class TestCabinetObjectsFromRoomConfigs:
         section_specs = config_to_section_specs(config)
         _, params_input = config_to_dtos(config)
 
-        command = GenerateLayoutCommand()
+        command = get_factory().create_generate_command()
         result = command.execute_room_layout(room, section_specs, params_input)
 
         assert result.is_valid
@@ -330,7 +324,7 @@ class TestCabinetObjectsFromRoomConfigs:
         section_specs = config_to_section_specs(config)
         _, params_input = config_to_dtos(config)
 
-        command = GenerateLayoutCommand()
+        command = get_factory().create_generate_command()
         result = command.execute_room_layout(room, section_specs, params_input)
 
         assert result.is_valid
@@ -350,12 +344,13 @@ class TestCabinetObjectsFromRoomConfigs:
         section_specs = config_to_section_specs(config)
         _, params_input = config_to_dtos(config)
 
-        command = GenerateLayoutCommand()
+        command = get_factory().create_generate_command()
         result = command.execute_room_layout(room, section_specs, params_input)
 
         assert result.is_valid
+        panel_service = PanelGenerationService()
         for cabinet in result.cabinets:
-            panels = cabinet.get_all_panels()
+            panels = panel_service.get_all_panels(cabinet)
             panel_types = {p.panel_type.value for p in panels}
 
             # Should have top, bottom, sides, and back
@@ -380,7 +375,7 @@ class TestSTLExportWithRoomTransforms:
         section_specs = config_to_section_specs(config)
         _, params_input = config_to_dtos(config)
 
-        command = GenerateLayoutCommand()
+        command = get_factory().create_generate_command()
         result = command.execute_room_layout(room, section_specs, params_input)
 
         assert result.is_valid
@@ -405,7 +400,7 @@ class TestSTLExportWithRoomTransforms:
         section_specs = config_to_section_specs(config)
         _, params_input = config_to_dtos(config)
 
-        command = GenerateLayoutCommand()
+        command = get_factory().create_generate_command()
         result = command.execute_room_layout(room, section_specs, params_input)
 
         assert result.is_valid
@@ -426,7 +421,7 @@ class TestSTLExportWithRoomTransforms:
         wall_input, params_input = config_to_dtos(config)
         section_specs = config_to_section_specs(config)
 
-        command = GenerateLayoutCommand()
+        command = get_factory().create_generate_command()
         result = command.execute(wall_input, params_input, section_specs=section_specs)
 
         assert result.is_valid
@@ -524,7 +519,7 @@ class TestFillSectionCalculation:
         section_specs = config_to_section_specs(config)
         _, params_input = config_to_dtos(config)
 
-        command = GenerateLayoutCommand()
+        command = get_factory().create_generate_command()
         result = command.execute_room_layout(room, section_specs, params_input)
 
         assert result.is_valid
@@ -534,7 +529,8 @@ class TestFillSectionCalculation:
         # Fill section should be 48" (96 - 48)
         # The fill section is the 6th section (index 5)
         north_wall_cabinets = [
-            c for i, c in enumerate(result.cabinets)
+            c
+            for i, c in enumerate(result.cabinets)
             if result.transforms[i].wall_index == 2
         ]
 
@@ -554,18 +550,14 @@ class TestErrorHandling:
             "schema_version": "1.1",
             "room": {
                 "name": "test-room",
-                "walls": [
-                    {"length": 72, "height": 84, "angle": 0, "name": "main"}
-                ]
+                "walls": [{"length": 72, "height": 84, "angle": 0, "name": "main"}],
             },
             "cabinet": {
                 "width": 72,
                 "height": 84,
                 "depth": 12,
-                "sections": [
-                    {"width": 36, "wall": "nonexistent", "shelves": 4}
-                ]
-            }
+                "sections": [{"width": 36, "wall": "nonexistent", "shelves": 4}],
+            },
         }
         config_file = tmp_path / "invalid_wall_ref.json"
         config_file.write_text(json.dumps(config_data))
@@ -577,7 +569,7 @@ class TestErrorHandling:
         section_specs = config_to_section_specs(config)
         _, params_input = config_to_dtos(config)
 
-        command = GenerateLayoutCommand()
+        command = get_factory().create_generate_command()
         result = command.execute_room_layout(room, section_specs, params_input)
 
         # Should have an error for invalid wall reference
@@ -591,9 +583,7 @@ class TestErrorHandling:
             "schema_version": "1.1",
             "room": {
                 "name": "test-room",
-                "walls": [
-                    {"length": 48, "height": 84, "angle": 0, "name": "main"}
-                ]
+                "walls": [{"length": 48, "height": 84, "angle": 0, "name": "main"}],
             },
             "cabinet": {
                 "width": 72,
@@ -601,9 +591,9 @@ class TestErrorHandling:
                 "depth": 12,
                 "sections": [
                     {"width": 36, "wall": "main", "shelves": 4},
-                    {"width": 36, "wall": "main", "shelves": 4}
-                ]
-            }
+                    {"width": 36, "wall": "main", "shelves": 4},
+                ],
+            },
         }
         config_file = tmp_path / "exceeds_wall.json"
         config_file.write_text(json.dumps(config_data))
@@ -615,7 +605,7 @@ class TestErrorHandling:
         section_specs = config_to_section_specs(config)
         _, params_input = config_to_dtos(config)
 
-        command = GenerateLayoutCommand()
+        command = get_factory().create_generate_command()
         result = command.execute_room_layout(room, section_specs, params_input)
 
         # Should have an error for exceeding wall length
@@ -635,8 +625,8 @@ class TestRoomConfigWithTempFiles:
                 "name": "test-room",
                 "walls": [
                     {"length": 60, "height": 90, "angle": 0, "name": "wall1"},
-                    {"length": 40, "height": 90, "angle": 90, "name": "wall2"}
-                ]
+                    {"length": 40, "height": 90, "angle": 90, "name": "wall2"},
+                ],
             },
             "cabinet": {
                 "width": 60,
@@ -646,9 +636,9 @@ class TestRoomConfigWithTempFiles:
                 "sections": [
                     {"width": 30, "wall": "wall1", "shelves": 3},
                     {"width": 30, "wall": "wall1", "shelves": 3},
-                    {"width": 40, "wall": "wall2", "shelves": 4}
-                ]
-            }
+                    {"width": 40, "wall": "wall2", "shelves": 4},
+                ],
+            },
         }
         config_file = tmp_path / "test_room.json"
         config_file.write_text(json.dumps(config_data))
@@ -669,18 +659,16 @@ class TestRoomConfigWithTempFiles:
                     {"length": 48, "height": 84, "angle": 0, "name": "south"},
                     {"length": 36, "height": 84, "angle": 90, "name": "west"},
                     {"length": 48, "height": 84, "angle": 90, "name": "north"},
-                    {"length": 36, "height": 84, "angle": 90, "name": "east"}
+                    {"length": 36, "height": 84, "angle": 90, "name": "east"},
                 ],
-                "is_closed": True
+                "is_closed": True,
             },
             "cabinet": {
                 "width": 48,
                 "height": 84,
                 "depth": 12,
-                "sections": [
-                    {"width": "fill", "wall": "south", "shelves": 4}
-                ]
-            }
+                "sections": [{"width": "fill", "wall": "south", "shelves": 4}],
+            },
         }
         config_file = tmp_path / "closed_room.json"
         config_file.write_text(json.dumps(config_data))

@@ -48,11 +48,11 @@ class SectionRowSpec:
         if isinstance(self.height, (int, float)):
             if self.height < self.min_height:
                 raise ValueError(
-                    f"Row height {self.height}\" is below min_height {self.min_height}\""
+                    f'Row height {self.height}" is below min_height {self.min_height}"'
                 )
             if self.max_height is not None and self.height > self.max_height:
                 raise ValueError(
-                    f"Row height {self.height}\" exceeds max_height {self.max_height}\""
+                    f'Row height {self.height}" exceeds max_height {self.max_height}"'
                 )
 
     @property
@@ -124,7 +124,9 @@ class SectionSpec:
     def __post_init__(self) -> None:
         """Validate section spec values."""
         if isinstance(self.width, (int, float)) and self.width <= 0:
-            raise ValueError("Section width must be positive when specified as a number")
+            raise ValueError(
+                "Section width must be positive when specified as a number"
+            )
         if self.shelves < 0:
             raise ValueError("Number of shelves cannot be negative")
         if self.min_width <= 0:
@@ -134,11 +136,11 @@ class SectionSpec:
         if isinstance(self.width, (int, float)):
             if self.width < self.min_width:
                 raise ValueError(
-                    f"Section width {self.width}\" is below min_width {self.min_width}\""
+                    f'Section width {self.width}" is below min_width {self.min_width}"'
                 )
             if self.max_width is not None and self.width > self.max_width:
                 raise ValueError(
-                    f"Section width {self.width}\" exceeds max_width {self.max_width}\""
+                    f'Section width {self.width}" exceeds max_width {self.max_width}"'
                 )
         if self.depth is not None and self.depth <= 0:
             raise ValueError("Section depth must be positive when specified")
@@ -246,8 +248,8 @@ def resolve_section_widths(
     # Validate fixed widths don't exceed available space
     if fixed_width_sum > available_width:
         raise SectionWidthError(
-            f"Fixed section widths ({fixed_width_sum:.2f}\") exceed available "
-            f"interior width ({available_width:.2f}\"). Reduce fixed widths or "
+            f'Fixed section widths ({fixed_width_sum:.2f}") exceed available '
+            f'interior width ({available_width:.2f}"). Reduce fixed widths or '
             f"increase cabinet width."
         )
 
@@ -260,7 +262,7 @@ def resolve_section_widths(
         if fill_section_width <= 0:
             raise SectionWidthError(
                 f"Fill sections would have zero or negative width. "
-                f"Remaining width ({remaining_width:.2f}\") with {fill_count} fill sections."
+                f'Remaining width ({remaining_width:.2f}") with {fill_count} fill sections.'
             )
 
         # Validate fill width against min/max constraints for each fill section
@@ -268,21 +270,21 @@ def resolve_section_widths(
             if spec.is_fill:
                 if fill_section_width < spec.min_width:
                     raise SectionWidthError(
-                        f"Section {i}: calculated fill width {fill_section_width:.2f}\" "
-                        f"is below min_width {spec.min_width}\""
+                        f'Section {i}: calculated fill width {fill_section_width:.2f}" '
+                        f'is below min_width {spec.min_width}"'
                     )
                 if spec.max_width is not None and fill_section_width > spec.max_width:
                     raise SectionWidthError(
-                        f"Section {i}: calculated fill width {fill_section_width:.2f}\" "
-                        f"exceeds max_width {spec.max_width}\""
+                        f'Section {i}: calculated fill width {fill_section_width:.2f}" '
+                        f'exceeds max_width {spec.max_width}"'
                     )
     else:
         # No fill sections - validate that fixed widths exactly match
         # Allow small tolerance for floating point comparison
         if abs(fixed_width_sum - available_width) > 0.001:
             raise SectionWidthError(
-                f"Fixed section widths ({fixed_width_sum:.2f}\") do not match "
-                f"available interior width ({available_width:.2f}\"). "
+                f'Fixed section widths ({fixed_width_sum:.2f}") do not match '
+                f'available interior width ({available_width:.2f}"). '
                 f"Use 'fill' for at least one section to automatically adjust."
             )
         fill_section_width = 0.0  # Not used, but defined for type consistency
@@ -349,11 +351,11 @@ def validate_section_specs(
         if not spec.is_fill and spec.fixed_width is not None:
             if spec.fixed_width < spec.min_width:
                 errors.append(
-                    f"Section {i + 1}: width {spec.fixed_width}\" is below min_width {spec.min_width}\""
+                    f'Section {i + 1}: width {spec.fixed_width}" is below min_width {spec.min_width}"'
                 )
             if spec.max_width is not None and spec.fixed_width > spec.max_width:
                 errors.append(
-                    f"Section {i + 1}: width {spec.fixed_width}\" exceeds max_width {spec.max_width}\""
+                    f'Section {i + 1}: width {spec.fixed_width}" exceeds max_width {spec.max_width}"'
                 )
 
     if errors:
@@ -408,11 +410,11 @@ class RowSpec:
         if isinstance(self.height, (int, float)):
             if self.height < self.min_height:
                 raise ValueError(
-                    f"Row height {self.height}\" is below min_height {self.min_height}\""
+                    f'Row height {self.height}" is below min_height {self.min_height}"'
                 )
             if self.max_height is not None and self.height > self.max_height:
                 raise ValueError(
-                    f"Row height {self.height}\" exceeds max_height {self.max_height}\""
+                    f'Row height {self.height}" exceeds max_height {self.max_height}"'
                 )
 
     @property
@@ -432,6 +434,7 @@ def resolve_row_heights(
     row_specs: list[RowSpec],
     total_height: float,
     material_thickness: float,
+    base_zone_height: float = 0.0,
 ) -> list[float]:
     """Resolve row heights from specifications.
 
@@ -440,7 +443,7 @@ def resolve_row_heights(
     for each row.
 
     Algorithm:
-    1. Calculate available interior height (total_height - 2 * outer panel thickness)
+    1. Calculate available interior height (total_height - 2 * outer panel thickness - base_zone_height)
     2. Subtract horizontal divider thickness between rows
     3. Sum all fixed heights
     4. Distribute remaining height equally among "fill" rows
@@ -451,6 +454,8 @@ def resolve_row_heights(
         total_height: Total cabinet height in inches (outer dimension).
         material_thickness: Thickness of material in inches (used for top/bottom
                            panels and horizontal dividers).
+        base_zone_height: Height of the base zone (toe kick) in inches. This space
+                         is reserved at the bottom and not available for rows.
 
     Returns:
         List of resolved row heights in the same order as the input specs.
@@ -466,14 +471,14 @@ def resolve_row_heights(
         ...     RowSpec(height="fill", section_specs=(...)),
         ...     RowSpec(height=12.0, section_specs=(...)),
         ... ]
-        >>> # Cabinet is 95" tall with 0.75" material
-        >>> # Interior = 95 - 2*0.75 = 93.5"
-        >>> # After 2 horizontal dividers = 93.5 - 2*0.75 = 92"
+        >>> # Cabinet is 95" tall with 0.75" material, 4" toe kick
+        >>> # Interior = 95 - 2*0.75 - 4 = 89.5"
+        >>> # After 2 horizontal dividers = 89.5 - 2*0.75 = 88"
         >>> # Fixed heights = 30 + 12 = 42"
-        >>> # Remaining = 92 - 42 = 50"
-        >>> # Fill row = 50"
-        >>> resolve_row_heights(row_specs, 95.0, 0.75)
-        [30.0, 50.0, 12.0]
+        >>> # Remaining = 88 - 42 = 46"
+        >>> # Fill row = 46"
+        >>> resolve_row_heights(row_specs, 95.0, 0.75, base_zone_height=4.0)
+        [30.0, 46.0, 12.0]
     """
     if not row_specs:
         raise RowHeightError("At least one row specification is required")
@@ -488,15 +493,20 @@ def resolve_row_heights(
     num_horizontal_dividers = num_rows - 1
 
     # Calculate available interior height
-    # Subtract top and bottom panels and horizontal dividers between rows
+    # Subtract top and bottom panels, horizontal dividers between rows, and base zone
     outer_panels_thickness = 2 * material_thickness
     dividers_thickness = num_horizontal_dividers * material_thickness
-    available_height = total_height - outer_panels_thickness - dividers_thickness
+    available_height = (
+        total_height - outer_panels_thickness - dividers_thickness - base_zone_height
+    )
 
     if available_height <= 0:
+        base_zone_msg = (
+            f", base zone ({base_zone_height})" if base_zone_height > 0 else ""
+        )
         raise RowHeightError(
             f"No interior space available. Total height ({total_height}) must be greater "
-            f"than outer panels ({outer_panels_thickness}) and dividers ({dividers_thickness})"
+            f"than outer panels ({outer_panels_thickness}), dividers ({dividers_thickness}){base_zone_msg}"
         )
 
     # Calculate fixed heights sum and count fill rows
@@ -514,8 +524,8 @@ def resolve_row_heights(
     # Validate fixed heights don't exceed available space
     if fixed_height_sum > available_height:
         raise RowHeightError(
-            f"Fixed row heights ({fixed_height_sum:.2f}\") exceed available "
-            f"interior height ({available_height:.2f}\"). Reduce fixed heights or "
+            f'Fixed row heights ({fixed_height_sum:.2f}") exceed available '
+            f'interior height ({available_height:.2f}"). Reduce fixed heights or '
             f"increase cabinet height."
         )
 
@@ -528,7 +538,7 @@ def resolve_row_heights(
         if fill_row_height <= 0:
             raise RowHeightError(
                 f"Fill rows would have zero or negative height. "
-                f"Remaining height ({remaining_height:.2f}\") with {fill_count} fill rows."
+                f'Remaining height ({remaining_height:.2f}") with {fill_count} fill rows.'
             )
 
         # Validate fill height against min/max constraints for each fill row
@@ -536,21 +546,21 @@ def resolve_row_heights(
             if spec.is_fill:
                 if fill_row_height < spec.min_height:
                     raise RowHeightError(
-                        f"Row {i}: calculated fill height {fill_row_height:.2f}\" "
-                        f"is below min_height {spec.min_height}\""
+                        f'Row {i}: calculated fill height {fill_row_height:.2f}" '
+                        f'is below min_height {spec.min_height}"'
                     )
                 if spec.max_height is not None and fill_row_height > spec.max_height:
                     raise RowHeightError(
-                        f"Row {i}: calculated fill height {fill_row_height:.2f}\" "
-                        f"exceeds max_height {spec.max_height}\""
+                        f'Row {i}: calculated fill height {fill_row_height:.2f}" '
+                        f'exceeds max_height {spec.max_height}"'
                     )
     else:
         # No fill rows - validate that fixed heights exactly match
         # Allow small tolerance for floating point comparison
         if abs(fixed_height_sum - available_height) > 0.001:
             raise RowHeightError(
-                f"Fixed row heights ({fixed_height_sum:.2f}\") do not match "
-                f"available interior height ({available_height:.2f}\"). "
+                f'Fixed row heights ({fixed_height_sum:.2f}") do not match '
+                f'available interior height ({available_height:.2f}"). '
                 f"Use 'fill' for at least one row to automatically adjust."
             )
         fill_row_height = 0.0  # Not used, but defined for type consistency
@@ -644,8 +654,8 @@ def resolve_section_row_heights(
     # Validate fixed heights don't exceed available space
     if fixed_height_sum > available_height:
         raise RowHeightError(
-            f"Fixed row heights ({fixed_height_sum:.2f}\") exceed available "
-            f"height ({available_height:.2f}\"). Reduce fixed heights or "
+            f'Fixed row heights ({fixed_height_sum:.2f}") exceed available '
+            f'height ({available_height:.2f}"). Reduce fixed heights or '
             f"increase section height."
         )
 
@@ -658,7 +668,7 @@ def resolve_section_row_heights(
         if fill_row_height <= 0:
             raise RowHeightError(
                 f"Fill rows would have zero or negative height. "
-                f"Remaining height ({remaining_height:.2f}\") with {fill_count} fill rows."
+                f'Remaining height ({remaining_height:.2f}") with {fill_count} fill rows.'
             )
 
         # Validate fill height against min/max constraints for each fill row
@@ -666,20 +676,20 @@ def resolve_section_row_heights(
             if spec.is_fill:
                 if fill_row_height < spec.min_height:
                     raise RowHeightError(
-                        f"Section row {i}: calculated fill height {fill_row_height:.2f}\" "
-                        f"is below min_height {spec.min_height}\""
+                        f'Section row {i}: calculated fill height {fill_row_height:.2f}" '
+                        f'is below min_height {spec.min_height}"'
                     )
                 if spec.max_height is not None and fill_row_height > spec.max_height:
                     raise RowHeightError(
-                        f"Section row {i}: calculated fill height {fill_row_height:.2f}\" "
-                        f"exceeds max_height {spec.max_height}\""
+                        f'Section row {i}: calculated fill height {fill_row_height:.2f}" '
+                        f'exceeds max_height {spec.max_height}"'
                     )
     else:
         # No fill rows - validate that fixed heights exactly match
         if abs(fixed_height_sum - available_height) > 0.001:
             raise RowHeightError(
-                f"Fixed row heights ({fixed_height_sum:.2f}\") do not match "
-                f"available height ({available_height:.2f}\"). "
+                f'Fixed row heights ({fixed_height_sum:.2f}") do not match '
+                f'available height ({available_height:.2f}"). '
                 f"Use 'fill' for at least one row to automatically adjust."
             )
         fill_row_height = 0.0  # Not used, but defined for type consistency
@@ -701,6 +711,7 @@ def validate_row_specs(
     row_specs: list[RowSpec],
     total_height: float,
     material_thickness: float,
+    base_zone_height: float = 0.0,
 ) -> list[str]:
     """Validate row specifications and return list of errors.
 
@@ -711,6 +722,7 @@ def validate_row_specs(
         row_specs: List of row specifications.
         total_height: Total cabinet height in inches.
         material_thickness: Material thickness in inches.
+        base_zone_height: Height of the base zone (toe kick) in inches.
 
     Returns:
         List of error messages. Empty list if valid.
@@ -732,7 +744,11 @@ def validate_row_specs(
 
     # Validate individual row specs
     for i, spec in enumerate(row_specs):
-        if not spec.is_fill and spec.fixed_height is not None and spec.fixed_height <= 0:
+        if (
+            not spec.is_fill
+            and spec.fixed_height is not None
+            and spec.fixed_height <= 0
+        ):
             errors.append(f"Row {i + 1}: Height must be positive")
         if not spec.section_specs:
             errors.append(f"Row {i + 1}: Must have at least one section")
@@ -746,11 +762,11 @@ def validate_row_specs(
         if not spec.is_fill and spec.fixed_height is not None:
             if spec.fixed_height < spec.min_height:
                 errors.append(
-                    f"Row {i + 1}: height {spec.fixed_height}\" is below min_height {spec.min_height}\""
+                    f'Row {i + 1}: height {spec.fixed_height}" is below min_height {spec.min_height}"'
                 )
             if spec.max_height is not None and spec.fixed_height > spec.max_height:
                 errors.append(
-                    f"Row {i + 1}: height {spec.fixed_height}\" exceeds max_height {spec.max_height}\""
+                    f'Row {i + 1}: height {spec.fixed_height}" exceeds max_height {spec.max_height}"'
                 )
 
     if errors:
@@ -758,7 +774,9 @@ def validate_row_specs(
 
     # Try to resolve heights to validate the overall configuration
     try:
-        resolve_row_heights(row_specs, total_height, material_thickness)
+        resolve_row_heights(
+            row_specs, total_height, material_thickness, base_zone_height
+        )
     except RowHeightError as e:
         errors.append(str(e))
 

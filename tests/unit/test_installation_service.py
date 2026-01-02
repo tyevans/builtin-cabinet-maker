@@ -721,9 +721,7 @@ class TestInstallationService:
         estimate = service.estimate_weight(sample_cabinet)
         assert isinstance(estimate, WeightEstimate)
 
-    def test_estimate_weight_uses_load_rating(
-        self, sample_cabinet: Cabinet
-    ) -> None:
+    def test_estimate_weight_uses_load_rating(self, sample_cabinet: Cabinet) -> None:
         """Test that estimate_weight uses configured load rating."""
         config = InstallationConfig(expected_load=LoadCategory.HEAVY)
         service = InstallationService(config)
@@ -1389,7 +1387,9 @@ class TestGeneratePlanIntegration:
         plan = service.generate_plan(heavy_cabinet, left_edge_position=0.0)
 
         assert plan.has_warnings
-        assert any("capacity" in w.lower() or "load" in w.lower() for w in plan.warnings)
+        assert any(
+            "capacity" in w.lower() or "load" in w.lower() for w in plan.warnings
+        )
 
     def test_generate_plan_without_cleats_for_direct_mount(
         self, sample_cabinet: Cabinet
@@ -1419,29 +1419,35 @@ class TestScrewLengthCalculation:
 
     def test_screw_length_rounds_up_to_standard(self) -> None:
         """Test screw length rounds up to next standard size."""
+        from cabinets.domain.services.installation import MountingService
+
         config = InstallationConfig(wall_thickness=0.5)  # 1/2" drywall
-        service = InstallationService(config)
+        mounting = MountingService(config)
 
         # 0.25" back + 0.5" wall + 1.5" penetration = 2.25" -> 2.25"
-        length = service._calculate_screw_length(back_thickness=0.25)
+        length = mounting._calculate_screw_length(back_thickness=0.25)
         assert length == 2.25
 
     def test_screw_length_for_thick_wall(self) -> None:
         """Test screw length for thicker walls."""
+        from cabinets.domain.services.installation import MountingService
+
         config = InstallationConfig(wall_thickness=1.5)  # Thicker plaster
-        service = InstallationService(config)
+        mounting = MountingService(config)
 
         # 0.25" back + 1.5" wall + 1.5" penetration = 3.25" -> 3.5"
-        length = service._calculate_screw_length(back_thickness=0.25)
+        length = mounting._calculate_screw_length(back_thickness=0.25)
         assert length == 3.5
 
     def test_screw_length_uses_maximum_for_extreme_cases(self) -> None:
         """Test screw length returns max for very thick walls."""
+        from cabinets.domain.services.installation import MountingService
+
         config = InstallationConfig(wall_thickness=2.0)  # Very thick
-        service = InstallationService(config)
+        mounting = MountingService(config)
 
         # 0.75" back + 2.0" wall + 1.5" penetration = 4.25" -> 4.0" (max)
-        length = service._calculate_screw_length(back_thickness=0.75)
+        length = mounting._calculate_screw_length(back_thickness=0.75)
         assert length == 4.0  # Maximum standard length
 
 
@@ -1519,9 +1525,7 @@ class TestGenerateInstructions:
         assert "## Safety Notes" in instructions
         assert "helper" in instructions.lower()
 
-    def test_instructions_include_disclaimer(
-        self, sample_cabinet: Cabinet
-    ) -> None:
+    def test_instructions_include_disclaimer(self, sample_cabinet: Cabinet) -> None:
         """Test that instructions include required disclaimer."""
         config = InstallationConfig()
         service = InstallationService(config)
@@ -1657,9 +1661,7 @@ class TestGenerateInstructions:
         assert "helper" in instructions.lower()
         assert "two people" in instructions.lower() or "alone" in instructions.lower()
 
-    def test_instructions_include_level_usage(
-        self, sample_cabinet: Cabinet
-    ) -> None:
+    def test_instructions_include_level_usage(self, sample_cabinet: Cabinet) -> None:
         """Test that instructions mention using a level."""
         config = InstallationConfig()
         service = InstallationService(config)
@@ -1684,9 +1686,7 @@ class TestGenerateInstructions:
         # Should have proper list formatting
         assert "- " in instructions
 
-    def test_instructions_include_all_five_steps(
-        self, sample_cabinet: Cabinet
-    ) -> None:
+    def test_instructions_include_all_five_steps(self, sample_cabinet: Cabinet) -> None:
         """Test that instructions include 5 procedural steps."""
         config = InstallationConfig()
         service = InstallationService(config)
@@ -1769,7 +1769,7 @@ class TestGenerateInstructions:
         service = InstallationService(config)
         instructions = service.generate_instructions(sample_cabinet, None)
 
-        assert '4"' in instructions or "4\"" in instructions
+        assert '4"' in instructions or '4"' in instructions
 
     def test_generate_plan_includes_complete_instructions(
         self, sample_cabinet: Cabinet

@@ -25,8 +25,8 @@ from typing import TYPE_CHECKING, Any, ClassVar
 from cabinets.infrastructure.exporters.base import ExporterRegistry
 
 if TYPE_CHECKING:
-    from cabinets.application.dtos import LayoutOutput, RoomLayoutOutput
-    from cabinets.domain.value_objects import CutPiece, MaterialSpec, PanelType
+    from cabinets.contracts.dtos import LayoutOutput, RoomLayoutOutput
+    from cabinets.domain.value_objects import MaterialSpec
 
 
 logger = logging.getLogger(__name__)
@@ -191,19 +191,19 @@ class BillOfMaterials:
         total = 0.0
         has_any_cost = False
 
-        for item in self.sheet_goods:
-            if item.unit_cost is not None:
-                total += item.total_cost or 0.0
+        for sheet_item in self.sheet_goods:
+            if sheet_item.unit_cost is not None:
+                total += sheet_item.total_cost or 0.0
                 has_any_cost = True
 
-        for item in self.hardware:
-            if item.unit_cost is not None:
-                total += item.total_cost or 0.0
+        for hw_item in self.hardware:
+            if hw_item.unit_cost is not None:
+                total += hw_item.total_cost or 0.0
                 has_any_cost = True
 
-        for item in self.edge_banding:
-            if item.unit_cost is not None:
-                total += item.total_cost or 0.0
+        for edge_item in self.edge_banding:
+            if edge_item.unit_cost is not None:
+                total += edge_item.total_cost or 0.0
                 has_any_cost = True
 
         return total if has_any_cost else None
@@ -242,7 +242,7 @@ class BillOfMaterials:
         return total if has_cost else None
 
 
-@ExporterRegistry.register("bom")
+@ExporterRegistry.register("bom")  # type: ignore[arg-type]
 class BomGenerator:
     """Bill of Materials generator for cabinet layouts.
 
@@ -257,7 +257,7 @@ class BomGenerator:
     """
 
     format_name: ClassVar[str] = "bom"
-    file_extension: ClassVar[str] = "txt"
+    # Note: file_extension is set dynamically in __init__ based on output_format
 
     def __init__(
         self,
@@ -280,11 +280,16 @@ class BomGenerator:
         self.edge_banding_default_color = edge_banding_default_color
 
         # Set file extension based on format (without leading dot)
-        self.file_extension = {
+        self._file_extension = {
             "text": "txt",
             "csv": "csv",
             "json": "json",
         }.get(output_format, "txt")
+
+    @property
+    def file_extension(self) -> str:
+        """Get the file extension for this output format."""
+        return self._file_extension
 
     def generate(
         self,
@@ -346,6 +351,25 @@ class BomGenerator:
         else:
             return self.format_text(bom)
 
+    def format_for_console(
+        self,
+        output: LayoutOutput | RoomLayoutOutput,
+    ) -> str:
+        """Format BOM for console display.
+
+        Always uses text format for console output regardless of
+        the configured output_format, as text is most readable
+        in a terminal.
+
+        Args:
+            output: Layout output to generate BOM from.
+
+        Returns:
+            Human-readable text BOM suitable for console display.
+        """
+        bom = self.generate(output)
+        return self.format_text(bom)
+
     def format_text(self, bom: BillOfMaterials) -> str:
         """Format BOM as human-readable text.
 
@@ -389,19 +413,19 @@ class BomGenerator:
         if bom.hardware:
             # Group by category
             by_category: dict[str, list[HardwareBomItem]] = {}
-            for item in bom.hardware:
-                cat = item.category or "other"
+            for hw_item in bom.hardware:
+                cat = hw_item.category or "other"
                 if cat not in by_category:
                     by_category[cat] = []
-                by_category[cat].append(item)
+                by_category[cat].append(hw_item)
 
             for category, items in sorted(by_category.items()):
                 lines.append(f"  [{category.replace('_', ' ').title()}]")
-                for item in items:
+                for hw in items:
                     cost_str = ""
-                    if self.include_costs and item.unit_cost is not None:
-                        cost_str = f" @ ${item.unit_cost:.2f} = ${item.total_cost:.2f}"
-                    lines.append(f"    {item.name} ({item.size}): {item.quantity}{cost_str}")
+                    if self.include_costs and hw.unit_cost is not None:
+                        cost_str = f" @ ${hw.unit_cost:.2f} = ${hw.total_cost:.2f}"
+                    lines.append(f"    {hw.name} ({hw.size}): {hw.quantity}{cost_str}")
         else:
             lines.append("  (No hardware)")
         lines.append("")
@@ -411,13 +435,13 @@ class BomGenerator:
         lines.append("-" * 40)
 
         if bom.edge_banding:
-            for item in bom.edge_banding:
+            for edge_item in bom.edge_banding:
                 cost_str = ""
-                if self.include_costs and item.unit_cost is not None:
-                    cost_str = f" @ ${item.unit_cost:.2f}/ft = ${item.total_cost:.2f}"
+                if self.include_costs and edge_item.unit_cost is not None:
+                    cost_str = f" @ ${edge_item.unit_cost:.2f}/ft = ${edge_item.total_cost:.2f}"
                 lines.append(
-                    f"  {item.material} {item.thickness} ({item.color}): "
-                    f"{item.linear_feet:.1f} linear ft{cost_str}"
+                    f"  {edge_item.material} {edge_item.thickness} ({edge_item.color}): "
+                    f"{edge_item.linear_feet:.1f} linear ft{cost_str}"
                 )
         else:
             lines.append("  (No edge banding)")
@@ -456,74 +480,96 @@ class BomGenerator:
         # Header row
         if self.include_costs:
             writer.writerow(
-                ["Category", "Item", "Size", "Quantity", "Unit", "Unit Cost", "Total Cost"]
+                [
+                    "Category",
+                    "Item",
+                    "Size",
+                    "Quantity",
+                    "Unit",
+                    "Unit Cost",
+                    "Total Cost",
+                ]
             )
         else:
             writer.writerow(["Category", "Item", "Size", "Quantity", "Unit"])
 
         # Sheet Goods
-        for item in bom.sheet_goods:
-            size_str = f'{item.sheet_size[0]:.0f}"x{item.sheet_size[1]:.0f}"'
+        for sheet_item in bom.sheet_goods:
+            size_str = (
+                f'{sheet_item.sheet_size[0]:.0f}"x{sheet_item.sheet_size[1]:.0f}"'
+            )
             if self.include_costs:
-                writer.writerow([
-                    "Sheet Goods",
-                    f'{item.material} {item.thickness}"',
-                    size_str,
-                    item.quantity,
-                    "sheets",
-                    f"{item.unit_cost:.2f}" if item.unit_cost else "",
-                    f"{item.total_cost:.2f}" if item.total_cost else "",
-                ])
+                writer.writerow(
+                    [
+                        "Sheet Goods",
+                        f'{sheet_item.material} {sheet_item.thickness}"',
+                        size_str,
+                        sheet_item.quantity,
+                        "sheets",
+                        f"{sheet_item.unit_cost:.2f}" if sheet_item.unit_cost else "",
+                        f"{sheet_item.total_cost:.2f}" if sheet_item.total_cost else "",
+                    ]
+                )
             else:
-                writer.writerow([
-                    "Sheet Goods",
-                    f'{item.material} {item.thickness}"',
-                    size_str,
-                    item.quantity,
-                    "sheets",
-                ])
+                writer.writerow(
+                    [
+                        "Sheet Goods",
+                        f'{sheet_item.material} {sheet_item.thickness}"',
+                        size_str,
+                        sheet_item.quantity,
+                        "sheets",
+                    ]
+                )
 
         # Hardware
-        for item in bom.hardware:
+        for hw_item in bom.hardware:
             if self.include_costs:
-                writer.writerow([
-                    f"Hardware - {item.category.replace('_', ' ').title()}",
-                    item.name,
-                    item.size,
-                    item.quantity,
-                    "count",
-                    f"{item.unit_cost:.2f}" if item.unit_cost else "",
-                    f"{item.total_cost:.2f}" if item.total_cost else "",
-                ])
+                writer.writerow(
+                    [
+                        f"Hardware - {hw_item.category.replace('_', ' ').title()}",
+                        hw_item.name,
+                        hw_item.size,
+                        hw_item.quantity,
+                        "count",
+                        f"{hw_item.unit_cost:.2f}" if hw_item.unit_cost else "",
+                        f"{hw_item.total_cost:.2f}" if hw_item.total_cost else "",
+                    ]
+                )
             else:
-                writer.writerow([
-                    f"Hardware - {item.category.replace('_', ' ').title()}",
-                    item.name,
-                    item.size,
-                    item.quantity,
-                    "count",
-                ])
+                writer.writerow(
+                    [
+                        f"Hardware - {hw_item.category.replace('_', ' ').title()}",
+                        hw_item.name,
+                        hw_item.size,
+                        hw_item.quantity,
+                        "count",
+                    ]
+                )
 
         # Edge Banding
-        for item in bom.edge_banding:
+        for edge_item in bom.edge_banding:
             if self.include_costs:
-                writer.writerow([
-                    "Edge Banding",
-                    f"{item.material} ({item.color})",
-                    item.thickness,
-                    f"{item.linear_feet:.1f}",
-                    "linear ft",
-                    f"{item.unit_cost:.2f}" if item.unit_cost else "",
-                    f"{item.total_cost:.2f}" if item.total_cost else "",
-                ])
+                writer.writerow(
+                    [
+                        "Edge Banding",
+                        f"{edge_item.material} ({edge_item.color})",
+                        edge_item.thickness,
+                        f"{edge_item.linear_feet:.1f}",
+                        "linear ft",
+                        f"{edge_item.unit_cost:.2f}" if edge_item.unit_cost else "",
+                        f"{edge_item.total_cost:.2f}" if edge_item.total_cost else "",
+                    ]
+                )
             else:
-                writer.writerow([
-                    "Edge Banding",
-                    f"{item.material} ({item.color})",
-                    item.thickness,
-                    f"{item.linear_feet:.1f}",
-                    "linear ft",
-                ])
+                writer.writerow(
+                    [
+                        "Edge Banding",
+                        f"{edge_item.material} ({edge_item.color})",
+                        edge_item.thickness,
+                        f"{edge_item.linear_feet:.1f}",
+                        "linear ft",
+                    ]
+                )
 
         return output.getvalue()
 
@@ -543,49 +589,49 @@ class BomGenerator:
         }
 
         # Sheet Goods
-        for item in bom.sheet_goods:
-            item_dict: dict[str, Any] = {
-                "material": item.material,
-                "thickness": item.thickness,
+        for sheet_item in bom.sheet_goods:
+            sheet_dict: dict[str, Any] = {
+                "material": sheet_item.material,
+                "thickness": sheet_item.thickness,
                 "sheet_size": {
-                    "width": item.sheet_size[0],
-                    "height": item.sheet_size[1],
+                    "width": sheet_item.sheet_size[0],
+                    "height": sheet_item.sheet_size[1],
                 },
-                "quantity": item.quantity,
-                "square_feet": item.square_feet,
+                "quantity": sheet_item.quantity,
+                "square_feet": sheet_item.square_feet,
             }
-            if self.include_costs and item.unit_cost is not None:
-                item_dict["unit_cost"] = item.unit_cost
-                item_dict["total_cost"] = item.total_cost
-            data["sheet_goods"].append(item_dict)
+            if self.include_costs and sheet_item.unit_cost is not None:
+                sheet_dict["unit_cost"] = sheet_item.unit_cost
+                sheet_dict["total_cost"] = sheet_item.total_cost
+            data["sheet_goods"].append(sheet_dict)
 
         # Hardware
-        for item in bom.hardware:
-            item_dict = {
-                "name": item.name,
-                "size": item.size,
-                "quantity": item.quantity,
-                "category": item.category,
+        for hw_item in bom.hardware:
+            hw_dict: dict[str, Any] = {
+                "name": hw_item.name,
+                "size": hw_item.size,
+                "quantity": hw_item.quantity,
+                "category": hw_item.category,
             }
-            if item.sku:
-                item_dict["sku"] = item.sku
-            if self.include_costs and item.unit_cost is not None:
-                item_dict["unit_cost"] = item.unit_cost
-                item_dict["total_cost"] = item.total_cost
-            data["hardware"].append(item_dict)
+            if hw_item.sku:
+                hw_dict["sku"] = hw_item.sku
+            if self.include_costs and hw_item.unit_cost is not None:
+                hw_dict["unit_cost"] = hw_item.unit_cost
+                hw_dict["total_cost"] = hw_item.total_cost
+            data["hardware"].append(hw_dict)
 
         # Edge Banding
-        for item in bom.edge_banding:
-            item_dict = {
-                "material": item.material,
-                "thickness": item.thickness,
-                "color": item.color,
-                "linear_feet": item.linear_feet,
+        for edge_item in bom.edge_banding:
+            edge_dict: dict[str, Any] = {
+                "material": edge_item.material,
+                "thickness": edge_item.thickness,
+                "color": edge_item.color,
+                "linear_feet": edge_item.linear_feet,
             }
-            if self.include_costs and item.unit_cost is not None:
-                item_dict["unit_cost"] = item.unit_cost
-                item_dict["total_cost"] = item.total_cost
-            data["edge_banding"].append(item_dict)
+            if self.include_costs and edge_item.unit_cost is not None:
+                edge_dict["unit_cost"] = edge_item.unit_cost
+                edge_dict["total_cost"] = edge_item.total_cost
+            data["edge_banding"].append(edge_dict)
 
         # Cost summary
         if self.include_costs:
@@ -613,7 +659,7 @@ class BomGenerator:
         Returns:
             List of SheetGoodItem requirements.
         """
-        from cabinets.application.dtos import LayoutOutput, RoomLayoutOutput
+        from cabinets.contracts.dtos import RoomLayoutOutput
 
         # Get cut list and packing result
         if isinstance(output, RoomLayoutOutput):
@@ -627,7 +673,6 @@ class BomGenerator:
             return []
 
         # Group pieces by material
-        from cabinets.domain.value_objects import MaterialSpec
 
         materials: dict[MaterialSpec, list[Any]] = {}
         for piece in cut_list:
@@ -681,9 +726,10 @@ class BomGenerator:
         Returns:
             List of HardwareBomItem requirements with duplicates consolidated.
         """
-        from cabinets.application.dtos import LayoutOutput, RoomLayoutOutput
+        from cabinets.contracts.dtos import RoomLayoutOutput
 
         # Get hardware list
+        hardware_items: list[Any]
         if isinstance(output, RoomLayoutOutput):
             # RoomLayoutOutput doesn't have direct hardware access
             # We would need to aggregate from individual cabinets
@@ -750,7 +796,7 @@ class BomGenerator:
         patterns = [
             r'#\d+\s*x\s*[\d\-/]+["\']?',  # #8 x 1-1/4"
             r'[\d\-/]+\s*(?:inch|in|")',  # 1-1/4 inch or 1-1/4"
-            r'\d+mm',  # 35mm
+            r"\d+mm",  # 35mm
             r'[\d\-/]+["\']',  # 1/4"
         ]
 
@@ -776,7 +822,7 @@ class BomGenerator:
         Returns:
             List of EdgeBandingItem requirements.
         """
-        from cabinets.application.dtos import LayoutOutput, RoomLayoutOutput
+        from cabinets.contracts.dtos import RoomLayoutOutput
 
         # Get cut list
         if isinstance(output, RoomLayoutOutput):
@@ -788,7 +834,6 @@ class BomGenerator:
             return []
 
         # Calculate linear feet by material/thickness
-        from cabinets.domain.value_objects import MaterialSpec
 
         banding_by_material: dict[tuple[str, float], float] = {}
 

@@ -355,16 +355,22 @@ class GuillotineBinPacker:
                     fits, rotated = self._piece_fits_on_shelf(piece, shelf, kerf)
                     if fits:
                         piece_height = piece.width if rotated else piece.height
-                        piece_width = piece.height if rotated else piece.width
                         height_waste = shelf.height - piece_height
                         # Only reject if BOTH: high height waste AND shelf has lots of room
                         # This prevents small pieces from using tall shelves when better
                         # options exist, but allows filling remaining horizontal space
-                        waste_ratio = height_waste / shelf.height if shelf.height > 0 else 0
-                        width_usage = 1 - (shelf.remaining_width / self.config.sheet_size.usable_width)
+                        waste_ratio = (
+                            height_waste / shelf.height if shelf.height > 0 else 0
+                        )
+                        width_usage = 1 - (
+                            shelf.remaining_width / self.config.sheet_size.usable_width
+                        )
                         # Accept if: reasonable height waste OR shelf is already well-used
                         if waste_ratio < 0.7 or width_usage > 0.3:
-                            if best_placement is None or height_waste < best_placement[3]:
+                            if (
+                                best_placement is None
+                                or height_waste < best_placement[3]
+                            ):
                                 best_placement = (sheet, shelf, rotated, height_waste)
                                 if height_waste == 0:
                                     break  # Perfect fit, stop searching
@@ -381,7 +387,9 @@ class GuillotineBinPacker:
                     sheets, key=lambda s: s.available_height, reverse=True
                 ):
                     fits, rotated = self._piece_fits_new_shelf(
-                        piece, sheet.available_height, self.config.sheet_size.usable_width
+                        piece,
+                        sheet.available_height,
+                        self.config.sheet_size.usable_width,
                     )
                     if fits:
                         piece_height = piece.width if rotated else piece.height
@@ -477,7 +485,9 @@ class GuillotineBinPacker:
             for i in range(piece.quantity):
                 # Create individual piece with quantity 1
                 # Append index to label if quantity > 1
-                label = piece.label if piece.quantity == 1 else f"{piece.label} #{i + 1}"
+                label = (
+                    piece.label if piece.quantity == 1 else f"{piece.label} #{i + 1}"
+                )
                 individual = CutPiece(
                     width=piece.width,
                     height=piece.height,
@@ -594,7 +604,7 @@ class GuillotineBinPacker:
         num_splits = 1
         while remaining > 0:
             num_splits += 1
-            remaining -= (effective_max - kerf)
+            remaining -= effective_max - kerf
 
         # Calculate piece sizes with overlap
         # Each piece overlaps with the next by 'overlap' amount
@@ -649,7 +659,9 @@ class GuillotineBinPacker:
                 )
 
             # Check if this piece still needs splitting in the other dimension
-            if self._piece_needs_splitting(new_piece) and self._is_splittable(new_piece):
+            if self._piece_needs_splitting(new_piece) and self._is_splittable(
+                new_piece
+            ):
                 # Recursively split
                 split_pieces.extend(self._split_oversized_piece(new_piece))
             else:
@@ -1165,7 +1177,7 @@ class BinPackingService:
             result = self.packer.pack(group_pieces, material)
 
             logger.debug(
-                "Material %.3f\" %s: %d pieces -> %d sheets",
+                'Material %.3f" %s: %d pieces -> %d sheets',
                 material.thickness,
                 material.material_type.value,
                 len(group_pieces),
@@ -1229,10 +1241,7 @@ class BinPackingService:
         if not layouts:
             return 0.0
 
-        total_usable = sum(
-            layout.sheet_config.usable_area
-            for layout in layouts
-        )
+        total_usable = sum(layout.sheet_config.usable_area for layout in layouts)
         total_used = sum(layout.used_area for layout in layouts)
 
         if total_usable == 0:

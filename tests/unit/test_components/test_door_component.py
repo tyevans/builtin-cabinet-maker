@@ -11,8 +11,6 @@ import pytest
 from cabinets.domain.components import (
     ComponentContext,
     GenerationResult,
-    HardwareItem,
-    ValidationResult,
     component_registry,
 )
 from cabinets.domain.components.door import (
@@ -83,7 +81,9 @@ class TestDoorComponentRegistration:
         if "door.hinged.inset" not in component_registry.list():
             component_registry.register("door.hinged.inset")(InsetDoorComponent)
         if "door.hinged.partial" not in component_registry.list():
-            component_registry.register("door.hinged.partial")(PartialOverlayDoorComponent)
+            component_registry.register("door.hinged.partial")(
+                PartialOverlayDoorComponent
+            )
 
     def test_overlay_door_is_registered(self) -> None:
         """Test that door.hinged.overlay is registered in the component registry."""
@@ -122,7 +122,9 @@ class TestOverlayDoorValidation:
     """Tests for OverlayDoorComponent.validate()."""
 
     def test_validate_returns_ok_for_valid_config(
-        self, overlay_component: OverlayDoorComponent, standard_context: ComponentContext
+        self,
+        overlay_component: OverlayDoorComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that validate returns ok for valid single door config."""
         config = {"count": 1, "hinge_side": "left"}
@@ -133,7 +135,9 @@ class TestOverlayDoorValidation:
         assert len(result.errors) == 0
 
     def test_validate_returns_ok_for_double_doors(
-        self, overlay_component: OverlayDoorComponent, standard_context: ComponentContext
+        self,
+        overlay_component: OverlayDoorComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that validate returns ok for valid double door config."""
         config = {"count": 2}
@@ -144,7 +148,9 @@ class TestOverlayDoorValidation:
         assert len(result.errors) == 0
 
     def test_validate_returns_error_for_count_zero(
-        self, overlay_component: OverlayDoorComponent, standard_context: ComponentContext
+        self,
+        overlay_component: OverlayDoorComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that validate returns error for count of 0."""
         config = {"count": 0}
@@ -155,7 +161,9 @@ class TestOverlayDoorValidation:
         assert "Door count must be 1 or 2" in result.errors
 
     def test_validate_returns_error_for_count_three(
-        self, overlay_component: OverlayDoorComponent, standard_context: ComponentContext
+        self,
+        overlay_component: OverlayDoorComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that validate returns error for count of 3."""
         config = {"count": 3}
@@ -166,7 +174,9 @@ class TestOverlayDoorValidation:
         assert "Door count must be 1 or 2" in result.errors
 
     def test_validate_returns_error_for_invalid_hinge_side_single_door(
-        self, overlay_component: OverlayDoorComponent, standard_context: ComponentContext
+        self,
+        overlay_component: OverlayDoorComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that validate returns error for invalid hinge_side on single door."""
         config = {"count": 1, "hinge_side": "top"}
@@ -177,7 +187,9 @@ class TestOverlayDoorValidation:
         assert "hinge_side must be 'left' or 'right'" in result.errors
 
     def test_validate_accepts_left_hinge_side(
-        self, overlay_component: OverlayDoorComponent, standard_context: ComponentContext
+        self,
+        overlay_component: OverlayDoorComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that validate accepts 'left' hinge_side."""
         config = {"count": 1, "hinge_side": "left"}
@@ -187,7 +199,9 @@ class TestOverlayDoorValidation:
         assert result.is_valid
 
     def test_validate_accepts_right_hinge_side(
-        self, overlay_component: OverlayDoorComponent, standard_context: ComponentContext
+        self,
+        overlay_component: OverlayDoorComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that validate accepts 'right' hinge_side."""
         config = {"count": 1, "hinge_side": "right"}
@@ -197,7 +211,9 @@ class TestOverlayDoorValidation:
         assert result.is_valid
 
     def test_validate_returns_error_for_reveal_zero(
-        self, overlay_component: OverlayDoorComponent, standard_context: ComponentContext
+        self,
+        overlay_component: OverlayDoorComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that validate returns error for reveal of 0."""
         config = {"count": 1, "reveal": 0}
@@ -208,7 +224,9 @@ class TestOverlayDoorValidation:
         assert "Reveal must be between 0 and 0.5 inches" in result.errors
 
     def test_validate_returns_error_for_reveal_negative(
-        self, overlay_component: OverlayDoorComponent, standard_context: ComponentContext
+        self,
+        overlay_component: OverlayDoorComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that validate returns error for negative reveal."""
         config = {"count": 1, "reveal": -0.1}
@@ -219,7 +237,9 @@ class TestOverlayDoorValidation:
         assert "Reveal must be between 0 and 0.5 inches" in result.errors
 
     def test_validate_returns_error_for_reveal_at_half_inch(
-        self, overlay_component: OverlayDoorComponent, standard_context: ComponentContext
+        self,
+        overlay_component: OverlayDoorComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that validate returns error for reveal of exactly 0.5."""
         config = {"count": 1, "reveal": 0.5}
@@ -230,7 +250,9 @@ class TestOverlayDoorValidation:
         assert "Reveal must be between 0 and 0.5 inches" in result.errors
 
     def test_validate_returns_error_for_reveal_above_half_inch(
-        self, overlay_component: OverlayDoorComponent, standard_context: ComponentContext
+        self,
+        overlay_component: OverlayDoorComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that validate returns error for reveal > 0.5."""
         config = {"count": 1, "reveal": 0.6}
@@ -241,7 +263,9 @@ class TestOverlayDoorValidation:
         assert "Reveal must be between 0 and 0.5 inches" in result.errors
 
     def test_validate_accepts_reveal_just_under_half_inch(
-        self, overlay_component: OverlayDoorComponent, standard_context: ComponentContext
+        self,
+        overlay_component: OverlayDoorComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that validate accepts reveal of 0.499."""
         config = {"count": 1, "reveal": 0.499}
@@ -379,7 +403,7 @@ class TestOverlayDoorValidation:
 
         assert result.is_valid  # Warning only, still valid
         assert len(result.warnings) == 1
-        assert "exceeds 60\"" in result.warnings[0]
+        assert 'exceeds 60"' in result.warnings[0]
         assert "consider weight" in result.warnings[0]
 
 
@@ -433,7 +457,9 @@ class TestPartialOverlayDoorValidation:
     """Tests for PartialOverlayDoorComponent.validate()."""
 
     def test_validate_returns_ok_for_valid_config(
-        self, partial_component: PartialOverlayDoorComponent, standard_context: ComponentContext
+        self,
+        partial_component: PartialOverlayDoorComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that validate returns ok for valid partial overlay door config."""
         config = {"count": 1, "hinge_side": "left"}
@@ -444,7 +470,9 @@ class TestPartialOverlayDoorValidation:
         assert len(result.errors) == 0
 
     def test_validate_returns_error_for_invalid_count(
-        self, partial_component: PartialOverlayDoorComponent, standard_context: ComponentContext
+        self,
+        partial_component: PartialOverlayDoorComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that validate returns error for invalid count."""
         config = {"count": 3}
@@ -464,7 +492,9 @@ class TestOverlayDoorGeneration:
     """Tests for OverlayDoorComponent.generate()."""
 
     def test_generate_single_door_sizing(
-        self, overlay_component: OverlayDoorComponent, standard_context: ComponentContext
+        self,
+        overlay_component: OverlayDoorComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test single overlay door sizing: width = section_width + (2 * overlay) - reveal."""
         config = {"count": 1, "overlay": 0.5, "reveal": 0.125}
@@ -477,7 +507,9 @@ class TestOverlayDoorGeneration:
         assert result.panels[0].width == pytest.approx(expected_width)
 
     def test_generate_single_door_height(
-        self, overlay_component: OverlayDoorComponent, standard_context: ComponentContext
+        self,
+        overlay_component: OverlayDoorComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test single overlay door height sizing."""
         config = {"count": 1, "overlay": 0.5, "reveal": 0.125}
@@ -489,7 +521,9 @@ class TestOverlayDoorGeneration:
         assert result.panels[0].height == pytest.approx(expected_height)
 
     def test_generate_double_door_creates_two_panels(
-        self, overlay_component: OverlayDoorComponent, standard_context: ComponentContext
+        self,
+        overlay_component: OverlayDoorComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that double doors create two panels."""
         config = {"count": 2}
@@ -499,7 +533,9 @@ class TestOverlayDoorGeneration:
         assert len(result.panels) == 2
 
     def test_generate_double_door_sizing(
-        self, overlay_component: OverlayDoorComponent, standard_context: ComponentContext
+        self,
+        overlay_component: OverlayDoorComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test double overlay door sizing with center gap."""
         config = {"count": 2, "overlay": 0.5, "reveal": 0.125}
@@ -517,7 +553,9 @@ class TestOverlayDoorGeneration:
             assert panel.width == pytest.approx(expected_single_width)
 
     def test_generate_panel_type_is_door(
-        self, overlay_component: OverlayDoorComponent, standard_context: ComponentContext
+        self,
+        overlay_component: OverlayDoorComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that generated panels are of type DOOR."""
         config = {"count": 1}
@@ -527,7 +565,9 @@ class TestOverlayDoorGeneration:
         assert result.panels[0].panel_type == PanelType.DOOR
 
     def test_generate_single_door_position(
-        self, overlay_component: OverlayDoorComponent, standard_context: ComponentContext
+        self,
+        overlay_component: OverlayDoorComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that single door is positioned at context position."""
         config = {"count": 1}
@@ -538,7 +578,9 @@ class TestOverlayDoorGeneration:
         assert result.panels[0].position.y == standard_context.position.y
 
     def test_generate_double_door_left_position(
-        self, overlay_component: OverlayDoorComponent, standard_context: ComponentContext
+        self,
+        overlay_component: OverlayDoorComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that left door is positioned at context position."""
         config = {"count": 2}
@@ -549,7 +591,9 @@ class TestOverlayDoorGeneration:
         assert result.panels[0].position.y == standard_context.position.y
 
     def test_generate_double_door_right_position(
-        self, overlay_component: OverlayDoorComponent, standard_context: ComponentContext
+        self,
+        overlay_component: OverlayDoorComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that right door is positioned with offset for left door and gap."""
         config = {"count": 2, "overlay": 0.5, "reveal": 0.125}
@@ -563,7 +607,9 @@ class TestOverlayDoorGeneration:
         assert result.panels[1].position.x == pytest.approx(expected_right_x)
 
     def test_generate_returns_generation_result(
-        self, overlay_component: OverlayDoorComponent, standard_context: ComponentContext
+        self,
+        overlay_component: OverlayDoorComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that generate returns a GenerationResult instance."""
         config = {"count": 1}
@@ -613,7 +659,9 @@ class TestInsetDoorGeneration:
         config_without_overlay = {"count": 1, "reveal": 0.125}
 
         result_with = inset_component.generate(config_with_overlay, standard_context)
-        result_without = inset_component.generate(config_without_overlay, standard_context)
+        result_without = inset_component.generate(
+            config_without_overlay, standard_context
+        )
 
         assert result_with.panels[0].width == result_without.panels[0].width
         assert result_with.panels[0].height == result_without.panels[0].height
@@ -628,7 +676,9 @@ class TestPartialOverlayDoorGeneration:
     """Tests for PartialOverlayDoorComponent.generate()."""
 
     def test_generate_partial_overlay_door_uses_half_overlay(
-        self, partial_component: PartialOverlayDoorComponent, standard_context: ComponentContext
+        self,
+        partial_component: PartialOverlayDoorComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test partial overlay uses overlay/2 for sizing."""
         config = {"count": 1, "overlay": 0.5, "reveal": 0.125}
@@ -641,7 +691,9 @@ class TestPartialOverlayDoorGeneration:
         assert result.panels[0].width == pytest.approx(expected_width)
 
     def test_generate_partial_overlay_height(
-        self, partial_component: PartialOverlayDoorComponent, standard_context: ComponentContext
+        self,
+        partial_component: PartialOverlayDoorComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test partial overlay door height sizing."""
         config = {"count": 1, "overlay": 0.5, "reveal": 0.125}
@@ -750,7 +802,9 @@ class TestDoorHardware:
     """Tests for door hardware generation."""
 
     def test_hardware_includes_correct_hinge_count_single_door(
-        self, overlay_component: OverlayDoorComponent, standard_context: ComponentContext
+        self,
+        overlay_component: OverlayDoorComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that hardware includes correct hinge count for single door."""
         config = {"count": 1}
@@ -762,7 +816,9 @@ class TestDoorHardware:
         assert hinge_item.quantity == 2
 
     def test_hardware_includes_correct_hinge_count_double_door(
-        self, overlay_component: OverlayDoorComponent, standard_context: ComponentContext
+        self,
+        overlay_component: OverlayDoorComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that hardware includes correct hinge count for double doors."""
         config = {"count": 2}
@@ -774,7 +830,9 @@ class TestDoorHardware:
         assert hinge_item.quantity == 4
 
     def test_hardware_soft_close_hinges_by_default(
-        self, overlay_component: OverlayDoorComponent, standard_context: ComponentContext
+        self,
+        overlay_component: OverlayDoorComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that soft-close hinges are used by default."""
         config = {"count": 1}
@@ -786,7 +844,9 @@ class TestDoorHardware:
         assert hinge_item.sku == "EURO-35MM-SC"
 
     def test_hardware_regular_hinges_when_soft_close_false(
-        self, overlay_component: OverlayDoorComponent, standard_context: ComponentContext
+        self,
+        overlay_component: OverlayDoorComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that regular hinges are used when soft_close is False."""
         config = {"count": 1, "soft_close": False}
@@ -798,7 +858,9 @@ class TestDoorHardware:
         assert hinge_item.sku == "EURO-35MM"
 
     def test_hardware_includes_handle_knob_placeholder(
-        self, overlay_component: OverlayDoorComponent, standard_context: ComponentContext
+        self,
+        overlay_component: OverlayDoorComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that hardware includes handle/knob placeholder."""
         config = {"count": 1}
@@ -809,7 +871,9 @@ class TestDoorHardware:
         assert handle_item.quantity == 1
 
     def test_hardware_handle_quantity_matches_door_count(
-        self, overlay_component: OverlayDoorComponent, standard_context: ComponentContext
+        self,
+        overlay_component: OverlayDoorComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that handle quantity matches door count."""
         config = {"count": 2}
@@ -820,7 +884,9 @@ class TestDoorHardware:
         assert handle_item.quantity == 2
 
     def test_hardware_includes_edge_banding(
-        self, overlay_component: OverlayDoorComponent, standard_context: ComponentContext
+        self,
+        overlay_component: OverlayDoorComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that hardware includes edge banding."""
         config = {"count": 1}
@@ -831,7 +897,9 @@ class TestDoorHardware:
         assert edge_item is not None
 
     def test_hardware_edge_banding_correct_linear_inches_single(
-        self, overlay_component: OverlayDoorComponent, standard_context: ComponentContext
+        self,
+        overlay_component: OverlayDoorComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test edge banding linear inches for single door."""
         config = {"count": 1, "overlay": 0.5, "reveal": 0.125}
@@ -848,7 +916,9 @@ class TestDoorHardware:
         assert f"{expected_perimeter:.1f}" in edge_item.notes
 
     def test_hardware_edge_banding_correct_linear_inches_double(
-        self, overlay_component: OverlayDoorComponent, standard_context: ComponentContext
+        self,
+        overlay_component: OverlayDoorComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test edge banding linear inches for double doors."""
         config = {"count": 2, "overlay": 0.5, "reveal": 0.125}
@@ -945,7 +1015,9 @@ class TestDoorComponentIntegration:
         if "door.hinged.inset" not in component_registry.list():
             component_registry.register("door.hinged.inset")(InsetDoorComponent)
         if "door.hinged.partial" not in component_registry.list():
-            component_registry.register("door.hinged.partial")(PartialOverlayDoorComponent)
+            component_registry.register("door.hinged.partial")(
+                PartialOverlayDoorComponent
+            )
 
     def test_full_workflow_overlay_door(
         self, standard_context: ComponentContext
@@ -970,9 +1042,7 @@ class TestDoorComponentIntegration:
         hardware = component.hardware(config, standard_context)
         assert len(hardware) >= 3  # Hinges, handle, edge banding
 
-    def test_full_workflow_inset_door(
-        self, standard_context: ComponentContext
-    ) -> None:
+    def test_full_workflow_inset_door(self, standard_context: ComponentContext) -> None:
         """Test complete workflow for inset door."""
         component_class = component_registry.get("door.hinged.inset")
         component = component_class()
@@ -1001,7 +1071,9 @@ class TestDoorComponentIntegration:
         assert len(generation.panels) == 1
 
     def test_hinge_specs_in_metadata_single_door(
-        self, overlay_component: OverlayDoorComponent, standard_context: ComponentContext
+        self,
+        overlay_component: OverlayDoorComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that hinge_specs are present in metadata for single door."""
         config = {"count": 1, "hinge_side": "right"}
@@ -1015,7 +1087,9 @@ class TestDoorComponentIntegration:
         assert hinge_specs[0].side == "right"
 
     def test_hinge_specs_in_metadata_double_doors(
-        self, overlay_component: OverlayDoorComponent, standard_context: ComponentContext
+        self,
+        overlay_component: OverlayDoorComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that hinge_specs are present in metadata for double doors."""
         config = {"count": 2}
@@ -1039,7 +1113,9 @@ class TestDoorComponentEdgeCases:
     """Edge case tests for door components."""
 
     def test_default_config_values(
-        self, overlay_component: OverlayDoorComponent, standard_context: ComponentContext
+        self,
+        overlay_component: OverlayDoorComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that default config values are applied correctly."""
         config: dict = {}  # Empty config, use all defaults
@@ -1050,13 +1126,12 @@ class TestDoorComponentEdgeCases:
         assert result.is_valid
 
     def test_custom_material_in_config(
-        self, overlay_component: OverlayDoorComponent, standard_context: ComponentContext
+        self,
+        overlay_component: OverlayDoorComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that custom material in config is used."""
-        config = {
-            "count": 1,
-            "material": {"thickness": 0.5}
-        }
+        config = {"count": 1, "material": {"thickness": 0.5}}
 
         result = overlay_component.generate(config, standard_context)
 
@@ -1084,9 +1159,7 @@ class TestDoorComponentEdgeCases:
         hinge_item = next(h for h in hardware if "Hinge" in h.name)
         assert hinge_item.quantity == 4
 
-    def test_minimum_size_door(
-        self, overlay_component: OverlayDoorComponent
-    ) -> None:
+    def test_minimum_size_door(self, overlay_component: OverlayDoorComponent) -> None:
         """Test door at minimum section size."""
         min_context = ComponentContext(
             width=6.0,
@@ -1108,7 +1181,9 @@ class TestDoorComponentEdgeCases:
         assert len(generation.panels) == 1
 
     def test_different_reveal_values(
-        self, overlay_component: OverlayDoorComponent, standard_context: ComponentContext
+        self,
+        overlay_component: OverlayDoorComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test various valid reveal values."""
         for reveal in [0.0625, 0.125, 0.25, 0.375]:
@@ -1117,7 +1192,9 @@ class TestDoorComponentEdgeCases:
             assert result.is_valid, f"Reveal {reveal} should be valid"
 
     def test_different_overlay_values(
-        self, overlay_component: OverlayDoorComponent, standard_context: ComponentContext
+        self,
+        overlay_component: OverlayDoorComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test various overlay values affect door size correctly."""
         overlays = [0.25, 0.5, 0.75, 1.0]
@@ -1146,7 +1223,9 @@ class TestDoorGenerationMetadata:
     """Tests for metadata generation in door components."""
 
     def test_single_door_hinge_positions_in_spec(
-        self, overlay_component: OverlayDoorComponent, standard_context: ComponentContext
+        self,
+        overlay_component: OverlayDoorComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that hinge spec contains correct positions."""
         config = {"count": 1}
@@ -1181,7 +1260,9 @@ class TestDoorGenerationMetadata:
         assert len(hinge_spec.positions) == 4
 
     def test_hardware_returned_in_generate_result(
-        self, overlay_component: OverlayDoorComponent, standard_context: ComponentContext
+        self,
+        overlay_component: OverlayDoorComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that generate() returns hardware in the result."""
         config = {"count": 1}
@@ -1202,7 +1283,7 @@ class TestDoorStyleComparison:
         self,
         overlay_component: OverlayDoorComponent,
         inset_component: InsetDoorComponent,
-        standard_context: ComponentContext
+        standard_context: ComponentContext,
     ) -> None:
         """Test that overlay doors are larger than inset doors."""
         config = {"count": 1, "reveal": 0.125, "overlay": 0.5}
@@ -1218,7 +1299,7 @@ class TestDoorStyleComparison:
         overlay_component: OverlayDoorComponent,
         inset_component: InsetDoorComponent,
         partial_component: PartialOverlayDoorComponent,
-        standard_context: ComponentContext
+        standard_context: ComponentContext,
     ) -> None:
         """Test that partial overlay is between full overlay and inset."""
         config = {"count": 1, "reveal": 0.125, "overlay": 0.5}
@@ -1238,7 +1319,7 @@ class TestDoorStyleComparison:
         overlay_component: OverlayDoorComponent,
         inset_component: InsetDoorComponent,
         partial_component: PartialOverlayDoorComponent,
-        standard_context: ComponentContext
+        standard_context: ComponentContext,
     ) -> None:
         """Test that all door types produce PanelType.DOOR."""
         config = {"count": 1}
@@ -1305,7 +1386,9 @@ class TestHingePlateSpecInGeneration:
     """Tests for HingePlateSpec generation in door components."""
 
     def test_single_door_left_hinge_creates_left_side_plate_spec(
-        self, overlay_component: OverlayDoorComponent, standard_context: ComponentContext
+        self,
+        overlay_component: OverlayDoorComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that single door with left hinge creates left_side plate spec."""
         config = {"count": 1, "hinge_side": "left"}
@@ -1318,7 +1401,9 @@ class TestHingePlateSpecInGeneration:
         assert plate_specs[0].panel_id == "left_side"
 
     def test_single_door_right_hinge_creates_right_side_plate_spec(
-        self, overlay_component: OverlayDoorComponent, standard_context: ComponentContext
+        self,
+        overlay_component: OverlayDoorComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that single door with right hinge creates right_side plate spec."""
         config = {"count": 1, "hinge_side": "right"}
@@ -1330,7 +1415,9 @@ class TestHingePlateSpecInGeneration:
         assert plate_specs[0].panel_id == "right_side"
 
     def test_double_doors_create_both_side_plate_specs(
-        self, overlay_component: OverlayDoorComponent, standard_context: ComponentContext
+        self,
+        overlay_component: OverlayDoorComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that double doors create plate specs for both side panels."""
         config = {"count": 2}
@@ -1343,7 +1430,9 @@ class TestHingePlateSpecInGeneration:
         assert panel_ids == {"left_side", "right_side"}
 
     def test_hinge_plate_positions_match_hinge_positions(
-        self, overlay_component: OverlayDoorComponent, standard_context: ComponentContext
+        self,
+        overlay_component: OverlayDoorComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that hinge plate positions match door hinge positions."""
         config = {"count": 1, "hinge_side": "left"}
@@ -1387,8 +1476,12 @@ class TestHandlePositionSpec:
 
     def test_handle_position_spec_equality(self) -> None:
         """Test that two HandlePositionSpecs with same values are equal."""
-        spec1 = HandlePositionSpec(door_id="door", x=12.0, y=27.0, position_type="upper")
-        spec2 = HandlePositionSpec(door_id="door", x=12.0, y=27.0, position_type="upper")
+        spec1 = HandlePositionSpec(
+            door_id="door", x=12.0, y=27.0, position_type="upper"
+        )
+        spec2 = HandlePositionSpec(
+            door_id="door", x=12.0, y=27.0, position_type="upper"
+        )
 
         assert spec1 == spec2
 
@@ -1397,7 +1490,9 @@ class TestHandlePositionSpecInGeneration:
     """Tests for HandlePositionSpec generation in door components."""
 
     def test_single_door_handle_spec_in_metadata(
-        self, overlay_component: OverlayDoorComponent, standard_context: ComponentContext
+        self,
+        overlay_component: OverlayDoorComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that single door generates handle spec in metadata."""
         config = {"count": 1}
@@ -1410,7 +1505,9 @@ class TestHandlePositionSpecInGeneration:
         assert handle_specs[0].door_id == "door"
 
     def test_double_doors_handle_specs_in_metadata(
-        self, overlay_component: OverlayDoorComponent, standard_context: ComponentContext
+        self,
+        overlay_component: OverlayDoorComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that double doors generate handle specs for both doors."""
         config = {"count": 2}
@@ -1423,10 +1520,17 @@ class TestHandlePositionSpecInGeneration:
         assert door_ids == {"left_door", "right_door"}
 
     def test_upper_handle_position_3_inches_from_top(
-        self, overlay_component: OverlayDoorComponent, standard_context: ComponentContext
+        self,
+        overlay_component: OverlayDoorComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that upper handle is 3\" from top of door."""
-        config = {"count": 1, "handle_position": "upper", "overlay": 0.5, "reveal": 0.125}
+        config = {
+            "count": 1,
+            "handle_position": "upper",
+            "overlay": 0.5,
+            "reveal": 0.125,
+        }
 
         result = overlay_component.generate(config, standard_context)
 
@@ -1439,7 +1543,9 @@ class TestHandlePositionSpecInGeneration:
         assert handle_spec.position_type == "upper"
 
     def test_lower_handle_position_3_inches_from_bottom(
-        self, overlay_component: OverlayDoorComponent, standard_context: ComponentContext
+        self,
+        overlay_component: OverlayDoorComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that lower handle is 3\" from bottom of door."""
         config = {"count": 1, "handle_position": "lower"}
@@ -1451,7 +1557,9 @@ class TestHandlePositionSpecInGeneration:
         assert handle_spec.position_type == "lower"
 
     def test_single_door_handle_centered_horizontally(
-        self, overlay_component: OverlayDoorComponent, standard_context: ComponentContext
+        self,
+        overlay_component: OverlayDoorComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that single door handle is centered horizontally."""
         config = {"count": 1, "overlay": 0.5, "reveal": 0.125}
@@ -1466,7 +1574,9 @@ class TestHandlePositionSpecInGeneration:
         assert handle_spec.x == pytest.approx(expected_x)
 
     def test_double_door_handles_opposite_hinge_side(
-        self, overlay_component: OverlayDoorComponent, standard_context: ComponentContext
+        self,
+        overlay_component: OverlayDoorComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that double door handles are positioned opposite their hinges."""
         config = {"count": 2, "overlay": 0.5, "reveal": 0.125}
@@ -1490,7 +1600,9 @@ class TestHandlePositionSpecInGeneration:
         assert right_handle.x == pytest.approx(3.0)
 
     def test_default_handle_position_is_upper(
-        self, overlay_component: OverlayDoorComponent, standard_context: ComponentContext
+        self,
+        overlay_component: OverlayDoorComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that default handle position is 'upper'."""
         config = {"count": 1}  # No handle_position specified
@@ -1501,7 +1613,9 @@ class TestHandlePositionSpecInGeneration:
         assert handle_spec.position_type == "upper"
 
     def test_hardware_notes_include_handle_position(
-        self, overlay_component: OverlayDoorComponent, standard_context: ComponentContext
+        self,
+        overlay_component: OverlayDoorComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that hardware notes include handle position info."""
         config = {"count": 1, "handle_position": "lower"}
@@ -1510,4 +1624,4 @@ class TestHandlePositionSpecInGeneration:
 
         handle_hardware = next(h for h in result.hardware if h.name == "Handle/Knob")
         assert "lower" in handle_hardware.notes
-        assert "3\"" in handle_hardware.notes
+        assert '3"' in handle_hardware.notes

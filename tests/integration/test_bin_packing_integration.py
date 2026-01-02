@@ -13,10 +13,15 @@ from pathlib import Path
 
 import pytest
 
-from cabinets.application import GenerateLayoutCommand, LayoutParametersInput, WallInput
+from cabinets.application import LayoutParametersInput, WallInput
+from cabinets.application.factory import get_factory
 from cabinets.application.config import load_config, config_to_bin_packing
 from cabinets.domain.value_objects import MaterialSpec
-from cabinets.infrastructure.bin_packing import BinPackingConfig, BinPackingService, SheetConfig
+from cabinets.infrastructure.bin_packing import (
+    BinPackingConfig,
+    BinPackingService,
+    SheetConfig,
+)
 
 
 # =============================================================================
@@ -70,9 +75,7 @@ def multi_material_config() -> dict:
 @pytest.fixture
 def config_file(simple_cabinet_config: dict) -> Path:
     """Write config to temporary file and return path."""
-    with tempfile.NamedTemporaryFile(
-        mode="w", suffix=".json", delete=False
-    ) as f:
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
         json.dump(simple_cabinet_config, f)
         return Path(f.name)
 
@@ -88,7 +91,7 @@ class TestFullPipeline:
     def test_cabinet_to_optimized_layout(self) -> None:
         """Full pipeline: cabinet generation to optimized cut layout."""
         # Generate cabinet layout
-        command = GenerateLayoutCommand()
+        command = get_factory().create_generate_command()
         wall_input = WallInput(width=48.0, height=84.0, depth=12.0)
         params_input = LayoutParametersInput(
             num_sections=2,
@@ -111,18 +114,14 @@ class TestFullPipeline:
 
         # Verify pieces were placed (total placed should be at least total pieces)
         # Note: expansion may add pieces for split panels, so >= is used
-        total_placed = sum(
-            len(layout.placements) for layout in packing_result.layouts
-        )
+        total_placed = sum(len(layout.placements) for layout in packing_result.layouts)
         total_pieces = sum(piece.quantity for piece in result.cut_list)
         assert total_placed >= total_pieces
 
     def test_multi_material_separation(self, multi_material_config: dict) -> None:
         """Different materials are separated into different sheet groups."""
         # Load and parse config
-        with tempfile.NamedTemporaryFile(
-            mode="w", suffix=".json", delete=False
-        ) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
             json.dump(multi_material_config, f)
             config_path = Path(f.name)
 
@@ -130,7 +129,7 @@ class TestFullPipeline:
             config = load_config(config_path)
 
             # Generate cabinet
-            command = GenerateLayoutCommand()
+            command = get_factory().create_generate_command()
             wall_input = WallInput(
                 width=config.cabinet.width,
                 height=config.cabinet.height,
@@ -159,7 +158,7 @@ class TestFullPipeline:
     def test_waste_improvement_over_naive(self) -> None:
         """Optimized layout should have reasonable waste."""
         # Generate a typical cabinet layout
-        command = GenerateLayoutCommand()
+        command = get_factory().create_generate_command()
         wall_input = WallInput(width=48.0, height=84.0, depth=12.0)
         params_input = LayoutParametersInput(
             num_sections=3,
@@ -192,7 +191,7 @@ class TestFullPipeline:
         The cut list consolidates pieces with same dimensions, so we check
         for total piece count (with quantities) not unique piece types.
         """
-        command = GenerateLayoutCommand()
+        command = get_factory().create_generate_command()
         # Use dimensions that produce pieces that fit on standard 48x96 sheet
         wall_input = WallInput(width=48.0, height=84.0, depth=12.0)
         params_input = LayoutParametersInput(
@@ -217,9 +216,7 @@ class TestFullPipeline:
         assert packing_result.total_waste_percentage < 60
 
         # All pieces should be placed (expansion creates individual placements)
-        total_placed = sum(
-            len(layout.placements) for layout in packing_result.layouts
-        )
+        total_placed = sum(len(layout.placements) for layout in packing_result.layouts)
         # Placed pieces should match or exceed total (due to panel splitting)
         assert total_placed >= total_pieces
 
@@ -236,9 +233,14 @@ class TestCLIIntegration:
         """CLI --format cutlayout produces output."""
         result = subprocess.run(
             [
-                "uv", "run", "cabinets", "generate",
-                "--config", str(config_file),
-                "--format", "cutlayout",
+                "uv",
+                "run",
+                "cabinets",
+                "generate",
+                "--config",
+                str(config_file),
+                "--format",
+                "cutlayout",
             ],
             capture_output=True,
             text=True,
@@ -256,10 +258,16 @@ class TestCLIIntegration:
 
             result = subprocess.run(
                 [
-                    "uv", "run", "cabinets", "generate",
-                    "--config", str(config_file),
-                    "--format", "cutlayout",
-                    "-o", str(output_path),
+                    "uv",
+                    "run",
+                    "cabinets",
+                    "generate",
+                    "--config",
+                    str(config_file),
+                    "--format",
+                    "cutlayout",
+                    "-o",
+                    str(output_path),
                 ],
                 capture_output=True,
                 text=True,
@@ -279,9 +287,14 @@ class TestCLIIntegration:
         """CLI --format all includes bin packing summary."""
         result = subprocess.run(
             [
-                "uv", "run", "cabinets", "generate",
-                "--config", str(config_file),
-                "--format", "all",
+                "uv",
+                "run",
+                "cabinets",
+                "generate",
+                "--config",
+                str(config_file),
+                "--format",
+                "all",
             ],
             capture_output=True,
             text=True,
@@ -296,14 +309,23 @@ class TestCLIIntegration:
         """CLI with dimensions only works with --optimize flag."""
         result = subprocess.run(
             [
-                "uv", "run", "cabinets", "generate",
-                "--width", "48",
-                "--height", "84",
-                "--depth", "12",
-                "--sections", "2",
-                "--shelves", "4",
+                "uv",
+                "run",
+                "cabinets",
+                "generate",
+                "--width",
+                "48",
+                "--height",
+                "84",
+                "--depth",
+                "12",
+                "--sections",
+                "2",
+                "--shelves",
+                "4",
                 "--optimize",
-                "--format", "cutlayout",
+                "--format",
+                "cutlayout",
             ],
             capture_output=True,
             text=True,
@@ -321,18 +343,21 @@ class TestCLIIntegration:
             "bin_packing": {"enabled": False},
         }
 
-        with tempfile.NamedTemporaryFile(
-            mode="w", suffix=".json", delete=False
-        ) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
             json.dump(config, f)
             config_path = Path(f.name)
 
         try:
             result = subprocess.run(
                 [
-                    "uv", "run", "cabinets", "generate",
-                    "--config", str(config_path),
-                    "--format", "cutlayout",
+                    "uv",
+                    "run",
+                    "cabinets",
+                    "generate",
+                    "--config",
+                    str(config_path),
+                    "--format",
+                    "cutlayout",
                 ],
                 capture_output=True,
                 text=True,
@@ -358,7 +383,7 @@ class TestConfigurationIntegration:
     def test_config_kerf_is_used(self) -> None:
         """Custom kerf value affects piece placement."""
         # Generate same cabinet with different kerfs
-        command = GenerateLayoutCommand()
+        command = get_factory().create_generate_command()
         wall_input = WallInput(width=48.0, height=84.0, depth=12.0)
         params_input = LayoutParametersInput(num_sections=2, shelves_per_section=4)
 
@@ -376,8 +401,10 @@ class TestConfigurationIntegration:
 
         # Larger kerf may require more sheets or have more waste
         # (or at minimum, piece positions differ)
-        assert result2.total_waste_percentage >= result1.total_waste_percentage or \
-               result2.total_sheets >= result1.total_sheets
+        assert (
+            result2.total_waste_percentage >= result1.total_waste_percentage
+            or result2.total_sheets >= result1.total_sheets
+        )
 
     def test_config_sheet_size_is_used(self) -> None:
         """Custom sheet size affects layout.
@@ -385,16 +412,12 @@ class TestConfigurationIntegration:
         Uses a smaller cabinet to ensure all pieces fit on both sheet sizes.
         """
         # Large sheet (48x96)
-        config_large = BinPackingConfig(
-            sheet_size=SheetConfig(width=48, height=96)
-        )
+        config_large = BinPackingConfig(sheet_size=SheetConfig(width=48, height=96))
         # Smaller sheet (36x72) - still large enough for pieces
-        config_small = BinPackingConfig(
-            sheet_size=SheetConfig(width=36, height=72)
-        )
+        config_small = BinPackingConfig(sheet_size=SheetConfig(width=36, height=72))
 
         # Generate smaller cabinet to ensure pieces fit on both sheet sizes
-        command = GenerateLayoutCommand()
+        command = get_factory().create_generate_command()
         wall_input = WallInput(width=32.0, height=48.0, depth=10.0)
         params_input = LayoutParametersInput(num_sections=2, shelves_per_section=3)
 
@@ -421,9 +444,7 @@ class TestConfigurationIntegration:
             "bin_packing": {"enabled": True},
         }
 
-        with tempfile.NamedTemporaryFile(
-            mode="w", suffix=".json", delete=False
-        ) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
             json.dump(config, f)
             config_path = Path(f.name)
 
@@ -443,9 +464,7 @@ class TestConfigurationIntegration:
             "cabinet": {"width": 48, "height": 84, "depth": 12},
         }
 
-        with tempfile.NamedTemporaryFile(
-            mode="w", suffix=".json", delete=False
-        ) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
             json.dump(config, f)
             config_path = Path(f.name)
 
@@ -473,9 +492,7 @@ class TestOutputValidation:
         """Generated SVG is valid XML."""
         import xml.etree.ElementTree as ET
 
-        with tempfile.NamedTemporaryFile(
-            mode="w", suffix=".json", delete=False
-        ) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
             json.dump(simple_cabinet_config, f)
             config_path = Path(f.name)
 
@@ -484,10 +501,16 @@ class TestOutputValidation:
 
             result = subprocess.run(
                 [
-                    "uv", "run", "cabinets", "generate",
-                    "--config", str(config_path),
-                    "--format", "cutlayout",
-                    "-o", str(output_path),
+                    "uv",
+                    "run",
+                    "cabinets",
+                    "generate",
+                    "--config",
+                    str(config_path),
+                    "--format",
+                    "cutlayout",
+                    "-o",
+                    str(output_path),
                 ],
                 capture_output=True,
                 text=True,
@@ -509,7 +532,9 @@ class TestOutputValidation:
         """Waste summary includes all required information."""
         from cabinets.infrastructure.cut_diagram_renderer import CutDiagramRenderer
         from cabinets.infrastructure.bin_packing import (
-            PackingResult, SheetLayout, SheetConfig
+            PackingResult,
+            SheetLayout,
+            SheetConfig,
         )
 
         # Create minimal result
@@ -540,7 +565,10 @@ class TestOutputValidation:
         """ASCII cut diagram has correct structure."""
         from cabinets.infrastructure.cut_diagram_renderer import CutDiagramRenderer
         from cabinets.infrastructure.bin_packing import (
-            PackingResult, SheetLayout, SheetConfig, PlacedPiece
+            PackingResult,
+            SheetLayout,
+            SheetConfig,
+            PlacedPiece,
         )
         from cabinets.domain.value_objects import CutPiece, PanelType
 
@@ -586,9 +614,7 @@ class TestOutputValidation:
 
     def test_svg_contains_rect_elements(self, simple_cabinet_config: dict) -> None:
         """Generated SVG contains rect elements for pieces."""
-        with tempfile.NamedTemporaryFile(
-            mode="w", suffix=".json", delete=False
-        ) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
             json.dump(simple_cabinet_config, f)
             config_path = Path(f.name)
 
@@ -597,10 +623,16 @@ class TestOutputValidation:
 
             result = subprocess.run(
                 [
-                    "uv", "run", "cabinets", "generate",
-                    "--config", str(config_path),
-                    "--format", "cutlayout",
-                    "-o", str(output_path),
+                    "uv",
+                    "run",
+                    "cabinets",
+                    "generate",
+                    "--config",
+                    str(config_path),
+                    "--format",
+                    "cutlayout",
+                    "-o",
+                    str(output_path),
                 ],
                 capture_output=True,
                 text=True,
@@ -644,7 +676,7 @@ class TestEdgeCases:
         service = BinPackingService(config)
 
         # Even with pieces, should return empty when disabled
-        command = GenerateLayoutCommand()
+        command = get_factory().create_generate_command()
         wall_input = WallInput(width=48.0, height=84.0, depth=12.0)
         params_input = LayoutParametersInput(num_sections=1, shelves_per_section=3)
         layout_result = command.execute(wall_input, params_input)
@@ -692,7 +724,7 @@ class TestPerformanceSanity:
         """
         import time
 
-        command = GenerateLayoutCommand()
+        command = get_factory().create_generate_command()
         # Use dimensions where all pieces fit on standard 48x96 sheet
         wall_input = WallInput(width=48.0, height=84.0, depth=14.0)
         params_input = LayoutParametersInput(num_sections=4, shelves_per_section=5)

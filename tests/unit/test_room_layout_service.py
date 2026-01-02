@@ -6,16 +6,12 @@ These tests verify:
 - Fit validation for sections on walls
 """
 
-import math
-
 import pytest
 
 from cabinets.domain.entities import Room, WallSegment
 from cabinets.domain.section_resolver import SectionSpec
 from cabinets.domain.services import RoomLayoutService
 from cabinets.domain.value_objects import (
-    FitError,
-    SectionTransform,
     WallSectionAssignment,
 )
 
@@ -62,9 +58,7 @@ class TestAssignSectionsToWalls:
         self, room_layout_service: RoomLayoutService, simple_room: Room
     ) -> None:
         """Empty section specs should return empty assignments."""
-        assignments = room_layout_service.assign_sections_to_walls(
-            simple_room, []
-        )
+        assignments = room_layout_service.assign_sections_to_walls(simple_room, [])
         assert assignments == []
 
     def test_single_section_default_wall(
@@ -72,9 +66,7 @@ class TestAssignSectionsToWalls:
     ) -> None:
         """Single section with no wall specified should go to wall 0."""
         specs = [SectionSpec(width=24.0, shelves=3)]
-        assignments = room_layout_service.assign_sections_to_walls(
-            simple_room, specs
-        )
+        assignments = room_layout_service.assign_sections_to_walls(simple_room, specs)
 
         assert len(assignments) == 1
         assert assignments[0].section_index == 0
@@ -90,9 +82,7 @@ class TestAssignSectionsToWalls:
             SectionSpec(width=36.0, shelves=4),
             SectionSpec(width=24.0, shelves=2),
         ]
-        assignments = room_layout_service.assign_sections_to_walls(
-            simple_room, specs
-        )
+        assignments = room_layout_service.assign_sections_to_walls(simple_room, specs)
 
         assert len(assignments) == 3
         assert assignments[0].offset_along_wall == 0.0
@@ -106,9 +96,7 @@ class TestAssignSectionsToWalls:
         specs = [
             SectionSpec(width=24.0, shelves=3, wall=1),
         ]
-        assignments = room_layout_service.assign_sections_to_walls(
-            l_shaped_room, specs
-        )
+        assignments = room_layout_service.assign_sections_to_walls(l_shaped_room, specs)
 
         assert len(assignments) == 1
         assert assignments[0].wall_index == 1
@@ -121,9 +109,7 @@ class TestAssignSectionsToWalls:
         specs = [
             SectionSpec(width=24.0, shelves=3, wall="west"),
         ]
-        assignments = room_layout_service.assign_sections_to_walls(
-            l_shaped_room, specs
-        )
+        assignments = room_layout_service.assign_sections_to_walls(l_shaped_room, specs)
 
         assert len(assignments) == 1
         assert assignments[0].wall_index == 1
@@ -137,9 +123,7 @@ class TestAssignSectionsToWalls:
             SectionSpec(width=36.0, shelves=4, wall=1),
             SectionSpec(width=24.0, shelves=2, wall=0),
         ]
-        assignments = room_layout_service.assign_sections_to_walls(
-            l_shaped_room, specs
-        )
+        assignments = room_layout_service.assign_sections_to_walls(l_shaped_room, specs)
 
         # Section 0 on wall 0 at offset 0
         assert assignments[0].section_index == 0
@@ -166,9 +150,7 @@ class TestAssignSectionsToWalls:
             SectionSpec(width=24.0, shelves=3),
             SectionSpec(width="fill", shelves=4),
         ]
-        assignments = room_layout_service.assign_sections_to_walls(
-            simple_room, specs
-        )
+        assignments = room_layout_service.assign_sections_to_walls(simple_room, specs)
 
         assert len(assignments) == 2
         assert assignments[0].offset_along_wall == 0.0
@@ -185,9 +167,7 @@ class TestAssignSectionsToWalls:
             SectionSpec(width=24.0, shelves=4),
             SectionSpec(width="fill", shelves=2),
         ]
-        assignments = room_layout_service.assign_sections_to_walls(
-            simple_room, specs
-        )
+        assignments = room_layout_service.assign_sections_to_walls(simple_room, specs)
 
         assert len(assignments) == 3
         # First fill section at offset 0
@@ -206,9 +186,7 @@ class TestAssignSectionsToWalls:
             SectionSpec(width=36.0, shelves=4, wall=0),
             SectionSpec(width=24.0, shelves=2, wall=1),
         ]
-        assignments = room_layout_service.assign_sections_to_walls(
-            l_shaped_room, specs
-        )
+        assignments = room_layout_service.assign_sections_to_walls(l_shaped_room, specs)
 
         assert [a.section_index for a in assignments] == [0, 1, 2]
 
@@ -240,9 +218,7 @@ class TestComputeSectionTransforms:
         self, room_layout_service: RoomLayoutService, simple_room: Room
     ) -> None:
         """Empty assignments should return empty transforms."""
-        transforms = room_layout_service.compute_section_transforms(
-            simple_room, [], []
-        )
+        transforms = room_layout_service.compute_section_transforms(simple_room, [], [])
         assert transforms == []
 
     def test_single_section_on_first_wall(
@@ -462,7 +438,7 @@ class TestValidateFit:
         """Valid sections on one wall and invalid on another."""
         # Wall 0 is 120 inches, wall 1 is 80 inches
         specs = [
-            SectionSpec(width=60.0, shelves=3, wall=0),   # Valid on wall 0
+            SectionSpec(width=60.0, shelves=3, wall=0),  # Valid on wall 0
             SectionSpec(width=100.0, shelves=4, wall=1),  # Exceeds wall 1
         ]
         errors = room_layout_service.validate_fit(l_shaped_room, specs)
@@ -488,47 +464,35 @@ class TestValidateFit:
 class TestResolveWallIndex:
     """Tests for _resolve_wall_index private method."""
 
-    def test_none_returns_zero(
-        self, room_layout_service: RoomLayoutService
-    ) -> None:
+    def test_none_returns_zero(self, room_layout_service: RoomLayoutService) -> None:
         """None wall reference should return 0."""
         result = room_layout_service._resolve_wall_index(None, 3, {})
         assert result == 0
 
-    def test_valid_index(
-        self, room_layout_service: RoomLayoutService
-    ) -> None:
+    def test_valid_index(self, room_layout_service: RoomLayoutService) -> None:
         """Valid wall index should be returned as-is."""
         result = room_layout_service._resolve_wall_index(2, 3, {})
         assert result == 2
 
-    def test_index_out_of_range(
-        self, room_layout_service: RoomLayoutService
-    ) -> None:
+    def test_index_out_of_range(self, room_layout_service: RoomLayoutService) -> None:
         """Index out of range should raise ValueError."""
         with pytest.raises(ValueError) as exc_info:
             room_layout_service._resolve_wall_index(5, 3, {})
         assert "out of range" in str(exc_info.value)
 
-    def test_negative_index(
-        self, room_layout_service: RoomLayoutService
-    ) -> None:
+    def test_negative_index(self, room_layout_service: RoomLayoutService) -> None:
         """Negative index should raise ValueError."""
         with pytest.raises(ValueError) as exc_info:
             room_layout_service._resolve_wall_index(-1, 3, {})
         assert "out of range" in str(exc_info.value)
 
-    def test_valid_name(
-        self, room_layout_service: RoomLayoutService
-    ) -> None:
+    def test_valid_name(self, room_layout_service: RoomLayoutService) -> None:
         """Valid wall name should return corresponding index."""
         name_map = {"north": 0, "south": 1, "east": 2}
         result = room_layout_service._resolve_wall_index("south", 3, name_map)
         assert result == 1
 
-    def test_invalid_name(
-        self, room_layout_service: RoomLayoutService
-    ) -> None:
+    def test_invalid_name(self, room_layout_service: RoomLayoutService) -> None:
         """Invalid wall name should raise ValueError."""
         name_map = {"north": 0, "south": 1}
         with pytest.raises(ValueError) as exc_info:
@@ -555,7 +519,7 @@ class TestIntegrationScenarios:
             SectionSpec(width=24.0, shelves=2, wall="south"),  # Base cabinet 1
             SectionSpec(width=36.0, shelves=3, wall="south"),  # Base cabinet 2
             SectionSpec(width="fill", shelves=2, wall="south"),  # Fill remaining
-            SectionSpec(width=30.0, shelves=2, wall="west"),   # West wall cabinet
+            SectionSpec(width=30.0, shelves=2, wall="west"),  # West wall cabinet
         ]
 
         # Validate fit
@@ -582,9 +546,7 @@ class TestIntegrationScenarios:
         assert len(west_transforms) == 1
         assert west_transforms[0].rotation_z == pytest.approx(90.0)
 
-    def test_closet_built_in(
-        self, room_layout_service: RoomLayoutService
-    ) -> None:
+    def test_closet_built_in(self, room_layout_service: RoomLayoutService) -> None:
         """Test a closet built-in cabinet scenario."""
         # Simple 6 foot closet alcove
         walls = [WallSegment(length=72.0, height=96.0, angle=0, name="back")]

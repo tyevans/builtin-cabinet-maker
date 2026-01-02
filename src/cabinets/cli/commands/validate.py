@@ -75,7 +75,7 @@ def _display_load_error(error: ConfigError) -> None:
         typer.echo(f"  File not found: {error.path}", err=True)
     elif error.error_type == "json_parse":
         typer.echo("Errors:", err=True)
-        typer.echo(f"  Invalid JSON syntax", err=True)
+        typer.echo("  Invalid JSON syntax", err=True)
         for detail in error.details:
             line = detail.get("line", "?")
             column = detail.get("column", "?")
@@ -106,8 +106,6 @@ def _display_validation_result(result: ValidationResult) -> None:
     Args:
         result: The ValidationResult to display
     """
-    has_issues = result.errors or result.warnings
-
     # Display errors
     if result.errors:
         typer.echo("Errors:", err=True)

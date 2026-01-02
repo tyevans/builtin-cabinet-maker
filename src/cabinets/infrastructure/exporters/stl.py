@@ -10,7 +10,7 @@ from cabinets.infrastructure.stl_exporter import StlExporter as StlExporterImpl
 from cabinets.infrastructure.stl_exporter import StlMeshBuilder
 
 if TYPE_CHECKING:
-    from cabinets.application.dtos import LayoutOutput, RoomLayoutOutput
+    from cabinets.contracts.dtos import LayoutOutput, RoomLayoutOutput
 
 
 @ExporterRegistry.register("stl")
@@ -55,7 +55,7 @@ class StlLayoutExporter:
             path: Path where the STL file will be saved.
         """
         # Import here to avoid circular imports at module level
-        from cabinets.application.dtos import LayoutOutput, RoomLayoutOutput
+        from cabinets.contracts.dtos import LayoutOutput, RoomLayoutOutput
 
         if isinstance(output, RoomLayoutOutput):
             self._exporter.export_room_layout(
@@ -85,6 +85,19 @@ class StlLayoutExporter:
         """
         raise NotImplementedError(
             "STL format is binary and does not support string export. "
+            "Use export() to write to a file instead."
+        )
+
+    def format_for_console(self, output: LayoutOutput | RoomLayoutOutput) -> str:
+        """STL format does not support console output.
+
+        STL is a binary 3D format not suitable for terminal display.
+
+        Raises:
+            NotImplementedError: Always raises this exception.
+        """
+        raise NotImplementedError(
+            "STL format is binary and does not support console output. "
             "Use export() to write to a file instead."
         )
 

@@ -2,10 +2,8 @@
 
 import pytest
 
-from cabinets.domain.entities import Panel
 from cabinets.domain.services import OutsideCornerService
 from cabinets.domain.value_objects import (
-    AngleCut,
     MaterialSpec,
     OutsideCornerConfig,
     PanelType,

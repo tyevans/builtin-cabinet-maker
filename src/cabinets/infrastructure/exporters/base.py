@@ -5,10 +5,10 @@ from __future__ import annotations
 import logging
 from abc import abstractmethod
 from pathlib import Path
-from typing import TYPE_CHECKING, ClassVar, Protocol, runtime_checkable
+from typing import TYPE_CHECKING, Callable, ClassVar, Protocol, runtime_checkable
 
 if TYPE_CHECKING:
-    from cabinets.application.dtos import LayoutOutput, RoomLayoutOutput
+    from cabinets.contracts.dtos import LayoutOutput, RoomLayoutOutput
 
 
 logger = logging.getLogger(__name__)
@@ -59,6 +59,26 @@ class Exporter(Protocol):
             f"Format '{self.format_name}' does not support string export"
         )
 
+    def format_for_console(self, output: LayoutOutput | RoomLayoutOutput) -> str:
+        """Format layout output for console display.
+
+        This method provides formatted output suitable for terminal display.
+        By default, it delegates to export_string() for text-based formats.
+        Binary formats should raise NotImplementedError.
+
+        Args:
+            output: The layout output to format for console.
+
+        Returns:
+            Formatted string suitable for console output.
+
+        Raises:
+            NotImplementedError: If the format does not support console output.
+        """
+        raise NotImplementedError(
+            f"Format '{self.format_name}' does not support console output"
+        )
+
 
 class ExporterRegistry:
     """Registry for exporter classes.
@@ -77,7 +97,7 @@ class ExporterRegistry:
     _exporters: ClassVar[dict[str, type[Exporter]]] = {}
 
     @classmethod
-    def register(cls, format_name: str) -> type:
+    def register(cls, format_name: str) -> Callable[[type[Exporter]], type[Exporter]]:
         """Decorator to register an exporter class.
 
         Args:
@@ -98,7 +118,9 @@ class ExporterRegistry:
                     f"Overwriting existing exporter for format '{format_name}'"
                 )
             cls._exporters[format_name] = exporter_class
-            logger.debug(f"Registered exporter '{format_name}': {exporter_class.__name__}")
+            logger.debug(
+                f"Registered exporter '{format_name}': {exporter_class.__name__}"
+            )
             return exporter_class
 
         return decorator

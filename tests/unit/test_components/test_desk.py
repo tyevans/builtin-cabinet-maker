@@ -21,7 +21,6 @@ from cabinets.domain.components import (
     ComponentContext,
     GenerationResult,
     HardwareItem,
-    ValidationResult,
     component_registry,
 )
 from cabinets.domain.components.desk import (
@@ -235,7 +234,9 @@ class TestDeskSurfaceValidation:
         """Standard grommet sizes pass validation."""
         component = DeskSurfaceComponent()
         for diameter in [2.0, 2.5, 3.0]:
-            config = {"grommets": [{"x_position": 24, "y_position": 20, "diameter": diameter}]}
+            config = {
+                "grommets": [{"x_position": 24, "y_position": 20, "diameter": diameter}]
+            }
             result = component.validate(config, standard_context)
             assert len(result.errors) == 0, f"Failed for grommet diameter: {diameter}"
 
@@ -281,7 +282,9 @@ class TestDeskSurfaceGeneration:
         component = DeskSurfaceComponent()
         config = {"edge_treatment": "waterfall", "desk_height": 30.0}
         result = component.generate(config, standard_context)
-        waterfall = [p for p in result.panels if p.panel_type == PanelType.WATERFALL_EDGE][0]
+        waterfall = [
+            p for p in result.panels if p.panel_type == PanelType.WATERFALL_EDGE
+        ][0]
         assert waterfall.height == 26.0  # 30 - 4
 
     def test_no_waterfall_for_square_edge(self, standard_context):
@@ -297,9 +300,7 @@ class TestDeskSurfaceGeneration:
     def test_grommet_cutout_in_metadata(self, standard_context):
         """Grommets appear as cutouts in metadata."""
         component = DeskSurfaceComponent()
-        config = {
-            "grommets": [{"x_position": 24, "y_position": 20, "diameter": 2.5}]
-        }
+        config = {"grommets": [{"x_position": 24, "y_position": 20, "diameter": 2.5}]}
         result = component.generate(config, standard_context)
         assert "cutouts" in result.metadata
         assert len(result.metadata["cutouts"]) == 1
@@ -307,9 +308,7 @@ class TestDeskSurfaceGeneration:
     def test_grommet_hardware(self, standard_context):
         """Grommets appear in hardware list."""
         component = DeskSurfaceComponent()
-        config = {
-            "grommets": [{"x_position": 24, "y_position": 20, "diameter": 2.5}]
-        }
+        config = {"grommets": [{"x_position": 24, "y_position": 20, "diameter": 2.5}]}
         result = component.generate(config, standard_context)
         grommet_items = [h for h in result.hardware if "Grommet" in h.name]
         assert len(grommet_items) == 1
@@ -371,8 +370,12 @@ class TestDeskSurfaceGeneration:
         result_basic = component.generate(config_basic, standard_context)
         result_exposed = component.generate(config_exposed, standard_context)
 
-        banding_basic = [h for h in result_basic.hardware if "Edge Banding" in h.name][0]
-        banding_exposed = [h for h in result_exposed.hardware if "Edge Banding" in h.name][0]
+        banding_basic = [h for h in result_basic.hardware if "Edge Banding" in h.name][
+            0
+        ]
+        banding_exposed = [
+            h for h in result_exposed.hardware if "Edge Banding" in h.name
+        ][0]
 
         # Exposed should have more linear inches noted
         assert "48.0" in banding_basic.notes  # Just front edge
@@ -780,7 +783,8 @@ class TestMonitorShelfGeneration:
         config = {}
         result = component.generate(config, standard_context)
         sides = [
-            p for p in result.panels
+            p
+            for p in result.panels
             if p.panel_type in (PanelType.LEFT_SIDE, PanelType.RIGHT_SIDE)
         ]
         assert len(sides) == 2
@@ -929,7 +933,10 @@ class TestDeskHutchValidation:
         component = DeskHutchComponent()
         config = {"head_clearance": 12.0}
         result = component.validate(config, standard_context)
-        assert any("head clearance" in w.lower() or "obstruct" in w.lower() for w in result.warnings)
+        assert any(
+            "head clearance" in w.lower() or "obstruct" in w.lower()
+            for w in result.warnings
+        )
 
     def test_depth_too_shallow(self, standard_context):
         """Hutch depth below 6" produces error."""
@@ -944,7 +951,9 @@ class TestDeskHutchValidation:
         component = DeskHutchComponent()
         config = {"depth": 18.0}
         result = component.validate(config, standard_context)
-        assert any("interfere" in w.lower() or "monitor" in w.lower() for w in result.warnings)
+        assert any(
+            "interfere" in w.lower() or "monitor" in w.lower() for w in result.warnings
+        )
 
     def test_height_too_short(self, standard_context):
         """Hutch height below 12" produces error."""
@@ -977,7 +986,8 @@ class TestDeskHutchGeneration:
         config = {}
         result = component.generate(config, standard_context)
         sides = [
-            p for p in result.panels
+            p
+            for p in result.panels
             if p.panel_type in (PanelType.LEFT_SIDE, PanelType.RIGHT_SIDE)
         ]
         assert len(sides) == 2
@@ -1036,7 +1046,9 @@ class TestDeskHutchGeneration:
         component = DeskHutchComponent()
         config = {"task_light_zone": True}
         result = component.generate(config, standard_context)
-        led_channel = [h for h in result.hardware if "LED" in h.name and "Channel" in h.name]
+        led_channel = [
+            h for h in result.hardware if "LED" in h.name and "Channel" in h.name
+        ]
         assert len(led_channel) == 1
         power_supply = [h for h in result.hardware if "Power Supply" in h.name]
         assert len(power_supply) == 1
@@ -1169,21 +1181,29 @@ class TestLShapedDeskValidation:
         config = {"corner_connection_type": "invalid"}
         result = component.validate(config, wide_context)
         assert len(result.errors) == 1
-        assert "corner" in result.errors[0].lower() or "butt" in result.errors[0].lower()
+        assert (
+            "corner" in result.errors[0].lower() or "butt" in result.errors[0].lower()
+        )
 
     def test_narrow_main_surface_warning(self, standard_context):
         """Narrow main surface produces warning."""
         component = LShapedDeskComponent()
         config = {"main_surface_width": 30.0}  # Below 36" minimum
         result = component.validate(config, standard_context)
-        assert any("narrow" in w.lower() or "main surface" in w.lower() for w in result.warnings)
+        assert any(
+            "narrow" in w.lower() or "main surface" in w.lower()
+            for w in result.warnings
+        )
 
     def test_narrow_return_surface_warning(self, standard_context):
         """Narrow return surface produces warning."""
         component = LShapedDeskComponent()
         config = {"return_surface_width": 30.0}  # Below 36" minimum
         result = component.validate(config, standard_context)
-        assert any("narrow" in w.lower() or "return surface" in w.lower() for w in result.warnings)
+        assert any(
+            "narrow" in w.lower() or "return surface" in w.lower()
+            for w in result.warnings
+        )
 
     def test_shallow_main_depth_error(self, standard_context):
         """Shallow main depth produces error."""
@@ -1229,7 +1249,9 @@ class TestLShapedDeskValidation:
             "corner_post": False,
         }
         result = component.validate(config, wide_context)
-        assert any("corner" in w.lower() and "support" in w.lower() for w in result.warnings)
+        assert any(
+            "corner" in w.lower() and "support" in w.lower() for w in result.warnings
+        )
 
     def test_diagonal_without_corner_post_warning(self, standard_context):
         """Diagonal corner without corner post produces warning."""
@@ -1239,7 +1261,9 @@ class TestLShapedDeskValidation:
             "corner_post": False,
         }
         result = component.validate(config, standard_context)
-        assert any("diagonal" in w.lower() or "corner" in w.lower() for w in result.warnings)
+        assert any(
+            "diagonal" in w.lower() or "corner" in w.lower() for w in result.warnings
+        )
 
     def test_default_config_passes(self, standard_context):
         """Default configuration passes validation."""
@@ -1271,8 +1295,7 @@ class TestLShapedDeskGeneration:
         }
         result = component.generate(config, wide_context)
         main_panels = [
-            p for p in result.panels
-            if p.metadata.get("l_shaped_surface") == "main"
+            p for p in result.panels if p.metadata.get("l_shaped_surface") == "main"
         ]
         assert len(main_panels) >= 1
 
@@ -1285,8 +1308,7 @@ class TestLShapedDeskGeneration:
         }
         result = component.generate(config, wide_context)
         return_panels = [
-            p for p in result.panels
-            if p.metadata.get("l_shaped_surface") == "return"
+            p for p in result.panels if p.metadata.get("l_shaped_surface") == "return"
         ]
         assert len(return_panels) >= 1
 
@@ -1297,10 +1319,7 @@ class TestLShapedDeskGeneration:
             "corner_post": True,
         }
         result = component.generate(config, wide_context)
-        posts = [
-            p for p in result.panels
-            if p.metadata.get("is_corner_post") is True
-        ]
+        posts = [p for p in result.panels if p.metadata.get("is_corner_post") is True]
         assert len(posts) == 1
 
     def test_diagonal_generates_diagonal_face(self, wide_context):
@@ -1310,7 +1329,9 @@ class TestLShapedDeskGeneration:
             "corner_connection_type": "diagonal",
         }
         result = component.generate(config, wide_context)
-        diagonals = [p for p in result.panels if p.panel_type == PanelType.DIAGONAL_FACE]
+        diagonals = [
+            p for p in result.panels if p.panel_type == PanelType.DIAGONAL_FACE
+        ]
         assert len(diagonals) == 1
 
     def test_butt_no_diagonal_face(self, wide_context):
@@ -1320,7 +1341,9 @@ class TestLShapedDeskGeneration:
             "corner_connection_type": "butt",
         }
         result = component.generate(config, wide_context)
-        diagonals = [p for p in result.panels if p.panel_type == PanelType.DIAGONAL_FACE]
+        diagonals = [
+            p for p in result.panels if p.panel_type == PanelType.DIAGONAL_FACE
+        ]
         assert len(diagonals) == 0
 
     def test_butt_corner_brackets(self, wide_context):
@@ -1368,7 +1391,8 @@ class TestLShapedDeskGeneration:
         }
         result = component.generate(config, wide_context)
         pedestal_panels = [
-            p for p in result.panels
+            p
+            for p in result.panels
             if p.metadata.get("l_shaped_pedestal") == "main_left"
         ]
         assert len(pedestal_panels) >= 3  # At least sides, bottom, back
@@ -1381,7 +1405,8 @@ class TestLShapedDeskGeneration:
         }
         result = component.generate(config, wide_context)
         pedestal_panels = [
-            p for p in result.panels
+            p
+            for p in result.panels
             if p.metadata.get("l_shaped_pedestal") == "return_right"
         ]
         assert len(pedestal_panels) >= 3
@@ -1726,7 +1751,10 @@ class TestLShapedDeskConfiguration:
             return_right_pedestal={"pedestal_type": "storage", "width": 15.0},
         )
         assert config.main_left_pedestal == {"pedestal_type": "file", "width": 18.0}
-        assert config.return_right_pedestal == {"pedestal_type": "storage", "width": 15.0}
+        assert config.return_right_pedestal == {
+            "pedestal_type": "storage",
+            "width": 15.0,
+        }
 
     def test_frozen(self):
         """LShapedDeskConfiguration is immutable (frozen)."""
@@ -1768,14 +1796,22 @@ class TestDeskComponentConstants:
         assert SITTING_DESK_HEIGHT_MIN == 28.0
         assert SITTING_DESK_HEIGHT_MAX == 32.0
         assert SITTING_DESK_HEIGHT_DEFAULT == 30.0
-        assert SITTING_DESK_HEIGHT_MIN < SITTING_DESK_HEIGHT_DEFAULT < SITTING_DESK_HEIGHT_MAX
+        assert (
+            SITTING_DESK_HEIGHT_MIN
+            < SITTING_DESK_HEIGHT_DEFAULT
+            < SITTING_DESK_HEIGHT_MAX
+        )
 
     def test_standing_height_range(self):
         """Standing desk height constants are valid."""
         assert STANDING_DESK_HEIGHT_MIN == 38.0
         assert STANDING_DESK_HEIGHT_MAX == 48.0
         assert STANDING_DESK_HEIGHT_DEFAULT == 42.0
-        assert STANDING_DESK_HEIGHT_MIN < STANDING_DESK_HEIGHT_DEFAULT < STANDING_DESK_HEIGHT_MAX
+        assert (
+            STANDING_DESK_HEIGHT_MIN
+            < STANDING_DESK_HEIGHT_DEFAULT
+            < STANDING_DESK_HEIGHT_MAX
+        )
 
     def test_sitting_standing_gap(self):
         """Gap between sitting and standing ranges."""
@@ -1857,11 +1893,13 @@ class TestDeskComponentIntegration:
         assert len(desktops) == 2
 
         main_pedestal = [
-            p for p in gen_result.panels
+            p
+            for p in gen_result.panels
             if p.metadata.get("l_shaped_pedestal") == "main_left"
         ]
         return_pedestal = [
-            p for p in gen_result.panels
+            p
+            for p in gen_result.panels
             if p.metadata.get("l_shaped_pedestal") == "return_right"
         ]
         assert len(main_pedestal) >= 3

@@ -1,6 +1,5 @@
 """Integration tests for obstacle-aware cabinet generation."""
 
-import pytest
 from pathlib import Path
 
 from cabinets.application.config import (
@@ -10,7 +9,10 @@ from cabinets.application.config import (
     config_to_clearance_defaults,
     config_to_section_specs,
 )
-from cabinets.domain.services import ObstacleCollisionService, ObstacleAwareLayoutService
+from cabinets.domain.services import (
+    ObstacleCollisionService,
+    ObstacleAwareLayoutService,
+)
 from cabinets.domain.section_resolver import SectionSpec
 from cabinets.domain.value_objects import ObstacleType
 
@@ -52,7 +54,9 @@ class TestObstacleValidation:
 
     def test_invalid_obstacle_beyond_wall_fails(self):
         """Obstacle extending beyond wall fails validation."""
-        config = load_config(FIXTURES_PATH / "invalid_obstacle_extends_beyond_wall.json")
+        config = load_config(
+            FIXTURES_PATH / "invalid_obstacle_extends_beyond_wall.json"
+        )
         result = validate_config(config)
         assert not result.is_valid
         assert any("extends beyond" in e.message for e in result.errors)
@@ -145,7 +149,9 @@ class TestObstacleAwareLayout:
         zones = collision_service.get_obstacle_zones(obstacles, 0)
         for placed in result.placed_sections:
             collisions = collision_service.check_collision(placed.bounds, zones)
-            assert len(collisions) == 0, f"Section {placed.section_index} collides with obstacles"
+            assert len(collisions) == 0, (
+                f"Section {placed.section_index} collides with obstacles"
+            )
 
 
 class TestEndToEndObstacleGeneration:
@@ -186,7 +192,9 @@ class TestEndToEndObstacleGeneration:
         zones = collision_service.get_obstacle_zones(obstacles, 0)
         for placed in layout_result.placed_sections:
             collisions = collision_service.check_collision(placed.bounds, zones)
-            assert len(collisions) == 0, f"Section {placed.section_index} collides with obstacles"
+            assert len(collisions) == 0, (
+                f"Section {placed.section_index} collides with obstacles"
+            )
 
     def test_pipeline_with_custom_clearances(self):
         """Pipeline respects custom clearances."""
@@ -261,4 +269,6 @@ class TestEndToEndObstacleGeneration:
         zones = collision_service.get_obstacle_zones(obstacles, 0)
         for placed in layout_result.placed_sections:
             collisions = collision_service.check_collision(placed.bounds, zones)
-            assert len(collisions) == 0, f"Section {placed.section_index} collides with obstacles"
+            assert len(collisions) == 0, (
+                f"Section {placed.section_index} collides with obstacles"
+            )

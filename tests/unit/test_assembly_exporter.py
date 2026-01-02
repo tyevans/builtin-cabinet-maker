@@ -11,22 +11,19 @@ Tests cover:
 from __future__ import annotations
 
 from pathlib import Path
-from unittest.mock import MagicMock, patch
 
 import pytest
 
 from cabinets.application.dtos import LayoutOutput, RoomLayoutOutput
 from cabinets.domain.components.results import HardwareItem
-from cabinets.domain.entities import Cabinet, Panel, Room, Section, Shelf, WallSegment
+from cabinets.domain.entities import Cabinet, Room, Section, Shelf, WallSegment
 from cabinets.domain.services.woodworking import (
     ConnectionJoinery,
     JointSpec,
-    WoodworkingIntelligence,
 )
 from cabinets.domain import MaterialEstimate
 from cabinets.domain.value_objects import (
     CutPiece,
-    JointType,
     MaterialSpec,
     MaterialType,
     PanelType,
@@ -54,7 +51,9 @@ def back_material_spec() -> MaterialSpec:
 
 
 @pytest.fixture
-def sample_cabinet(material_spec: MaterialSpec, back_material_spec: MaterialSpec) -> Cabinet:
+def sample_cabinet(
+    material_spec: MaterialSpec, back_material_spec: MaterialSpec
+) -> Cabinet:
     """Create a sample cabinet for testing."""
     cabinet = Cabinet(
         width=48.0,
@@ -91,7 +90,9 @@ def sample_cabinet(material_spec: MaterialSpec, back_material_spec: MaterialSpec
 
 
 @pytest.fixture
-def sample_cut_list(material_spec: MaterialSpec, back_material_spec: MaterialSpec) -> list[CutPiece]:
+def sample_cut_list(
+    material_spec: MaterialSpec, back_material_spec: MaterialSpec
+) -> list[CutPiece]:
     """Create a sample cut list for testing."""
     return [
         CutPiece(
@@ -365,7 +366,9 @@ class TestMarkdownGeneration:
         assert '48"W' in result or "48" in result
         assert '84"H' in result or "84" in result
 
-    def test_export_string_includes_materials_checklist(self, layout_output: LayoutOutput) -> None:
+    def test_export_string_includes_materials_checklist(
+        self, layout_output: LayoutOutput
+    ) -> None:
         """Generated markdown should include materials checklist."""
         exporter = AssemblyInstructionGenerator()
         result = exporter.export_string(layout_output)
@@ -379,38 +382,50 @@ class TestMarkdownGeneration:
         assert "## Tools Needed" in result
         assert "Router" in result or "Drill" in result
 
-    def test_export_string_includes_safety_warnings(self, layout_output: LayoutOutput) -> None:
+    def test_export_string_includes_safety_warnings(
+        self, layout_output: LayoutOutput
+    ) -> None:
         """Generated markdown should include safety warnings when enabled."""
         exporter = AssemblyInstructionGenerator(include_warnings=True)
         result = exporter.export_string(layout_output)
         assert "## Safety Warnings" in result or "Safety" in result
 
-    def test_export_string_excludes_safety_warnings(self, layout_output: LayoutOutput) -> None:
+    def test_export_string_excludes_safety_warnings(
+        self, layout_output: LayoutOutput
+    ) -> None:
         """Generated markdown should exclude safety warnings when disabled."""
         exporter = AssemblyInstructionGenerator(include_warnings=False)
         result = exporter.export_string(layout_output)
         assert "## Safety Warnings" not in result
 
-    def test_export_string_includes_assembly_steps(self, layout_output: LayoutOutput) -> None:
+    def test_export_string_includes_assembly_steps(
+        self, layout_output: LayoutOutput
+    ) -> None:
         """Generated markdown should include assembly steps."""
         exporter = AssemblyInstructionGenerator()
         result = exporter.export_string(layout_output)
         assert "## Assembly Steps" in result
         assert "### Step" in result
 
-    def test_export_string_includes_finishing(self, layout_output: LayoutOutput) -> None:
+    def test_export_string_includes_finishing(
+        self, layout_output: LayoutOutput
+    ) -> None:
         """Generated markdown should include finishing notes."""
         exporter = AssemblyInstructionGenerator()
         result = exporter.export_string(layout_output)
         assert "## Finishing" in result
 
-    def test_export_string_includes_timestamp_by_default(self, layout_output: LayoutOutput) -> None:
+    def test_export_string_includes_timestamp_by_default(
+        self, layout_output: LayoutOutput
+    ) -> None:
         """Generated markdown should include timestamp by default."""
         exporter = AssemblyInstructionGenerator(include_timestamps=True)
         result = exporter.export_string(layout_output)
         assert "Generated:" in result
 
-    def test_export_string_excludes_timestamp_when_disabled(self, layout_output: LayoutOutput) -> None:
+    def test_export_string_excludes_timestamp_when_disabled(
+        self, layout_output: LayoutOutput
+    ) -> None:
         """Generated markdown should exclude timestamp when disabled."""
         exporter = AssemblyInstructionGenerator(include_timestamps=False)
         result = exporter.export_string(layout_output)
@@ -420,9 +435,7 @@ class TestMarkdownGeneration:
 class TestCutPieceGrouping:
     """Tests for grouping cut pieces by build phase."""
 
-    def test_group_pieces_by_phase(
-        self, sample_cut_list: list[CutPiece]
-    ) -> None:
+    def test_group_pieces_by_phase(self, sample_cut_list: list[CutPiece]) -> None:
         """Should correctly group cut pieces by build phase."""
         exporter = AssemblyInstructionGenerator()
         groups = exporter._group_pieces_by_phase(sample_cut_list)
@@ -604,7 +617,7 @@ class TestRoomLayoutOutputSupport:
             name="Test Room",
             walls=[
                 WallSegment(length=120.0, height=96.0, angle=0.0),
-            ]
+            ],
         )
         room_output = RoomLayoutOutput(
             room=room,
@@ -640,7 +653,11 @@ class TestPhaseInstructions:
         result = exporter.export_string(layout_output)
 
         # Check for horizontal assembly content
-        assert "Attach Horizontal" in result or "top panel" in result.lower() or "bottom panel" in result.lower()
+        assert (
+            "Attach Horizontal" in result
+            or "top panel" in result.lower()
+            or "bottom panel" in result.lower()
+        )
 
     def test_back_panel_instructions(self, layout_output: LayoutOutput) -> None:
         """Back panel phase should have squaring and attachment instructions."""

@@ -14,13 +14,10 @@ from cabinets.domain.components import (
     ComponentContext,
     CrownMoldingComponent,
     CrownMoldingZone,
-    GenerationResult,
-    HardwareItem,
     LightRailComponent,
     LightRailZone,
     MoldingZoneService,
     ToeKickComponent,
-    ValidationResult,
     component_registry,
 )
 from cabinets.domain.value_objects import MaterialSpec, PanelType, Position
@@ -443,7 +440,7 @@ class TestMoldingZoneServiceValidation:
             cabinet_depth=12.0,
         )
 
-        assert any("less than" in w and "3\"" in w for w in warnings)
+        assert any("less than" in w and '3"' in w for w in warnings)
 
     def test_validate_zones_toe_kick_setback_warning(
         self, molding_zone_service: MoldingZoneService
@@ -459,7 +456,7 @@ class TestMoldingZoneServiceValidation:
             cabinet_depth=12.0,
         )
 
-        assert any("less than" in w and "2\"" in w for w in warnings)
+        assert any("less than" in w and '2"' in w for w in warnings)
 
     def test_validate_zones_light_rail_height_warning(
         self, molding_zone_service: MoldingZoneService
@@ -730,7 +727,9 @@ class TestCrownMoldingValidation:
     """Tests for CrownMoldingComponent.validate()."""
 
     def test_validate_returns_ok_for_empty_config(
-        self, crown_molding_component: CrownMoldingComponent, standard_context: ComponentContext
+        self,
+        crown_molding_component: CrownMoldingComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test validation passes for empty config."""
         config: dict = {}
@@ -740,7 +739,9 @@ class TestCrownMoldingValidation:
         assert result.is_valid
 
     def test_validate_returns_ok_for_valid_config(
-        self, crown_molding_component: CrownMoldingComponent, standard_context: ComponentContext
+        self,
+        crown_molding_component: CrownMoldingComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test validation passes for valid crown molding config."""
         config = {"crown_molding": {"height": 4.0, "setback": 1.0, "nailer_width": 2.5}}
@@ -750,10 +751,14 @@ class TestCrownMoldingValidation:
         assert result.is_valid
 
     def test_validate_returns_error_for_invalid_setback(
-        self, crown_molding_component: CrownMoldingComponent, standard_context: ComponentContext
+        self,
+        crown_molding_component: CrownMoldingComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test validation fails for setback exceeding depth."""
-        config = {"crown_molding": {"height": 4.0, "setback": 15.0, "nailer_width": 2.5}}
+        config = {
+            "crown_molding": {"height": 4.0, "setback": 15.0, "nailer_width": 2.5}
+        }
 
         result = crown_molding_component.validate(config, standard_context)
 
@@ -770,7 +775,9 @@ class TestCrownMoldingGeneration:
     """Tests for CrownMoldingComponent.generate()."""
 
     def test_generate_produces_one_panel(
-        self, crown_molding_component: CrownMoldingComponent, standard_context: ComponentContext
+        self,
+        crown_molding_component: CrownMoldingComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that generate produces exactly 1 nailer panel."""
         config = {"crown_molding": {"height": 4.0, "setback": 1.0, "nailer_width": 2.5}}
@@ -780,7 +787,9 @@ class TestCrownMoldingGeneration:
         assert len(result.panels) == 1
 
     def test_generate_produces_nailer_panel(
-        self, crown_molding_component: CrownMoldingComponent, standard_context: ComponentContext
+        self,
+        crown_molding_component: CrownMoldingComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that generate produces a NAILER panel."""
         config = {"crown_molding": {"height": 4.0, "setback": 1.0, "nailer_width": 2.5}}
@@ -790,7 +799,9 @@ class TestCrownMoldingGeneration:
         assert result.panels[0].panel_type == PanelType.NAILER
 
     def test_generate_includes_adjustments_in_metadata(
-        self, crown_molding_component: CrownMoldingComponent, standard_context: ComponentContext
+        self,
+        crown_molding_component: CrownMoldingComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that metadata includes adjustments."""
         config = {"crown_molding": {"height": 4.0, "setback": 1.0, "nailer_width": 2.5}}
@@ -810,7 +821,9 @@ class TestCrownMoldingHardware:
     """Tests for CrownMoldingComponent.hardware()."""
 
     def test_hardware_returns_empty_list(
-        self, crown_molding_component: CrownMoldingComponent, standard_context: ComponentContext
+        self,
+        crown_molding_component: CrownMoldingComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that hardware returns an empty list."""
         config = {"crown_molding": {"height": 4.0}}
@@ -975,7 +988,9 @@ class TestLightRailValidation:
     """Tests for LightRailComponent.validate()."""
 
     def test_validate_returns_ok_for_empty_config(
-        self, light_rail_component: LightRailComponent, wall_cabinet_context: ComponentContext
+        self,
+        light_rail_component: LightRailComponent,
+        wall_cabinet_context: ComponentContext,
     ) -> None:
         """Test validation passes for empty config."""
         config: dict = {}
@@ -985,20 +1000,28 @@ class TestLightRailValidation:
         assert result.is_valid
 
     def test_validate_returns_ok_for_valid_config(
-        self, light_rail_component: LightRailComponent, wall_cabinet_context: ComponentContext
+        self,
+        light_rail_component: LightRailComponent,
+        wall_cabinet_context: ComponentContext,
     ) -> None:
         """Test validation passes for valid light rail config."""
-        config = {"light_rail": {"height": 1.5, "setback": 0.25, "generate_strip": True}}
+        config = {
+            "light_rail": {"height": 1.5, "setback": 0.25, "generate_strip": True}
+        }
 
         result = light_rail_component.validate(config, wall_cabinet_context)
 
         assert result.is_valid
 
     def test_validate_returns_warning_for_tall_height(
-        self, light_rail_component: LightRailComponent, wall_cabinet_context: ComponentContext
+        self,
+        light_rail_component: LightRailComponent,
+        wall_cabinet_context: ComponentContext,
     ) -> None:
         """Test warning for light rail height > 3\"."""
-        config = {"light_rail": {"height": 4.0, "setback": 0.25, "generate_strip": True}}
+        config = {
+            "light_rail": {"height": 4.0, "setback": 0.25, "generate_strip": True}
+        }
 
         result = light_rail_component.validate(config, wall_cabinet_context)
 
@@ -1015,30 +1038,42 @@ class TestLightRailGeneration:
     """Tests for LightRailComponent.generate()."""
 
     def test_generate_produces_one_panel_when_strip_true(
-        self, light_rail_component: LightRailComponent, wall_cabinet_context: ComponentContext
+        self,
+        light_rail_component: LightRailComponent,
+        wall_cabinet_context: ComponentContext,
     ) -> None:
         """Test that generate produces exactly 1 panel when generate_strip=True."""
-        config = {"light_rail": {"height": 1.5, "setback": 0.25, "generate_strip": True}}
+        config = {
+            "light_rail": {"height": 1.5, "setback": 0.25, "generate_strip": True}
+        }
 
         result = light_rail_component.generate(config, wall_cabinet_context)
 
         assert len(result.panels) == 1
 
     def test_generate_produces_no_panel_when_strip_false(
-        self, light_rail_component: LightRailComponent, wall_cabinet_context: ComponentContext
+        self,
+        light_rail_component: LightRailComponent,
+        wall_cabinet_context: ComponentContext,
     ) -> None:
         """Test that generate produces 0 panels when generate_strip=False."""
-        config = {"light_rail": {"height": 1.5, "setback": 0.25, "generate_strip": False}}
+        config = {
+            "light_rail": {"height": 1.5, "setback": 0.25, "generate_strip": False}
+        }
 
         result = light_rail_component.generate(config, wall_cabinet_context)
 
         assert len(result.panels) == 0
 
     def test_generate_produces_light_rail_panel(
-        self, light_rail_component: LightRailComponent, wall_cabinet_context: ComponentContext
+        self,
+        light_rail_component: LightRailComponent,
+        wall_cabinet_context: ComponentContext,
     ) -> None:
         """Test that generate produces a LIGHT_RAIL panel."""
-        config = {"light_rail": {"height": 1.5, "setback": 0.25, "generate_strip": True}}
+        config = {
+            "light_rail": {"height": 1.5, "setback": 0.25, "generate_strip": True}
+        }
 
         result = light_rail_component.generate(config, wall_cabinet_context)
 
@@ -1054,7 +1089,9 @@ class TestLightRailHardware:
     """Tests for LightRailComponent.hardware()."""
 
     def test_hardware_returns_empty_list(
-        self, light_rail_component: LightRailComponent, wall_cabinet_context: ComponentContext
+        self,
+        light_rail_component: LightRailComponent,
+        wall_cabinet_context: ComponentContext,
     ) -> None:
         """Test that hardware returns an empty list."""
         config = {"light_rail": {"height": 1.5}}
@@ -1101,9 +1138,7 @@ class TestMoldingZoneIntegration:
         hardware = component.hardware(config, standard_context)
         assert len(hardware) == 0
 
-    def test_toe_kick_full_workflow(
-        self, standard_context: ComponentContext
-    ) -> None:
+    def test_toe_kick_full_workflow(self, standard_context: ComponentContext) -> None:
         """Test complete workflow for toe kick component."""
         component_class = component_registry.get("decorative.toe_kick")
         component = component_class()
@@ -1243,7 +1278,7 @@ class TestTaskSpecSuccessCriteria:
             cabinet_depth=12.0,
         )
 
-        assert any("less than" in w and "3\"" in w for w in warnings)
+        assert any("less than" in w and '3"' in w for w in warnings)
 
     def test_validation_crown_setback_exceeds_depth(self) -> None:
         """Success Criteria 5: Crown setback > depth fails."""

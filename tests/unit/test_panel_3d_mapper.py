@@ -18,7 +18,6 @@ from cabinets.domain.value_objects import (
     MaterialSpec,
     PanelType,
     Position,
-    Position3D,
 )
 
 
@@ -35,7 +34,9 @@ def back_material() -> MaterialSpec:
 
 
 @pytest.fixture
-def simple_cabinet(standard_material: MaterialSpec, back_material: MaterialSpec) -> Cabinet:
+def simple_cabinet(
+    standard_material: MaterialSpec, back_material: MaterialSpec
+) -> Cabinet:
     """Create a simple cabinet for testing."""
     return Cabinet(
         width=24.0,
@@ -56,7 +57,10 @@ class TestPanel3DMapperInit:
     """Tests for Panel3DMapper initialization."""
 
     def test_init_with_cabinet(
-        self, simple_cabinet: Cabinet, standard_material: MaterialSpec, back_material: MaterialSpec
+        self,
+        simple_cabinet: Cabinet,
+        standard_material: MaterialSpec,
+        back_material: MaterialSpec,
     ) -> None:
         """Should initialize with cabinet properties."""
         mapper = Panel3DMapper(simple_cabinet)
@@ -398,7 +402,9 @@ class TestMapAllPanels:
         assert isinstance(result, list)
         assert all(isinstance(box, BoundingBox3D) for box in result)
 
-    def test_map_all_panels_includes_structural_panels(self, simple_cabinet: Cabinet) -> None:
+    def test_map_all_panels_includes_structural_panels(
+        self, simple_cabinet: Cabinet
+    ) -> None:
         """map_all_panels should include all structural panels."""
         mapper = Panel3DMapper(simple_cabinet)
         result = mapper.map_all_panels()
@@ -1094,9 +1100,7 @@ class TestMapPanelCableChase:
         expected_y = 24.0 - standard_material.thickness
         assert result.origin.y == pytest.approx(expected_y)
 
-    def test_cable_chase_with_thin_material(
-        self, mapper: Panel3DMapper
-    ) -> None:
+    def test_cable_chase_with_thin_material(self, mapper: Panel3DMapper) -> None:
         """CABLE_CHASE panel with thin material should render correctly."""
         thin_material = MaterialSpec.standard_1_4()  # 1/4 inch material
         panel = Panel(

@@ -12,7 +12,8 @@ These tests verify:
 import pytest
 
 from cabinets.application.commands import GenerateLayoutCommand
-from cabinets.application.dtos import LayoutParametersInput, RoomLayoutOutput, WallInput
+from cabinets.application.dtos import LayoutParametersInput, WallInput
+from cabinets.application.factory import get_factory
 from cabinets.domain.entities import Room, WallSegment
 from cabinets.domain.section_resolver import SectionSpec
 
@@ -20,7 +21,7 @@ from cabinets.domain.section_resolver import SectionSpec
 @pytest.fixture
 def command() -> GenerateLayoutCommand:
     """Create a GenerateLayoutCommand instance for testing."""
-    return GenerateLayoutCommand()
+    return get_factory().create_generate_command()
 
 
 @pytest.fixture
@@ -327,7 +328,9 @@ class TestExecuteRoomLayoutIntegration:
         self, command: GenerateLayoutCommand, params_input: LayoutParametersInput
     ) -> None:
         """Test a closet built-in with equal sections."""
-        walls = [WallSegment(length=72.0, height=84.0, angle=0, name="back", depth=18.0)]
+        walls = [
+            WallSegment(length=72.0, height=84.0, angle=0, name="back", depth=18.0)
+        ]
         room = Room(name="closet", walls=walls)
 
         # Three equal fill sections

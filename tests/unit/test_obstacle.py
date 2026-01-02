@@ -36,10 +36,15 @@ class TestObstacleType:
         assert ObstacleType.VENT.value == "vent"
         assert ObstacleType.SKYLIGHT.value == "skylight"
         assert ObstacleType.CUSTOM.value == "custom"
+        # FRD-21 safety-related obstacle types
+        assert ObstacleType.ELECTRICAL_PANEL.value == "electrical_panel"
+        assert ObstacleType.COOKTOP.value == "cooktop"
+        assert ObstacleType.HEAT_SOURCE.value == "heat_source"
+        assert ObstacleType.CLOSET_LIGHT.value == "closet_light"
 
     def test_obstacle_type_count(self) -> None:
-        """ObstacleType should have exactly 7 values."""
-        assert len(ObstacleType) == 7
+        """ObstacleType should have exactly 11 values (7 original + 4 FRD-21 safety)."""
+        assert len(ObstacleType) == 11
 
 
 class TestClearance:
@@ -531,7 +536,9 @@ class TestCollisionResult:
             width=48.0,
             height=36.0,
         )
-        zone = ObstacleZone(left=22.0, right=74.0, bottom=34.0, top=74.0, obstacle=obstacle)
+        zone = ObstacleZone(
+            left=22.0, right=74.0, bottom=34.0, top=74.0, obstacle=obstacle
+        )
         result = CollisionResult(zone=zone, overlap_area=100.0)
         assert result.zone == zone
         assert result.overlap_area == 100.0
@@ -546,7 +553,9 @@ class TestCollisionResult:
             width=48.0,
             height=36.0,
         )
-        zone = ObstacleZone(left=22.0, right=74.0, bottom=34.0, top=74.0, obstacle=obstacle)
+        zone = ObstacleZone(
+            left=22.0, right=74.0, bottom=34.0, top=74.0, obstacle=obstacle
+        )
         result = CollisionResult(zone=zone, overlap_area=100.0)
         with pytest.raises(AttributeError):
             result.overlap_area = 200.0  # type: ignore
@@ -561,7 +570,9 @@ class TestCollisionResult:
             width=48.0,
             height=36.0,
         )
-        zone = ObstacleZone(left=22.0, right=74.0, bottom=34.0, top=74.0, obstacle=obstacle)
+        zone = ObstacleZone(
+            left=22.0, right=74.0, bottom=34.0, top=74.0, obstacle=obstacle
+        )
         with pytest.raises(ValueError) as exc_info:
             CollisionResult(zone=zone, overlap_area=-10.0)
         assert "non-negative" in str(exc_info.value)
@@ -576,7 +587,9 @@ class TestCollisionResult:
             width=48.0,
             height=36.0,
         )
-        zone = ObstacleZone(left=22.0, right=74.0, bottom=34.0, top=74.0, obstacle=obstacle)
+        zone = ObstacleZone(
+            left=22.0, right=74.0, bottom=34.0, top=74.0, obstacle=obstacle
+        )
         result = CollisionResult(zone=zone, overlap_area=0.0)
         assert result.overlap_area == 0.0
 
@@ -586,7 +599,9 @@ class TestValidRegion:
 
     def test_valid_region_full(self) -> None:
         """Valid region with 'full' type should be created successfully."""
-        region = ValidRegion(left=0.0, right=120.0, bottom=0.0, top=96.0, region_type="full")
+        region = ValidRegion(
+            left=0.0, right=120.0, bottom=0.0, top=96.0, region_type="full"
+        )
         assert region.left == 0.0
         assert region.right == 120.0
         assert region.bottom == 0.0
@@ -595,39 +610,53 @@ class TestValidRegion:
 
     def test_valid_region_lower(self) -> None:
         """Valid region with 'lower' type should be created successfully."""
-        region = ValidRegion(left=0.0, right=120.0, bottom=0.0, top=36.0, region_type="lower")
+        region = ValidRegion(
+            left=0.0, right=120.0, bottom=0.0, top=36.0, region_type="lower"
+        )
         assert region.region_type == "lower"
 
     def test_valid_region_upper(self) -> None:
         """Valid region with 'upper' type should be created successfully."""
-        region = ValidRegion(left=0.0, right=120.0, bottom=72.0, top=96.0, region_type="upper")
+        region = ValidRegion(
+            left=0.0, right=120.0, bottom=72.0, top=96.0, region_type="upper"
+        )
         assert region.region_type == "upper"
 
     def test_valid_region_gap(self) -> None:
         """Valid region with 'gap' type should be created successfully."""
-        region = ValidRegion(left=70.0, right=100.0, bottom=0.0, top=96.0, region_type="gap")
+        region = ValidRegion(
+            left=70.0, right=100.0, bottom=0.0, top=96.0, region_type="gap"
+        )
         assert region.region_type == "gap"
 
     def test_valid_region_width_property(self) -> None:
         """ValidRegion width should be right - left."""
-        region = ValidRegion(left=10.0, right=50.0, bottom=0.0, top=96.0, region_type="full")
+        region = ValidRegion(
+            left=10.0, right=50.0, bottom=0.0, top=96.0, region_type="full"
+        )
         assert region.width == 40.0
 
     def test_valid_region_height_property(self) -> None:
         """ValidRegion height should be top - bottom."""
-        region = ValidRegion(left=0.0, right=120.0, bottom=10.0, top=80.0, region_type="full")
+        region = ValidRegion(
+            left=0.0, right=120.0, bottom=10.0, top=80.0, region_type="full"
+        )
         assert region.height == 70.0
 
     def test_valid_region_is_frozen(self) -> None:
         """ValidRegion should be immutable."""
-        region = ValidRegion(left=0.0, right=120.0, bottom=0.0, top=96.0, region_type="full")
+        region = ValidRegion(
+            left=0.0, right=120.0, bottom=0.0, top=96.0, region_type="full"
+        )
         with pytest.raises(AttributeError):
             region.left = 10.0  # type: ignore
 
     def test_valid_region_rejects_invalid_type(self) -> None:
         """ValidRegion should reject invalid region_type."""
         with pytest.raises(ValueError) as exc_info:
-            ValidRegion(left=0.0, right=120.0, bottom=0.0, top=96.0, region_type="invalid")
+            ValidRegion(
+                left=0.0, right=120.0, bottom=0.0, top=96.0, region_type="invalid"
+            )
         assert "region_type must be one of" in str(exc_info.value)
 
     def test_valid_region_rejects_right_less_than_left(self) -> None:

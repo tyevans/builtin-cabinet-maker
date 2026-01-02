@@ -50,7 +50,9 @@ def ensure_media_components_registered() -> None:
     if "media.equipment_shelf" not in component_registry.list():
         component_registry.register("media.equipment_shelf")(EquipmentShelfComponent)
     if "media.ventilated_section" not in component_registry.list():
-        component_registry.register("media.ventilated_section")(VentilatedSectionComponent)
+        component_registry.register("media.ventilated_section")(
+            VentilatedSectionComponent
+        )
     if "media.soundbar_shelf" not in component_registry.list():
         component_registry.register("media.soundbar_shelf")(SoundbarShelfComponent)
     if "media.speaker_alcove" not in component_registry.list():
@@ -234,9 +236,7 @@ class TestConsoleLayoutIntegration:
         assert soundbar_panels[0].metadata.get("open_back") is True
 
         # Verify ventilation back panel
-        vent_panels = [
-            p for p in vent_result.panels if p.panel_type == PanelType.BACK
-        ]
+        vent_panels = [p for p in vent_result.panels if p.panel_type == PanelType.BACK]
         assert len(vent_panels) == 1
         assert vent_panels[0].metadata.get("requires_vent_cutout") is True
         assert vent_panels[0].metadata.get("vent_pattern") == "grid"
@@ -309,7 +309,9 @@ class TestWallUnitLayoutIntegration:
     ) -> None:
         """Validate wall unit layout dimensions are acceptable."""
         dimensions = Dimensions(width=96.0, height=84.0, depth=16.0)
-        errors, warnings = entertainment_service.validate_layout("wall_unit", dimensions)
+        errors, warnings = entertainment_service.validate_layout(
+            "wall_unit", dimensions
+        )
 
         assert len(errors) == 0
         assert len(warnings) == 0
@@ -323,7 +325,9 @@ class TestWallUnitLayoutIntegration:
 
         assert isinstance(tv_zone, TVZone)
         # TV zone should be centered
-        assert tv_zone.flanking_left_width == pytest.approx(tv_zone.flanking_right_width)
+        assert tv_zone.flanking_left_width == pytest.approx(
+            tv_zone.flanking_right_width
+        )
         # TV zone width should accommodate TV with clearance
         assert tv_zone.tv_zone_width >= tv.viewing_width + 4.0  # 2" clearance each side
 
@@ -512,7 +516,9 @@ class TestTowerLayoutIntegration:
         # Active fan generates hardware, not panels
         assert len(active_vent_result.panels) == 0
         fan_hardware = [
-            h for h in active_vent_result.hardware if "Fan" in h.name or "fan" in h.name.lower()
+            h
+            for h in active_vent_result.hardware
+            if "Fan" in h.name or "fan" in h.name.lower()
         ]
         assert len(fan_hardware) > 0
         assert any("120mm" in h.name for h in fan_hardware)
@@ -612,8 +618,10 @@ class TestGamingStationIntegration:
         result = ventilated.validate(no_vent_config, gaming_context)
 
         assert not result.is_valid
-        assert any("enclosed" in error.lower() or "ventilation" in error.lower()
-                   for error in result.errors)
+        assert any(
+            "enclosed" in error.lower() or "ventilation" in error.lower()
+            for error in result.errors
+        )
 
     def test_gaming_station_hardware_list(
         self, gaming_context: ComponentContext
@@ -730,7 +738,8 @@ class TestHomeTheaterIntegration:
 
         # Verify acoustic dampening foam included
         dampening_hardware = [
-            h for h in speaker_result.hardware
+            h
+            for h in speaker_result.hardware
             if "Acoustic" in h.name or "Dampening" in h.name or "Foam" in h.name
         ]
         assert len(dampening_hardware) > 0
@@ -1006,7 +1015,8 @@ class TestEndToEndWorkflow:
         pass
 
     def test_console_workflow_validate_generate_render(
-        self, console_context: ComponentContext,
+        self,
+        console_context: ComponentContext,
         standard_material: MaterialSpec,
         back_material: MaterialSpec,
     ) -> None:
@@ -1043,7 +1053,8 @@ class TestEndToEndWorkflow:
             assert box.size_z > 0
 
     def test_wall_unit_workflow_with_tv_zone(
-        self, wall_unit_context: ComponentContext,
+        self,
+        wall_unit_context: ComponentContext,
         entertainment_service: EntertainmentCenterLayoutService,
         standard_material: MaterialSpec,
         back_material: MaterialSpec,
@@ -1060,7 +1071,9 @@ class TestEndToEndWorkflow:
             height=wall_unit_context.cabinet_height,
             depth=wall_unit_context.cabinet_depth,
         )
-        errors, warnings = entertainment_service.validate_layout("wall_unit", dimensions)
+        errors, warnings = entertainment_service.validate_layout(
+            "wall_unit", dimensions
+        )
         assert len(errors) == 0
 
         # Step 3: Generate flanking equipment
@@ -1108,8 +1121,10 @@ class TestEndToEndWorkflow:
 
         # Should have error about width
         assert not validation.is_valid
-        assert any("width" in error.lower() or "exceeds" in error.lower()
-                   for error in validation.errors)
+        assert any(
+            "width" in error.lower() or "exceeds" in error.lower()
+            for error in validation.errors
+        )
 
     def test_multiple_components_hardware_aggregation(
         self, home_theater_context: ComponentContext

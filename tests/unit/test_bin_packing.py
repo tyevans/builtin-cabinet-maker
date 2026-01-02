@@ -14,7 +14,13 @@ from __future__ import annotations
 
 import pytest
 
-from cabinets.domain.value_objects import CutPiece, GrainDirection, MaterialSpec, MaterialType, PanelType
+from cabinets.domain.value_objects import (
+    CutPiece,
+    GrainDirection,
+    MaterialSpec,
+    MaterialType,
+    PanelType,
+)
 from cabinets.infrastructure.bin_packing import (
     BinPackingConfig,
     BinPackingService,
@@ -169,7 +175,9 @@ class TestBinPackingConfig:
 
     def test_invalid_min_offcut_size(self) -> None:
         """Test that negative min_offcut_size raises ValueError."""
-        with pytest.raises(ValueError, match="Minimum offcut size must be non-negative"):
+        with pytest.raises(
+            ValueError, match="Minimum offcut size must be non-negative"
+        ):
             BinPackingConfig(min_offcut_size=-1.0)
 
 
@@ -208,7 +216,9 @@ class TestPlacedPiece:
 
     def test_invalid_position_raises(self, simple_piece: CutPiece) -> None:
         """Test that negative position raises ValueError."""
-        with pytest.raises(ValueError, match="Position coordinates must be non-negative"):
+        with pytest.raises(
+            ValueError, match="Position coordinates must be non-negative"
+        ):
             PlacedPiece(piece=simple_piece, x=-1.0, y=0.0)
 
 
@@ -367,7 +377,9 @@ class TestPackingResult:
 class TestGuillotineBinPackerBasic:
     """Basic tests for GuillotineBinPacker."""
 
-    def test_packer_initialization(self, default_packing_config: BinPackingConfig) -> None:
+    def test_packer_initialization(
+        self, default_packing_config: BinPackingConfig
+    ) -> None:
         """Test packer initialization."""
         packer = GuillotineBinPacker(default_packing_config)
         assert packer.config == default_packing_config
@@ -382,7 +394,10 @@ class TestGuillotineBinPackerBasic:
         assert result.sheets_by_material == {}
 
     def test_pack_single_piece(
-        self, packer: GuillotineBinPacker, simple_piece: CutPiece, standard_material: MaterialSpec
+        self,
+        packer: GuillotineBinPacker,
+        simple_piece: CutPiece,
+        standard_material: MaterialSpec,
     ) -> None:
         """Test packing a single piece."""
         result = packer.pack([simple_piece], standard_material)
@@ -400,7 +415,10 @@ class TestGuillotineBinPackerPlacement:
     """Tests for piece placement logic."""
 
     def test_first_piece_at_origin(
-        self, packer: GuillotineBinPacker, simple_piece: CutPiece, standard_material: MaterialSpec
+        self,
+        packer: GuillotineBinPacker,
+        simple_piece: CutPiece,
+        standard_material: MaterialSpec,
     ) -> None:
         """Test first piece is placed at origin."""
         result = packer.pack([simple_piece], standard_material)
@@ -434,9 +452,7 @@ class TestGuillotineBinPackerPlacement:
         # Second piece at x=20+kerf
         assert placements[1].x == 20.0 + packer.config.kerf
 
-    def test_kerf_between_pieces(
-        self, standard_material: MaterialSpec
-    ) -> None:
+    def test_kerf_between_pieces(self, standard_material: MaterialSpec) -> None:
         """Test kerf is applied between adjacent pieces."""
         config = BinPackingConfig(kerf=0.125)
         packer = GuillotineBinPacker(config)
@@ -584,7 +600,10 @@ class TestGuillotineBinPackerQuantity:
         assert "Panel #3" in labels
 
     def test_single_quantity_no_numbering(
-        self, packer: GuillotineBinPacker, simple_piece: CutPiece, standard_material: MaterialSpec
+        self,
+        packer: GuillotineBinPacker,
+        simple_piece: CutPiece,
+        standard_material: MaterialSpec,
     ) -> None:
         """Test pieces with quantity=1 keep original label."""
         result = packer.pack([simple_piece], standard_material)
@@ -755,9 +774,7 @@ class TestGuillotineBinPackerWaste:
 class TestGuillotineBinPackerOffcuts:
     """Tests for offcut identification."""
 
-    def test_offcuts_above_min_size(
-        self, standard_material: MaterialSpec
-    ) -> None:
+    def test_offcuts_above_min_size(self, standard_material: MaterialSpec) -> None:
         """Test offcuts above minimum size are identified."""
         config = BinPackingConfig(min_offcut_size=6.0)
         packer = GuillotineBinPacker(config)
@@ -814,7 +831,11 @@ class TestGuillotineBinPackerOffcuts:
 
         # Should have bottom offcut: full width x remaining height
         bottom_offcut = next(
-            (o for o in result.offcuts if o.width == packer.config.sheet_size.usable_width),
+            (
+                o
+                for o in result.offcuts
+                if o.width == packer.config.sheet_size.usable_width
+            ),
             None,
         )
         assert bottom_offcut is not None
@@ -1021,9 +1042,7 @@ class TestGuillotineBinPackerIntegration:
 class TestGuillotineBinPackerRotation:
     """Tests for rotation logic in bin packing."""
 
-    def test_rotation_improves_packing(
-        self, standard_material: MaterialSpec
-    ) -> None:
+    def test_rotation_improves_packing(self, standard_material: MaterialSpec) -> None:
         """Test that rotation allows pieces to fit that otherwise wouldn't."""
         # Use a sheet that allows testing rotation behavior
         # Sheet: 70x100, no edge allowance, no kerf for simpler math
@@ -1287,7 +1306,6 @@ class TestGuillotineBinPackerGrainDirection:
         self, packer: GuillotineBinPacker, standard_material: MaterialSpec
     ) -> None:
         """Test grain direction is correctly extracted from cut_metadata."""
-        from cabinets.domain.value_objects import GrainDirection
 
         # No metadata
         piece1 = CutPiece(
@@ -1340,7 +1358,6 @@ class TestGuillotineBinPackerGrainDirection:
         self, packer: GuillotineBinPacker, standard_material: MaterialSpec
     ) -> None:
         """Test invalid grain direction values are treated as none."""
-        from cabinets.domain.value_objects import GrainDirection
 
         piece = CutPiece(
             width=20.0,
@@ -1534,13 +1551,17 @@ def service(default_packing_config: BinPackingConfig) -> BinPackingService:
 class TestBinPackingServiceBasic:
     """Basic tests for BinPackingService initialization and structure."""
 
-    def test_service_initialization(self, default_packing_config: BinPackingConfig) -> None:
+    def test_service_initialization(
+        self, default_packing_config: BinPackingConfig
+    ) -> None:
         """Test service initializes with correct configuration."""
         service = BinPackingService(default_packing_config)
         assert service.config == default_packing_config
         assert isinstance(service.packer, GuillotineBinPacker)
 
-    def test_service_uses_config_packer(self, default_packing_config: BinPackingConfig) -> None:
+    def test_service_uses_config_packer(
+        self, default_packing_config: BinPackingConfig
+    ) -> None:
         """Test service's packer uses same config."""
         service = BinPackingService(default_packing_config)
         assert service.packer.config == default_packing_config
@@ -1562,9 +1583,7 @@ class TestBinPackingServiceEmptyDisabled:
         assert result.total_waste_percentage == 0.0
         assert result.sheets_by_material == {}
 
-    def test_disabled_mode_returns_empty(
-        self, standard_material: MaterialSpec
-    ) -> None:
+    def test_disabled_mode_returns_empty(self, standard_material: MaterialSpec) -> None:
         """Test disabled mode returns empty result."""
         config = BinPackingConfig(enabled=False)
         service = BinPackingService(config)
@@ -1769,16 +1788,28 @@ class TestBinPackingServiceMultipleMaterials:
 
         pieces = [
             CutPiece(
-                width=20.0, height=30.0, quantity=1, label="Panel 3/4",
-                panel_type=PanelType.LEFT_SIDE, material=material_3_4,
+                width=20.0,
+                height=30.0,
+                quantity=1,
+                label="Panel 3/4",
+                panel_type=PanelType.LEFT_SIDE,
+                material=material_3_4,
             ),
             CutPiece(
-                width=20.0, height=30.0, quantity=1, label="Panel 1/2",
-                panel_type=PanelType.BACK, material=material_1_2,
+                width=20.0,
+                height=30.0,
+                quantity=1,
+                label="Panel 1/2",
+                panel_type=PanelType.BACK,
+                material=material_1_2,
             ),
             CutPiece(
-                width=20.0, height=30.0, quantity=1, label="Panel 1/4",
-                panel_type=PanelType.BACK, material=material_1_4,
+                width=20.0,
+                height=30.0,
+                quantity=1,
+                label="Panel 1/4",
+                panel_type=PanelType.BACK,
+                material=material_1_4,
             ),
         ]
 
@@ -1849,20 +1880,28 @@ class TestBinPackingServiceWaste:
 
         pieces = [
             CutPiece(
-                width=47.0, height=95.0, quantity=1, label="Full 3/4",
-                panel_type=PanelType.LEFT_SIDE, material=standard_material,
+                width=47.0,
+                height=95.0,
+                quantity=1,
+                label="Full 3/4",
+                panel_type=PanelType.LEFT_SIDE,
+                material=standard_material,
             ),
             CutPiece(
-                width=47.0, height=47.5, quantity=1, label="Half 1/2",
-                panel_type=PanelType.BACK, material=half_inch_material,
+                width=47.0,
+                height=47.5,
+                quantity=1,
+                label="Half 1/2",
+                panel_type=PanelType.BACK,
+                material=half_inch_material,
             ),
         ]
 
         result = service.optimize_cut_list(pieces)
 
         # Manual calculation
-        total_usable = sum(l.sheet_config.usable_area for l in result.layouts)
-        total_used = sum(l.used_area for l in result.layouts)
+        total_usable = sum(layout.sheet_config.usable_area for layout in result.layouts)
+        total_used = sum(layout.used_area for layout in result.layouts)
         expected_waste = (1 - total_used / total_usable) * 100
 
         assert abs(result.total_waste_percentage - expected_waste) < 0.01
@@ -1877,23 +1916,36 @@ class TestBinPackingServiceGrouping:
     """Tests for material grouping logic."""
 
     def test_group_by_material_internal(
-        self, service: BinPackingService,
+        self,
+        service: BinPackingService,
         standard_material: MaterialSpec,
         half_inch_material: MaterialSpec,
     ) -> None:
         """Test internal grouping method correctly groups pieces."""
         pieces = [
             CutPiece(
-                width=20.0, height=30.0, quantity=1, label="A",
-                panel_type=PanelType.LEFT_SIDE, material=standard_material,
+                width=20.0,
+                height=30.0,
+                quantity=1,
+                label="A",
+                panel_type=PanelType.LEFT_SIDE,
+                material=standard_material,
             ),
             CutPiece(
-                width=20.0, height=30.0, quantity=1, label="B",
-                panel_type=PanelType.BACK, material=half_inch_material,
+                width=20.0,
+                height=30.0,
+                quantity=1,
+                label="B",
+                panel_type=PanelType.BACK,
+                material=half_inch_material,
             ),
             CutPiece(
-                width=20.0, height=30.0, quantity=1, label="C",
-                panel_type=PanelType.RIGHT_SIDE, material=standard_material,
+                width=20.0,
+                height=30.0,
+                quantity=1,
+                label="C",
+                panel_type=PanelType.RIGHT_SIDE,
+                material=standard_material,
             ),
         ]
 
@@ -1913,12 +1965,20 @@ class TestBinPackingServiceGrouping:
 
         pieces = [
             CutPiece(
-                width=20.0, height=30.0, quantity=1, label="Thick",
-                panel_type=PanelType.LEFT_SIDE, material=material_3_4,
+                width=20.0,
+                height=30.0,
+                quantity=1,
+                label="Thick",
+                panel_type=PanelType.LEFT_SIDE,
+                material=material_3_4,
             ),
             CutPiece(
-                width=20.0, height=30.0, quantity=1, label="Thin",
-                panel_type=PanelType.BACK, material=material_1_2,
+                width=20.0,
+                height=30.0,
+                quantity=1,
+                label="Thin",
+                panel_type=PanelType.BACK,
+                material=material_1_2,
             ),
         ]
 
@@ -1948,21 +2008,37 @@ class TestBinPackingServiceIntegration:
         pieces = [
             # 3/4" structural panels
             CutPiece(
-                width=24.0, height=48.0, quantity=2, label="Side",
-                panel_type=PanelType.LEFT_SIDE, material=material_3_4,
+                width=24.0,
+                height=48.0,
+                quantity=2,
+                label="Side",
+                panel_type=PanelType.LEFT_SIDE,
+                material=material_3_4,
             ),
             CutPiece(
-                width=47.0, height=12.0, quantity=4, label="Shelf",
-                panel_type=PanelType.SHELF, material=material_3_4,
+                width=47.0,
+                height=12.0,
+                quantity=4,
+                label="Shelf",
+                panel_type=PanelType.SHELF,
+                material=material_3_4,
             ),
             CutPiece(
-                width=47.0, height=24.0, quantity=2, label="Top/Bottom",
-                panel_type=PanelType.TOP, material=material_3_4,
+                width=47.0,
+                height=24.0,
+                quantity=2,
+                label="Top/Bottom",
+                panel_type=PanelType.TOP,
+                material=material_3_4,
             ),
             # 1/2" back panel
             CutPiece(
-                width=47.0, height=48.0, quantity=1, label="Back",
-                panel_type=PanelType.BACK, material=material_1_2,
+                width=47.0,
+                height=48.0,
+                quantity=1,
+                label="Back",
+                panel_type=PanelType.BACK,
+                material=material_1_2,
             ),
         ]
 
@@ -2199,7 +2275,7 @@ class TestGuillotineBinPackerLargeQuantity:
 
         assert result.total_pieces_placed == 15
         # Verify labels are numbered correctly
-        labels = [p.piece.label for l in result.layouts for p in l.placements]
+        labels = [p.piece.label for layout in result.layouts for p in layout.placements]
         assert all(f"Panel #{i}" in labels for i in range(1, 16))
 
     def test_quantity_50_small_pieces(self, standard_material: MaterialSpec) -> None:
@@ -2618,7 +2694,7 @@ class TestBinPackingServiceUniformQuantity:
 
         assert result.total_pieces_placed == 10
         # No piece should have numbered label (all qty=1)
-        labels = [p.piece.label for l in result.layouts for p in l.placements]
+        labels = [p.piece.label for layout in result.layouts for p in layout.placements]
         assert all("#" not in label for label in labels)
 
     def test_all_pieces_same_high_quantity(
@@ -2801,9 +2877,7 @@ class TestOffcutEdgeCases:
         with pytest.raises(ValueError, match="must be positive"):
             Offcut(width=0.0, height=10.0, material=standard_material, sheet_index=0)
 
-    def test_negative_sheet_index_raises(
-        self, standard_material: MaterialSpec
-    ) -> None:
+    def test_negative_sheet_index_raises(self, standard_material: MaterialSpec) -> None:
         """Test negative sheet index raises ValueError."""
         with pytest.raises(ValueError, match="non-negative"):
             Offcut(width=10.0, height=10.0, material=standard_material, sheet_index=-1)

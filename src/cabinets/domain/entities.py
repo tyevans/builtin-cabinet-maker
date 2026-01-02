@@ -115,7 +115,11 @@ class Section:
 
 @dataclass
 class Cabinet:
-    """A complete cabinet with panels and sections.
+    """A complete cabinet with sections representing the cabinet structure.
+
+    This is a pure data entity that holds cabinet configuration and structure.
+    For panel generation and cut list operations, use PanelGenerationService
+    from cabinets.domain.services.
 
     Attributes:
         width: Overall cabinet width in inches.
@@ -162,223 +166,27 @@ class Cabinet:
         return self.width - (2 * self.material.thickness)
 
     @property
+    def base_zone_height(self) -> float:
+        """Height of the base zone (toe kick) if present."""
+        if self.base_zone and self.base_zone.get("zone_type") == "toe_kick":
+            return self.base_zone.get("height", 0.0)
+        return 0.0
+
+    @property
     def interior_height(self) -> float:
-        """Height available inside the cabinet (minus top and bottom)."""
-        return self.height - (2 * self.material.thickness)
+        """Height available inside the cabinet for rows (minus top, bottom, and toe kick)."""
+        return self.height - (2 * self.material.thickness) - self.base_zone_height
+
+    @property
+    def side_panel_height(self) -> float:
+        """Height of side panels (full height minus top panel only - sides extend to floor)."""
+        return self.height - self.material.thickness
 
     @property
     def interior_depth(self) -> float:
         """Depth available inside (minus back panel)."""
         assert self.back_material is not None
         return self.depth - self.back_material.thickness
-
-    def get_all_panels(self) -> list[Panel]:
-        """Get all panels that make up this cabinet."""
-        panels: list[Panel] = []
-
-        # Top panel - spans full width, depth is interior depth
-        panels.append(
-            Panel(
-                panel_type=PanelType.TOP,
-                width=self.width,
-                height=self.interior_depth,
-                material=self.material,
-                position=Position(0, self.height - self.material.thickness),
-            )
-        )
-
-        # Bottom panel - shortened if there's a toe kick zone
-        # With a toe kick, the bottom stops at the setback, leaving room for the toe kick panel
-        bottom_depth = self.interior_depth
-        if self.base_zone and self.base_zone.get("zone_type") == "toe_kick":
-            toe_kick_setback = self.base_zone.get("setback", 3.0)
-            bottom_depth = self.interior_depth - toe_kick_setback
-        panels.append(
-            Panel(
-                panel_type=PanelType.BOTTOM,
-                width=self.width,
-                height=bottom_depth,
-                material=self.material,
-                position=Position(0, 0),
-            )
-        )
-
-        # Left side panel - full height, interior depth
-        panels.append(
-            Panel(
-                panel_type=PanelType.LEFT_SIDE,
-                width=self.interior_depth,
-                height=self.interior_height,
-                material=self.material,
-                position=Position(0, self.material.thickness),
-            )
-        )
-
-        # Right side panel - same as left
-        panels.append(
-            Panel(
-                panel_type=PanelType.RIGHT_SIDE,
-                width=self.interior_depth,
-                height=self.interior_height,
-                material=self.material,
-                position=Position(
-                    self.width - self.material.thickness, self.material.thickness
-                ),
-            )
-        )
-
-        # Back panel - full width and height, thinner material
-        assert self.back_material is not None
-        panels.append(
-            Panel(
-                panel_type=PanelType.BACK,
-                width=self.width,
-                height=self.height,
-                material=self.back_material,
-                position=Position(0, 0),
-            )
-        )
-
-        # Vertical dividers between sections (within each row)
-        # For multi-row cabinets, dividers only span the row height, not full cabinet
-        for i in range(len(self.sections) - 1):
-            section = self.sections[i]
-            next_section = self.sections[i + 1]
-            # Only add divider if adjacent sections are in the same row
-            # (they would have the same y position)
-            if abs(section.position.y - next_section.position.y) < 0.001:
-                panels.append(
-                    Panel(
-                        panel_type=PanelType.DIVIDER,
-                        width=self.interior_depth,
-                        height=section.height,  # Use section height, not interior_height
-                        material=self.material,
-                        position=Position(
-                            section.position.x + section.width, section.position.y
-                        ),
-                    )
-                )
-
-        # Horizontal dividers between rows (for multi-row cabinets)
-        if self.row_heights:
-            current_y = self.material.thickness  # Start at top of bottom panel
-            for i, row_height in enumerate(self.row_heights[:-1]):  # Skip last row
-                current_y += row_height  # Move to top of current row
-                panels.append(
-                    Panel(
-                        panel_type=PanelType.HORIZONTAL_DIVIDER,
-                        width=self.interior_width,
-                        height=self.interior_depth,
-                        material=self.material,
-                        position=Position(self.material.thickness, current_y),
-                    )
-                )
-                current_y += self.material.thickness  # Account for divider thickness
-
-        # Shelves from all sections
-        for section in self.sections:
-            for shelf in section.shelves:
-                panels.append(shelf.to_panel())
-
-        # Additional panels from sections (doors, drawer fronts, etc.)
-        for section in self.sections:
-            for panel in section.panels:
-                panels.append(panel)
-
-        # Zone panels (toe kick, crown nailer, light rail)
-        panels.extend(self._get_zone_panels())
-
-        return panels
-
-    def _get_zone_panels(self) -> list[Panel]:
-        """Generate panels for decorative zones (toe kick, crown, light rail)."""
-        zone_panels: list[Panel] = []
-
-        # Toe kick panel - recessed panel at bottom front
-        if self.base_zone and self.base_zone.get("zone_type") == "toe_kick":
-            toe_kick_height = self.base_zone.get("height", 3.5)
-            toe_kick_setback = self.base_zone.get("setback", 3.0)
-            # Toe kick is positioned at the front, recessed by setback
-            zone_panels.append(
-                Panel(
-                    panel_type=PanelType.TOE_KICK,
-                    width=self.width,
-                    height=toe_kick_height,
-                    material=self.material,
-                    position=Position(0, 0),
-                    metadata={
-                        "zone_type": "toe_kick",
-                        "setback": toe_kick_setback,
-                        "location": "bottom_front_recessed",
-                    },
-                )
-            )
-
-        # Crown molding nailer - strip at top back for mounting crown molding
-        if self.crown_molding:
-            crown_height = self.crown_molding.get("height", 3.0)
-            nailer_width = self.crown_molding.get("nailer_width", 2.0)
-            zone_panels.append(
-                Panel(
-                    panel_type=PanelType.NAILER,
-                    width=self.width,
-                    height=nailer_width,  # Nailer depth
-                    material=self.material,
-                    position=Position(0, self.height - nailer_width),
-                    metadata={
-                        "zone_type": "crown_molding",
-                        "zone_height": crown_height,
-                        "setback": self.crown_molding.get("setback", 0.75),
-                        "location": "top_back",
-                    },
-                )
-            )
-
-        # Light rail strip - at bottom front for concealing under-cabinet lights
-        if self.light_rail:
-            rail_height = self.light_rail.get("height", 1.5)
-            zone_panels.append(
-                Panel(
-                    panel_type=PanelType.LIGHT_RAIL,
-                    width=self.width,
-                    height=rail_height,
-                    material=self.material,
-                    position=Position(0, 0),
-                    metadata={
-                        "zone_type": "light_rail",
-                        "setback": self.light_rail.get("setback", 0.25),
-                        "location": "bottom_front",
-                    },
-                )
-            )
-
-        return zone_panels
-
-    def get_cut_list(self) -> list[CutPiece]:
-        """Generate a consolidated cut list for this cabinet."""
-        panels = self.get_all_panels()
-
-        # Group identical panels together
-        piece_key_to_panels: dict[tuple, list[Panel]] = {}
-        for panel in panels:
-            key = (
-                panel.panel_type,
-                round(panel.width, 3),
-                round(panel.height, 3),
-                panel.material.thickness,
-                panel.material.material_type,
-            )
-            if key not in piece_key_to_panels:
-                piece_key_to_panels[key] = []
-            piece_key_to_panels[key].append(panel)
-
-        # Convert to cut pieces with quantities
-        cut_pieces: list[CutPiece] = []
-        for panels_group in piece_key_to_panels.values():
-            first_panel = panels_group[0]
-            cut_pieces.append(first_panel.to_cut_piece(quantity=len(panels_group)))
-
-        return cut_pieces
 
 
 @dataclass(frozen=True)
@@ -413,8 +221,9 @@ class WallSegment:
     Attributes:
         length: Length along the wall in inches.
         height: Wall height in inches.
-        angle: Angle from previous wall direction in degrees.
-               Must be -90 (left turn), 0 (straight), or 90 (right turn).
+        angle: Angle from previous wall direction in degrees (-135 to 135).
+               Supports standard corners (±90), angled walls (e.g., 45°),
+               and outside corners (e.g., 120°).
         name: Optional identifier for the wall segment.
         depth: Available depth for cabinets in inches.
     """
@@ -551,8 +360,7 @@ class Room:
             start_point = positions[0].start
             end_point = positions[-1].end
             gap = math.sqrt(
-                (end_point.x - start_point.x) ** 2
-                + (end_point.y - start_point.y) ** 2
+                (end_point.x - start_point.x) ** 2 + (end_point.y - start_point.y) ** 2
             )
             if gap > self.closure_tolerance:
                 errors.append(
@@ -586,7 +394,9 @@ class Room:
         bx2, by2 = pos_b.end.x, pos_b.end.y
 
         # Calculate cross products to determine if points are on opposite sides
-        def cross(ox: float, oy: float, ax: float, ay: float, bx: float, by: float) -> float:
+        def cross(
+            ox: float, oy: float, ax: float, ay: float, bx: float, by: float
+        ) -> float:
             """Cross product of vectors (o->a) and (o->b)."""
             return (ax - ox) * (by - oy) - (ay - oy) * (bx - ox)
 
@@ -662,6 +472,8 @@ class Obstacle:
         height: Height of the obstacle in inches.
         clearance_override: Optional custom clearance (overrides default for type).
         name: Optional identifier for the obstacle.
+        is_egress: If True, this obstacle is an emergency egress point
+            that must not be blocked (applies to windows and doors).
     """
 
     obstacle_type: ObstacleType
@@ -672,6 +484,7 @@ class Obstacle:
     height: float
     clearance_override: Clearance | None = None
     name: str | None = None
+    is_egress: bool = False  # FRD-21: Egress checking support
 
     def __post_init__(self) -> None:
         """Validate obstacle dimensions and position."""

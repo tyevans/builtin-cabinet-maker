@@ -13,7 +13,10 @@ import pytest
 
 from cabinets.domain.entities import Obstacle
 from cabinets.domain.section_resolver import SectionSpec
-from cabinets.domain.services import ObstacleAwareLayoutService, ObstacleCollisionService
+from cabinets.domain.services import (
+    ObstacleAwareLayoutService,
+    ObstacleCollisionService,
+)
 from cabinets.domain.value_objects import (
     Clearance,
     LayoutResult,
@@ -494,9 +497,6 @@ class TestSectionSplitting:
             requested_sections=sections,
         )
 
-        # Total shelves in split sections should roughly match requested
-        # (may differ due to rounding and minimum of 1 shelf per section)
-        total_shelves = sum(s.shelves for s in result.placed_sections)
         # Each split section should have at least 1 shelf
         for section in result.placed_sections:
             assert section.shelves >= 1
@@ -1022,11 +1022,11 @@ class TestValueObjectValidation:
         """LayoutResult should be created correctly."""
         # Empty result
         result = LayoutResult()
-        assert result.placed_sections == []
-        assert result.warnings == []
-        assert result.skipped_areas == []
+        assert result.placed_sections == ()
+        assert result.warnings == ()
+        assert result.skipped_areas == ()
 
-        # Result with data
+        # Result with data using factory method
         bounds = SectionBounds(left=0.0, right=30.0, bottom=0.0, top=96.0)
         section = PlacedSection(
             section_index=0,
@@ -1037,7 +1037,7 @@ class TestValueObjectValidation:
         warning = LayoutWarning(message="Test")
         skipped = SkippedArea(bounds=bounds, reason="Test")
 
-        result = LayoutResult(
+        result = LayoutResult.create(
             placed_sections=[section],
             warnings=[warning],
             skipped_areas=[skipped],
@@ -1045,6 +1045,11 @@ class TestValueObjectValidation:
         assert len(result.placed_sections) == 1
         assert len(result.warnings) == 1
         assert len(result.skipped_areas) == 1
+
+        # Verify immutability (tuples are used)
+        assert isinstance(result.placed_sections, tuple)
+        assert isinstance(result.warnings, tuple)
+        assert isinstance(result.skipped_areas, tuple)
 
 
 class TestIntegration:
@@ -1104,7 +1109,9 @@ class TestIntegration:
         custom_clearances = {
             ObstacleType.WINDOW: Clearance(top=6.0, bottom=6.0, left=6.0, right=6.0)
         }
-        collision_service = ObstacleCollisionService(default_clearances=custom_clearances)
+        collision_service = ObstacleCollisionService(
+            default_clearances=custom_clearances
+        )
         service = ObstacleAwareLayoutService(collision_service)
 
         obstacles = [

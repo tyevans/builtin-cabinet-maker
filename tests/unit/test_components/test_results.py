@@ -86,7 +86,9 @@ class TestValidationResult:
 
     def test_validation_result_ok_with_warnings(self) -> None:
         """Test ValidationResult.ok() with warnings."""
-        result = ValidationResult.ok(warnings=["Width is near minimum", "Consider thicker material"])
+        result = ValidationResult.ok(
+            warnings=["Width is near minimum", "Consider thicker material"]
+        )
 
         assert result.errors == ()
         assert result.warnings == ("Width is near minimum", "Consider thicker material")
@@ -318,7 +320,9 @@ class TestGenerationResult:
         assert result.metadata == {}
         assert isinstance(result.metadata, dict)
 
-    def test_generation_result_from_panels_metadata_defaults_to_empty_dict(self) -> None:
+    def test_generation_result_from_panels_metadata_defaults_to_empty_dict(
+        self,
+    ) -> None:
         """Test that from_panels() factory leaves metadata as empty dict."""
         material = MaterialSpec.standard_3_4()
         panels = [

@@ -7,17 +7,26 @@ import math
 import pytest
 
 from cabinets.domain.components import (
+    BlindCornerComponent,
+    ComponentContext,
     CornerFootprint,
+    DiagonalCornerComponent,
+    LazySusanCornerComponent,
     calculate_blind_corner_footprint,
     calculate_diagonal_footprint,
     calculate_lazy_susan_footprint,
+    component_registry,
 )
 from cabinets.domain.components.corner import (
+    BlindCornerComponent as BlindCornerDirect,
     CornerFootprint as CornerFootprintDirect,
+    DiagonalCornerComponent as DiagonalCornerDirect,
+    LazySusanCornerComponent as LazySusanDirect,
     calculate_blind_corner_footprint as calc_blind_direct,
     calculate_diagonal_footprint as calc_diagonal_direct,
     calculate_lazy_susan_footprint as calc_lazy_susan_direct,
 )
+from cabinets.domain.value_objects import MaterialSpec, PanelType, Position
 
 
 class TestCornerFootprintDataclass:
@@ -549,14 +558,6 @@ class TestPanelTypeEnumValues:
 # Phase 2: LazySusanCornerComponent Tests
 # =============================================================================
 
-from cabinets.domain.components import (
-    ComponentContext,
-    LazySusanCornerComponent,
-    component_registry,
-)
-from cabinets.domain.components.corner import LazySusanCornerComponent as LazySusanDirect
-from cabinets.domain.value_objects import MaterialSpec, PanelType, Position
-
 
 @pytest.fixture
 def standard_context() -> ComponentContext:
@@ -608,7 +609,9 @@ class TestLazySusanValidation:
     """Tests for LazySusanCornerComponent validation."""
 
     def test_validate_default_config(
-        self, lazy_susan_component: LazySusanCornerComponent, standard_context: ComponentContext
+        self,
+        lazy_susan_component: LazySusanCornerComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test validation with default configuration."""
         config: dict = {}
@@ -618,7 +621,9 @@ class TestLazySusanValidation:
         assert len(result.errors) == 0
 
     def test_validate_explicit_tray_diameter(
-        self, lazy_susan_component: LazySusanCornerComponent, standard_context: ComponentContext
+        self,
+        lazy_susan_component: LazySusanCornerComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test validation with explicit tray diameter."""
         config = {"tray_diameter": 20.0}
@@ -627,7 +632,9 @@ class TestLazySusanValidation:
         assert result.is_valid
 
     def test_validate_tray_count_minimum(
-        self, lazy_susan_component: LazySusanCornerComponent, standard_context: ComponentContext
+        self,
+        lazy_susan_component: LazySusanCornerComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test validation with minimum tray count (1)."""
         config = {"tray_count": 1}
@@ -636,7 +643,9 @@ class TestLazySusanValidation:
         assert result.is_valid
 
     def test_validate_tray_count_maximum(
-        self, lazy_susan_component: LazySusanCornerComponent, standard_context: ComponentContext
+        self,
+        lazy_susan_component: LazySusanCornerComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test validation with maximum tray count (5)."""
         config = {"tray_count": 5}
@@ -645,7 +654,9 @@ class TestLazySusanValidation:
         assert result.is_valid
 
     def test_validate_tray_count_zero_fails(
-        self, lazy_susan_component: LazySusanCornerComponent, standard_context: ComponentContext
+        self,
+        lazy_susan_component: LazySusanCornerComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that tray count of 0 fails validation."""
         config = {"tray_count": 0}
@@ -655,7 +666,9 @@ class TestLazySusanValidation:
         assert any("Tray count must be between 1 and 5" in e for e in result.errors)
 
     def test_validate_tray_count_exceeds_maximum_fails(
-        self, lazy_susan_component: LazySusanCornerComponent, standard_context: ComponentContext
+        self,
+        lazy_susan_component: LazySusanCornerComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that tray count > 5 fails validation."""
         config = {"tray_count": 6}
@@ -665,7 +678,9 @@ class TestLazySusanValidation:
         assert any("Tray count must be between 1 and 5" in e for e in result.errors)
 
     def test_validate_tray_diameter_exceeds_maximum_fails(
-        self, lazy_susan_component: LazySusanCornerComponent, standard_context: ComponentContext
+        self,
+        lazy_susan_component: LazySusanCornerComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that tray diameter exceeding max fails validation."""
         # Max for 24" depth = (24 * 2) - 2 = 46"
@@ -676,7 +691,9 @@ class TestLazySusanValidation:
         assert any("exceeds maximum" in e for e in result.errors)
 
     def test_validate_tray_diameter_at_maximum_passes(
-        self, lazy_susan_component: LazySusanCornerComponent, standard_context: ComponentContext
+        self,
+        lazy_susan_component: LazySusanCornerComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that tray diameter at max passes validation."""
         # Max for 24" depth = (24 * 2) - 2 = 46"
@@ -709,7 +726,9 @@ class TestLazySusanValidation:
         assert any("less than recommended minimum" in w for w in result.warnings)
 
     def test_validate_door_style_single(
-        self, lazy_susan_component: LazySusanCornerComponent, standard_context: ComponentContext
+        self,
+        lazy_susan_component: LazySusanCornerComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test validation with single door style."""
         config = {"door_style": "single"}
@@ -718,7 +737,9 @@ class TestLazySusanValidation:
         assert result.is_valid
 
     def test_validate_door_style_bifold(
-        self, lazy_susan_component: LazySusanCornerComponent, standard_context: ComponentContext
+        self,
+        lazy_susan_component: LazySusanCornerComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test validation with bifold door style."""
         config = {"door_style": "bifold"}
@@ -727,7 +748,9 @@ class TestLazySusanValidation:
         assert result.is_valid
 
     def test_validate_invalid_door_style_fails(
-        self, lazy_susan_component: LazySusanCornerComponent, standard_context: ComponentContext
+        self,
+        lazy_susan_component: LazySusanCornerComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that invalid door style fails validation."""
         config = {"door_style": "sliding"}
@@ -737,7 +760,9 @@ class TestLazySusanValidation:
         assert any("Door style must be" in e for e in result.errors)
 
     def test_validate_negative_door_clearance_fails(
-        self, lazy_susan_component: LazySusanCornerComponent, standard_context: ComponentContext
+        self,
+        lazy_susan_component: LazySusanCornerComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that negative door clearance fails validation."""
         config = {"door_clearance": -1.0}
@@ -751,7 +776,9 @@ class TestLazySusanPanelGeneration:
     """Tests for LazySusanCornerComponent panel generation."""
 
     def test_generate_creates_panels(
-        self, lazy_susan_component: LazySusanCornerComponent, standard_context: ComponentContext
+        self,
+        lazy_susan_component: LazySusanCornerComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that generate creates panel entities."""
         config: dict = {}
@@ -760,7 +787,9 @@ class TestLazySusanPanelGeneration:
         assert len(result.panels) > 0
 
     def test_generate_creates_left_side_panel(
-        self, lazy_susan_component: LazySusanCornerComponent, standard_context: ComponentContext
+        self,
+        lazy_susan_component: LazySusanCornerComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that LEFT_SIDE panel is generated."""
         config: dict = {}
@@ -770,7 +799,9 @@ class TestLazySusanPanelGeneration:
         assert len(left_sides) == 1
 
     def test_generate_creates_right_side_panel(
-        self, lazy_susan_component: LazySusanCornerComponent, standard_context: ComponentContext
+        self,
+        lazy_susan_component: LazySusanCornerComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that RIGHT_SIDE panel is generated."""
         config: dict = {}
@@ -780,7 +811,9 @@ class TestLazySusanPanelGeneration:
         assert len(right_sides) == 1
 
     def test_generate_creates_top_panel(
-        self, lazy_susan_component: LazySusanCornerComponent, standard_context: ComponentContext
+        self,
+        lazy_susan_component: LazySusanCornerComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that TOP panel is generated."""
         config: dict = {}
@@ -790,7 +823,9 @@ class TestLazySusanPanelGeneration:
         assert len(tops) == 1
 
     def test_generate_creates_bottom_panel(
-        self, lazy_susan_component: LazySusanCornerComponent, standard_context: ComponentContext
+        self,
+        lazy_susan_component: LazySusanCornerComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that BOTTOM panel is generated."""
         config: dict = {}
@@ -800,7 +835,9 @@ class TestLazySusanPanelGeneration:
         assert len(bottoms) == 1
 
     def test_generate_creates_back_panels(
-        self, lazy_susan_component: LazySusanCornerComponent, standard_context: ComponentContext
+        self,
+        lazy_susan_component: LazySusanCornerComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that BACK panels are generated (L-shaped = 2 panels)."""
         config: dict = {}
@@ -811,7 +848,9 @@ class TestLazySusanPanelGeneration:
         assert len(backs) >= 1
 
     def test_generate_panel_count(
-        self, lazy_susan_component: LazySusanCornerComponent, standard_context: ComponentContext
+        self,
+        lazy_susan_component: LazySusanCornerComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test total panel count for square cabinet (width == depth)."""
         config: dict = {}
@@ -822,13 +861,17 @@ class TestLazySusanPanelGeneration:
         assert len(result.panels) == 5
 
     def test_generate_side_panel_dimensions(
-        self, lazy_susan_component: LazySusanCornerComponent, standard_context: ComponentContext
+        self,
+        lazy_susan_component: LazySusanCornerComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test side panel dimensions are correct."""
         config: dict = {}
         result = lazy_susan_component.generate(config, standard_context)
 
-        left_side = next(p for p in result.panels if p.panel_type == PanelType.LEFT_SIDE)
+        left_side = next(
+            p for p in result.panels if p.panel_type == PanelType.LEFT_SIDE
+        )
         thickness = standard_context.material.thickness
         expected_depth = standard_context.depth - thickness  # Interior depth
         expected_height = standard_context.height - (2 * thickness)  # Interior height
@@ -837,7 +880,9 @@ class TestLazySusanPanelGeneration:
         assert left_side.height == pytest.approx(expected_height)
 
     def test_generate_includes_metadata(
-        self, lazy_susan_component: LazySusanCornerComponent, standard_context: ComponentContext
+        self,
+        lazy_susan_component: LazySusanCornerComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that metadata includes tray and footprint info."""
         config = {"tray_count": 3}
@@ -850,7 +895,9 @@ class TestLazySusanPanelGeneration:
         assert "footprint" in result.metadata
 
     def test_generate_footprint_metadata(
-        self, lazy_susan_component: LazySusanCornerComponent, standard_context: ComponentContext
+        self,
+        lazy_susan_component: LazySusanCornerComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test footprint metadata values."""
         config = {"door_clearance": 2.0}
@@ -867,7 +914,9 @@ class TestLazySusanHardwareGeneration:
     """Tests for LazySusanCornerComponent hardware generation."""
 
     def test_hardware_includes_center_pole(
-        self, lazy_susan_component: LazySusanCornerComponent, standard_context: ComponentContext
+        self,
+        lazy_susan_component: LazySusanCornerComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that hardware includes center pole."""
         config: dict = {}
@@ -878,7 +927,9 @@ class TestLazySusanHardwareGeneration:
         assert poles[0].quantity == 1
 
     def test_hardware_includes_trays(
-        self, lazy_susan_component: LazySusanCornerComponent, standard_context: ComponentContext
+        self,
+        lazy_susan_component: LazySusanCornerComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that hardware includes correct number of trays."""
         config = {"tray_count": 3}
@@ -889,7 +940,9 @@ class TestLazySusanHardwareGeneration:
         assert trays[0].quantity == 3
 
     def test_hardware_includes_bearings(
-        self, lazy_susan_component: LazySusanCornerComponent, standard_context: ComponentContext
+        self,
+        lazy_susan_component: LazySusanCornerComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that hardware includes bearings matching tray count."""
         config = {"tray_count": 4}
@@ -900,7 +953,9 @@ class TestLazySusanHardwareGeneration:
         assert bearings[0].quantity == 4
 
     def test_hardware_bifold_hinges(
-        self, lazy_susan_component: LazySusanCornerComponent, standard_context: ComponentContext
+        self,
+        lazy_susan_component: LazySusanCornerComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that bifold door style includes 4 hinges."""
         config = {"door_style": "bifold"}
@@ -911,7 +966,9 @@ class TestLazySusanHardwareGeneration:
         assert hinges[0].quantity == 4
 
     def test_hardware_bifold_includes_catch(
-        self, lazy_susan_component: LazySusanCornerComponent, standard_context: ComponentContext
+        self,
+        lazy_susan_component: LazySusanCornerComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that bifold door style includes door catch."""
         config = {"door_style": "bifold"}
@@ -987,7 +1044,9 @@ class TestLazySusanHardwareGeneration:
         assert hinges[0].quantity == 4
 
     def test_hardware_handle_count_single(
-        self, lazy_susan_component: LazySusanCornerComponent, standard_context: ComponentContext
+        self,
+        lazy_susan_component: LazySusanCornerComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test handle count for single door."""
         config = {"door_style": "single"}
@@ -998,7 +1057,9 @@ class TestLazySusanHardwareGeneration:
         assert handles[0].quantity == 1
 
     def test_hardware_handle_count_bifold(
-        self, lazy_susan_component: LazySusanCornerComponent, standard_context: ComponentContext
+        self,
+        lazy_susan_component: LazySusanCornerComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test handle count for bifold doors."""
         config = {"door_style": "bifold"}
@@ -1009,7 +1070,9 @@ class TestLazySusanHardwareGeneration:
         assert handles[0].quantity == 2
 
     def test_hardware_tray_sku_includes_diameter(
-        self, lazy_susan_component: LazySusanCornerComponent, standard_context: ComponentContext
+        self,
+        lazy_susan_component: LazySusanCornerComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that tray SKU includes diameter."""
         config = {"tray_diameter": 18.0}
@@ -1023,7 +1086,9 @@ class TestLazySusanAutoCalculations:
     """Tests for LazySusanCornerComponent auto-calculations."""
 
     def test_auto_calculate_tray_diameter(
-        self, lazy_susan_component: LazySusanCornerComponent, standard_context: ComponentContext
+        self,
+        lazy_susan_component: LazySusanCornerComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test auto-calculation of tray diameter when not specified."""
         config: dict = {}
@@ -1054,7 +1119,9 @@ class TestLazySusanAutoCalculations:
         assert result.metadata["tray_diameter"] == 20.0
 
     def test_explicit_diameter_overrides_auto(
-        self, lazy_susan_component: LazySusanCornerComponent, standard_context: ComponentContext
+        self,
+        lazy_susan_component: LazySusanCornerComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that explicit tray_diameter overrides auto-calculation."""
         config = {"tray_diameter": 30.0}
@@ -1111,7 +1178,9 @@ class TestLazySusanEdgeCases:
         assert len(backs) == 2
 
     def test_minimum_tray_count(
-        self, lazy_susan_component: LazySusanCornerComponent, standard_context: ComponentContext
+        self,
+        lazy_susan_component: LazySusanCornerComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test with minimum tray count."""
         config = {"tray_count": 1}
@@ -1123,7 +1192,9 @@ class TestLazySusanEdgeCases:
         assert bearings[0].quantity == 1
 
     def test_maximum_tray_count(
-        self, lazy_susan_component: LazySusanCornerComponent, standard_context: ComponentContext
+        self,
+        lazy_susan_component: LazySusanCornerComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test with maximum tray count."""
         config = {"tray_count": 5}
@@ -1138,9 +1209,6 @@ class TestLazySusanEdgeCases:
 # =============================================================================
 # Phase 3: BlindCornerComponent Tests
 # =============================================================================
-
-from cabinets.domain.components import BlindCornerComponent
-from cabinets.domain.components.corner import BlindCornerComponent as BlindCornerDirect
 
 
 @pytest.fixture
@@ -1177,7 +1245,9 @@ class TestBlindCornerValidation:
     """Tests for BlindCornerComponent validation."""
 
     def test_validate_default_config(
-        self, blind_corner_component: BlindCornerComponent, standard_context: ComponentContext
+        self,
+        blind_corner_component: BlindCornerComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test validation with default configuration."""
         config: dict = {}
@@ -1187,7 +1257,9 @@ class TestBlindCornerValidation:
         assert len(result.errors) == 0
 
     def test_validate_blind_side_left(
-        self, blind_corner_component: BlindCornerComponent, standard_context: ComponentContext
+        self,
+        blind_corner_component: BlindCornerComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test validation with blind_side='left'."""
         config = {"blind_side": "left"}
@@ -1196,7 +1268,9 @@ class TestBlindCornerValidation:
         assert result.is_valid
 
     def test_validate_blind_side_right(
-        self, blind_corner_component: BlindCornerComponent, standard_context: ComponentContext
+        self,
+        blind_corner_component: BlindCornerComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test validation with blind_side='right'."""
         config = {"blind_side": "right"}
@@ -1205,7 +1279,9 @@ class TestBlindCornerValidation:
         assert result.is_valid
 
     def test_validate_invalid_blind_side_fails(
-        self, blind_corner_component: BlindCornerComponent, standard_context: ComponentContext
+        self,
+        blind_corner_component: BlindCornerComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that invalid blind_side fails validation."""
         config = {"blind_side": "center"}
@@ -1215,7 +1291,9 @@ class TestBlindCornerValidation:
         assert any("blind_side must be 'left' or 'right'" in e for e in result.errors)
 
     def test_validate_accessible_width_minimum(
-        self, blind_corner_component: BlindCornerComponent, standard_context: ComponentContext
+        self,
+        blind_corner_component: BlindCornerComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test validation with minimum accessible_width (12\")."""
         config = {"accessible_width": 12.0}
@@ -1224,7 +1302,9 @@ class TestBlindCornerValidation:
         assert result.is_valid
 
     def test_validate_accessible_width_below_minimum_fails(
-        self, blind_corner_component: BlindCornerComponent, standard_context: ComponentContext
+        self,
+        blind_corner_component: BlindCornerComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that accessible_width below 12\" fails validation."""
         config = {"accessible_width": 10.0}
@@ -1234,7 +1314,9 @@ class TestBlindCornerValidation:
         assert any("accessible_width must be at least 12" in e for e in result.errors)
 
     def test_validate_accessible_width_above_maximum_warning(
-        self, blind_corner_component: BlindCornerComponent, standard_context: ComponentContext
+        self,
+        blind_corner_component: BlindCornerComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that accessible_width above 36\" generates warning."""
         config = {"accessible_width": 40.0}
@@ -1245,7 +1327,9 @@ class TestBlindCornerValidation:
         assert any("exceeds recommended maximum" in w for w in result.warnings)
 
     def test_validate_accessible_width_at_maximum_no_warning(
-        self, blind_corner_component: BlindCornerComponent, standard_context: ComponentContext
+        self,
+        blind_corner_component: BlindCornerComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that accessible_width at 36\" does not generate warning."""
         config = {"accessible_width": 36.0}
@@ -1255,7 +1339,9 @@ class TestBlindCornerValidation:
         assert len(result.warnings) == 0
 
     def test_validate_filler_width_zero(
-        self, blind_corner_component: BlindCornerComponent, standard_context: ComponentContext
+        self,
+        blind_corner_component: BlindCornerComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test validation with zero filler_width."""
         config = {"filler_width": 0.0}
@@ -1264,7 +1350,9 @@ class TestBlindCornerValidation:
         assert result.is_valid
 
     def test_validate_negative_filler_width_fails(
-        self, blind_corner_component: BlindCornerComponent, standard_context: ComponentContext
+        self,
+        blind_corner_component: BlindCornerComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that negative filler_width fails validation."""
         config = {"filler_width": -1.0}
@@ -1274,7 +1362,9 @@ class TestBlindCornerValidation:
         assert any("filler_width must be non-negative" in e for e in result.errors)
 
     def test_validate_pull_out_true(
-        self, blind_corner_component: BlindCornerComponent, standard_context: ComponentContext
+        self,
+        blind_corner_component: BlindCornerComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test validation with pull_out=True."""
         config = {"pull_out": True}
@@ -1283,7 +1373,9 @@ class TestBlindCornerValidation:
         assert result.is_valid
 
     def test_validate_pull_out_false(
-        self, blind_corner_component: BlindCornerComponent, standard_context: ComponentContext
+        self,
+        blind_corner_component: BlindCornerComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test validation with pull_out=False."""
         config = {"pull_out": False}
@@ -1296,7 +1388,9 @@ class TestBlindCornerPanelGeneration:
     """Tests for BlindCornerComponent panel generation."""
 
     def test_generate_creates_panels(
-        self, blind_corner_component: BlindCornerComponent, standard_context: ComponentContext
+        self,
+        blind_corner_component: BlindCornerComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that generate creates panel entities."""
         config: dict = {}
@@ -1305,7 +1399,9 @@ class TestBlindCornerPanelGeneration:
         assert len(result.panels) > 0
 
     def test_generate_creates_left_side_panel(
-        self, blind_corner_component: BlindCornerComponent, standard_context: ComponentContext
+        self,
+        blind_corner_component: BlindCornerComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that LEFT_SIDE panel is generated."""
         config: dict = {}
@@ -1315,7 +1411,9 @@ class TestBlindCornerPanelGeneration:
         assert len(left_sides) == 1
 
     def test_generate_creates_right_side_panel(
-        self, blind_corner_component: BlindCornerComponent, standard_context: ComponentContext
+        self,
+        blind_corner_component: BlindCornerComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that RIGHT_SIDE panel is generated."""
         config: dict = {}
@@ -1325,7 +1423,9 @@ class TestBlindCornerPanelGeneration:
         assert len(right_sides) == 1
 
     def test_generate_creates_top_panel(
-        self, blind_corner_component: BlindCornerComponent, standard_context: ComponentContext
+        self,
+        blind_corner_component: BlindCornerComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that TOP panel is generated."""
         config: dict = {}
@@ -1335,7 +1435,9 @@ class TestBlindCornerPanelGeneration:
         assert len(tops) == 1
 
     def test_generate_creates_bottom_panel(
-        self, blind_corner_component: BlindCornerComponent, standard_context: ComponentContext
+        self,
+        blind_corner_component: BlindCornerComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that BOTTOM panel is generated."""
         config: dict = {}
@@ -1345,7 +1447,9 @@ class TestBlindCornerPanelGeneration:
         assert len(bottoms) == 1
 
     def test_generate_creates_back_panel(
-        self, blind_corner_component: BlindCornerComponent, standard_context: ComponentContext
+        self,
+        blind_corner_component: BlindCornerComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that BACK panel is generated."""
         config: dict = {}
@@ -1355,7 +1459,9 @@ class TestBlindCornerPanelGeneration:
         assert len(backs) == 1
 
     def test_generate_creates_filler_panel(
-        self, blind_corner_component: BlindCornerComponent, standard_context: ComponentContext
+        self,
+        blind_corner_component: BlindCornerComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that FILLER panel is generated."""
         config = {"filler_width": 3.0}
@@ -1366,7 +1472,9 @@ class TestBlindCornerPanelGeneration:
         assert fillers[0].width == 3.0
 
     def test_generate_no_filler_when_zero_width(
-        self, blind_corner_component: BlindCornerComponent, standard_context: ComponentContext
+        self,
+        blind_corner_component: BlindCornerComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that no FILLER panel is generated when filler_width is 0."""
         config = {"filler_width": 0.0}
@@ -1376,7 +1484,9 @@ class TestBlindCornerPanelGeneration:
         assert len(fillers) == 0
 
     def test_generate_panel_count_with_filler(
-        self, blind_corner_component: BlindCornerComponent, standard_context: ComponentContext
+        self,
+        blind_corner_component: BlindCornerComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test total panel count with filler."""
         config = {"filler_width": 3.0}
@@ -1386,7 +1496,9 @@ class TestBlindCornerPanelGeneration:
         assert len(result.panels) == 6
 
     def test_generate_panel_count_without_filler(
-        self, blind_corner_component: BlindCornerComponent, standard_context: ComponentContext
+        self,
+        blind_corner_component: BlindCornerComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test total panel count without filler."""
         config = {"filler_width": 0.0}
@@ -1396,7 +1508,9 @@ class TestBlindCornerPanelGeneration:
         assert len(result.panels) == 5
 
     def test_generate_top_bottom_width_includes_filler(
-        self, blind_corner_component: BlindCornerComponent, standard_context: ComponentContext
+        self,
+        blind_corner_component: BlindCornerComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that TOP and BOTTOM panels have correct width (accessible + filler)."""
         config = {"accessible_width": 24.0, "filler_width": 3.0}
@@ -1410,13 +1524,17 @@ class TestBlindCornerPanelGeneration:
         assert bottom.width == expected_width
 
     def test_generate_side_panel_dimensions(
-        self, blind_corner_component: BlindCornerComponent, standard_context: ComponentContext
+        self,
+        blind_corner_component: BlindCornerComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test side panel dimensions are correct."""
         config: dict = {}
         result = blind_corner_component.generate(config, standard_context)
 
-        left_side = next(p for p in result.panels if p.panel_type == PanelType.LEFT_SIDE)
+        left_side = next(
+            p for p in result.panels if p.panel_type == PanelType.LEFT_SIDE
+        )
         thickness = standard_context.material.thickness
         expected_depth = standard_context.depth - thickness  # Interior depth
         expected_height = standard_context.height - (2 * thickness)  # Interior height
@@ -1425,7 +1543,9 @@ class TestBlindCornerPanelGeneration:
         assert left_side.height == pytest.approx(expected_height)
 
     def test_generate_back_panel_uses_quarter_inch_material(
-        self, blind_corner_component: BlindCornerComponent, standard_context: ComponentContext
+        self,
+        blind_corner_component: BlindCornerComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that back panel uses 1/4\" material."""
         config: dict = {}
@@ -1435,7 +1555,9 @@ class TestBlindCornerPanelGeneration:
         assert back.material.thickness == 0.25
 
     def test_generate_includes_metadata(
-        self, blind_corner_component: BlindCornerComponent, standard_context: ComponentContext
+        self,
+        blind_corner_component: BlindCornerComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that metadata includes configuration info."""
         config = {"blind_side": "right", "accessible_width": 30.0}
@@ -1451,7 +1573,9 @@ class TestBlindCornerPanelGeneration:
         assert "footprint" in result.metadata
 
     def test_generate_footprint_metadata_left(
-        self, blind_corner_component: BlindCornerComponent, standard_context: ComponentContext
+        self,
+        blind_corner_component: BlindCornerComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test footprint metadata values for blind_side='left'."""
         config = {"blind_side": "left", "accessible_width": 24.0, "filler_width": 3.0}
@@ -1464,7 +1588,9 @@ class TestBlindCornerPanelGeneration:
         assert footprint["total"] == standard_context.depth + 27.0
 
     def test_generate_footprint_metadata_right(
-        self, blind_corner_component: BlindCornerComponent, standard_context: ComponentContext
+        self,
+        blind_corner_component: BlindCornerComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test footprint metadata values for blind_side='right'."""
         config = {"blind_side": "right", "accessible_width": 24.0, "filler_width": 3.0}
@@ -1477,7 +1603,9 @@ class TestBlindCornerPanelGeneration:
         assert footprint["total"] == 27.0 + standard_context.depth
 
     def test_generate_filler_position_left_side(
-        self, blind_corner_component: BlindCornerComponent, standard_context: ComponentContext
+        self,
+        blind_corner_component: BlindCornerComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test filler panel position when blind_side='left'."""
         config = {"blind_side": "left", "filler_width": 3.0}
@@ -1488,7 +1616,9 @@ class TestBlindCornerPanelGeneration:
         assert filler.position.x == standard_context.position.x
 
     def test_generate_filler_position_right_side(
-        self, blind_corner_component: BlindCornerComponent, standard_context: ComponentContext
+        self,
+        blind_corner_component: BlindCornerComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test filler panel position when blind_side='right'."""
         config = {"blind_side": "right", "accessible_width": 24.0, "filler_width": 3.0}
@@ -1504,7 +1634,9 @@ class TestBlindCornerHardwareGeneration:
     """Tests for BlindCornerComponent hardware generation."""
 
     def test_hardware_includes_pullout_slides_when_enabled(
-        self, blind_corner_component: BlindCornerComponent, standard_context: ComponentContext
+        self,
+        blind_corner_component: BlindCornerComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that hardware includes pull-out slides when pull_out=True."""
         config = {"pull_out": True}
@@ -1515,7 +1647,9 @@ class TestBlindCornerHardwareGeneration:
         assert slides[0].quantity == 1
 
     def test_hardware_includes_pullout_tray_when_enabled(
-        self, blind_corner_component: BlindCornerComponent, standard_context: ComponentContext
+        self,
+        blind_corner_component: BlindCornerComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that hardware includes pull-out tray when pull_out=True."""
         config = {"pull_out": True}
@@ -1526,7 +1660,9 @@ class TestBlindCornerHardwareGeneration:
         assert trays[0].quantity == 1
 
     def test_hardware_empty_when_pullout_disabled(
-        self, blind_corner_component: BlindCornerComponent, standard_context: ComponentContext
+        self,
+        blind_corner_component: BlindCornerComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that no hardware is returned when pull_out=False."""
         config = {"pull_out": False}
@@ -1535,7 +1671,9 @@ class TestBlindCornerHardwareGeneration:
         assert len(hardware) == 0
 
     def test_hardware_tray_sku_includes_width(
-        self, blind_corner_component: BlindCornerComponent, standard_context: ComponentContext
+        self,
+        blind_corner_component: BlindCornerComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that tray SKU includes accessible width."""
         config = {"pull_out": True, "accessible_width": 30.0}
@@ -1545,7 +1683,9 @@ class TestBlindCornerHardwareGeneration:
         assert trays[0].sku == "BC-TRAY-30"
 
     def test_hardware_tray_notes_include_blind_side(
-        self, blind_corner_component: BlindCornerComponent, standard_context: ComponentContext
+        self,
+        blind_corner_component: BlindCornerComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that tray notes include blind side."""
         config = {"pull_out": True, "blind_side": "right"}
@@ -1555,7 +1695,9 @@ class TestBlindCornerHardwareGeneration:
         assert "right" in trays[0].notes
 
     def test_hardware_slides_notes_include_width(
-        self, blind_corner_component: BlindCornerComponent, standard_context: ComponentContext
+        self,
+        blind_corner_component: BlindCornerComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that slides notes include accessible width."""
         config = {"pull_out": True, "accessible_width": 24.0}
@@ -1569,7 +1711,9 @@ class TestBlindCornerEdgeCases:
     """Edge case tests for BlindCornerComponent."""
 
     def test_minimum_accessible_width(
-        self, blind_corner_component: BlindCornerComponent, standard_context: ComponentContext
+        self,
+        blind_corner_component: BlindCornerComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test with minimum accessible width (12\")."""
         config = {"accessible_width": 12.0}
@@ -1579,7 +1723,9 @@ class TestBlindCornerEdgeCases:
         assert result.metadata["cabinet_width"] == 15.0  # 12 + 3 default filler
 
     def test_maximum_practical_accessible_width(
-        self, blind_corner_component: BlindCornerComponent, standard_context: ComponentContext
+        self,
+        blind_corner_component: BlindCornerComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test with maximum practical accessible width (36\")."""
         config = {"accessible_width": 36.0}
@@ -1589,7 +1735,9 @@ class TestBlindCornerEdgeCases:
         assert result.metadata["cabinet_width"] == 39.0  # 36 + 3 default filler
 
     def test_large_filler_width(
-        self, blind_corner_component: BlindCornerComponent, standard_context: ComponentContext
+        self,
+        blind_corner_component: BlindCornerComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test with large filler width."""
         config = {"accessible_width": 24.0, "filler_width": 6.0}
@@ -1600,11 +1748,21 @@ class TestBlindCornerEdgeCases:
         assert result.metadata["cabinet_width"] == 30.0
 
     def test_both_blind_sides_produce_correct_footprints(
-        self, blind_corner_component: BlindCornerComponent, standard_context: ComponentContext
+        self,
+        blind_corner_component: BlindCornerComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that left and right blind sides produce mirror footprints."""
-        config_left = {"blind_side": "left", "accessible_width": 24.0, "filler_width": 3.0}
-        config_right = {"blind_side": "right", "accessible_width": 24.0, "filler_width": 3.0}
+        config_left = {
+            "blind_side": "left",
+            "accessible_width": 24.0,
+            "filler_width": 3.0,
+        }
+        config_right = {
+            "blind_side": "right",
+            "accessible_width": 24.0,
+            "filler_width": 3.0,
+        }
 
         result_left = blind_corner_component.generate(config_left, standard_context)
         result_right = blind_corner_component.generate(config_right, standard_context)
@@ -1618,7 +1776,9 @@ class TestBlindCornerEdgeCases:
         assert fp_left["total"] == fp_right["total"]
 
     def test_hardware_in_generate_result(
-        self, blind_corner_component: BlindCornerComponent, standard_context: ComponentContext
+        self,
+        blind_corner_component: BlindCornerComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that generate includes hardware in result."""
         config = {"pull_out": True}
@@ -1627,7 +1787,9 @@ class TestBlindCornerEdgeCases:
         assert len(result.hardware) == 2  # Slides + Tray
 
     def test_no_hardware_in_generate_when_disabled(
-        self, blind_corner_component: BlindCornerComponent, standard_context: ComponentContext
+        self,
+        blind_corner_component: BlindCornerComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that generate has no hardware when pull_out=False."""
         config = {"pull_out": False}
@@ -1636,7 +1798,9 @@ class TestBlindCornerEdgeCases:
         assert len(result.hardware) == 0
 
     def test_defaults_are_applied(
-        self, blind_corner_component: BlindCornerComponent, standard_context: ComponentContext
+        self,
+        blind_corner_component: BlindCornerComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that all defaults are correctly applied."""
         config: dict = {}
@@ -1652,9 +1816,6 @@ class TestBlindCornerEdgeCases:
 # =============================================================================
 # Phase 4: DiagonalCornerComponent Tests
 # =============================================================================
-
-from cabinets.domain.components import DiagonalCornerComponent
-from cabinets.domain.components.corner import DiagonalCornerComponent as DiagonalCornerDirect
 
 
 @pytest.fixture
@@ -1691,7 +1852,9 @@ class TestDiagonalCornerValidation:
     """Tests for DiagonalCornerComponent validation."""
 
     def test_validate_default_config(
-        self, diagonal_corner_component: DiagonalCornerComponent, standard_context: ComponentContext
+        self,
+        diagonal_corner_component: DiagonalCornerComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test validation with default configuration."""
         config: dict = {}
@@ -1701,7 +1864,9 @@ class TestDiagonalCornerValidation:
         assert len(result.errors) == 0
 
     def test_validate_explicit_face_width(
-        self, diagonal_corner_component: DiagonalCornerComponent, standard_context: ComponentContext
+        self,
+        diagonal_corner_component: DiagonalCornerComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test validation with explicit face_width."""
         config = {"face_width": 24.0}
@@ -1710,7 +1875,9 @@ class TestDiagonalCornerValidation:
         assert result.is_valid
 
     def test_validate_face_width_minimum(
-        self, diagonal_corner_component: DiagonalCornerComponent, standard_context: ComponentContext
+        self,
+        diagonal_corner_component: DiagonalCornerComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test validation with minimum face_width (18\")."""
         config = {"face_width": 18.0}
@@ -1719,7 +1886,9 @@ class TestDiagonalCornerValidation:
         assert result.is_valid
 
     def test_validate_face_width_below_minimum_fails(
-        self, diagonal_corner_component: DiagonalCornerComponent, standard_context: ComponentContext
+        self,
+        diagonal_corner_component: DiagonalCornerComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that face_width below 18\" fails validation."""
         config = {"face_width": 16.0}
@@ -1729,7 +1898,9 @@ class TestDiagonalCornerValidation:
         assert any("face_width must be at least 18" in e for e in result.errors)
 
     def test_validate_shelf_count_zero(
-        self, diagonal_corner_component: DiagonalCornerComponent, standard_context: ComponentContext
+        self,
+        diagonal_corner_component: DiagonalCornerComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test validation with shelf_count=0."""
         config = {"shelf_count": 0}
@@ -1738,7 +1909,9 @@ class TestDiagonalCornerValidation:
         assert result.is_valid
 
     def test_validate_shelf_count_maximum(
-        self, diagonal_corner_component: DiagonalCornerComponent, standard_context: ComponentContext
+        self,
+        diagonal_corner_component: DiagonalCornerComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test validation with maximum shelf_count (6)."""
         config = {"shelf_count": 6}
@@ -1747,7 +1920,9 @@ class TestDiagonalCornerValidation:
         assert result.is_valid
 
     def test_validate_shelf_count_exceeds_maximum_fails(
-        self, diagonal_corner_component: DiagonalCornerComponent, standard_context: ComponentContext
+        self,
+        diagonal_corner_component: DiagonalCornerComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that shelf_count > 6 fails validation."""
         config = {"shelf_count": 7}
@@ -1757,7 +1932,9 @@ class TestDiagonalCornerValidation:
         assert any("shelf_count must be between 0 and 6" in e for e in result.errors)
 
     def test_validate_shelf_count_negative_fails(
-        self, diagonal_corner_component: DiagonalCornerComponent, standard_context: ComponentContext
+        self,
+        diagonal_corner_component: DiagonalCornerComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that shelf_count < 0 fails validation."""
         config = {"shelf_count": -1}
@@ -1767,7 +1944,9 @@ class TestDiagonalCornerValidation:
         assert any("shelf_count must be between 0 and 6" in e for e in result.errors)
 
     def test_validate_shelf_shape_triangular(
-        self, diagonal_corner_component: DiagonalCornerComponent, standard_context: ComponentContext
+        self,
+        diagonal_corner_component: DiagonalCornerComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test validation with shelf_shape='triangular'."""
         config = {"shelf_shape": "triangular"}
@@ -1776,7 +1955,9 @@ class TestDiagonalCornerValidation:
         assert result.is_valid
 
     def test_validate_shelf_shape_squared(
-        self, diagonal_corner_component: DiagonalCornerComponent, standard_context: ComponentContext
+        self,
+        diagonal_corner_component: DiagonalCornerComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test validation with shelf_shape='squared'."""
         config = {"shelf_shape": "squared"}
@@ -1785,14 +1966,18 @@ class TestDiagonalCornerValidation:
         assert result.is_valid
 
     def test_validate_invalid_shelf_shape_fails(
-        self, diagonal_corner_component: DiagonalCornerComponent, standard_context: ComponentContext
+        self,
+        diagonal_corner_component: DiagonalCornerComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that invalid shelf_shape fails validation."""
         config = {"shelf_shape": "circular"}
         result = diagonal_corner_component.validate(config, standard_context)
 
         assert not result.is_valid
-        assert any("shelf_shape must be 'triangular' or 'squared'" in e for e in result.errors)
+        assert any(
+            "shelf_shape must be 'triangular' or 'squared'" in e for e in result.errors
+        )
 
     def test_validate_auto_calculated_face_width_below_minimum(
         self, diagonal_corner_component: DiagonalCornerComponent
@@ -1822,7 +2007,9 @@ class TestDiagonalCornerPanelGeneration:
     """Tests for DiagonalCornerComponent panel generation."""
 
     def test_generate_creates_panels(
-        self, diagonal_corner_component: DiagonalCornerComponent, standard_context: ComponentContext
+        self,
+        diagonal_corner_component: DiagonalCornerComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that generate creates panel entities."""
         config: dict = {}
@@ -1831,7 +2018,9 @@ class TestDiagonalCornerPanelGeneration:
         assert len(result.panels) > 0
 
     def test_generate_creates_left_side_panel(
-        self, diagonal_corner_component: DiagonalCornerComponent, standard_context: ComponentContext
+        self,
+        diagonal_corner_component: DiagonalCornerComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that LEFT_SIDE panel is generated."""
         config: dict = {}
@@ -1841,7 +2030,9 @@ class TestDiagonalCornerPanelGeneration:
         assert len(left_sides) == 1
 
     def test_generate_creates_right_side_panel(
-        self, diagonal_corner_component: DiagonalCornerComponent, standard_context: ComponentContext
+        self,
+        diagonal_corner_component: DiagonalCornerComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that RIGHT_SIDE panel is generated."""
         config: dict = {}
@@ -1851,17 +2042,23 @@ class TestDiagonalCornerPanelGeneration:
         assert len(right_sides) == 1
 
     def test_generate_creates_diagonal_face_panel(
-        self, diagonal_corner_component: DiagonalCornerComponent, standard_context: ComponentContext
+        self,
+        diagonal_corner_component: DiagonalCornerComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that DIAGONAL_FACE panel is generated."""
         config: dict = {}
         result = diagonal_corner_component.generate(config, standard_context)
 
-        diagonal_faces = [p for p in result.panels if p.panel_type == PanelType.DIAGONAL_FACE]
+        diagonal_faces = [
+            p for p in result.panels if p.panel_type == PanelType.DIAGONAL_FACE
+        ]
         assert len(diagonal_faces) == 1
 
     def test_generate_creates_top_panel(
-        self, diagonal_corner_component: DiagonalCornerComponent, standard_context: ComponentContext
+        self,
+        diagonal_corner_component: DiagonalCornerComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that TOP panel is generated."""
         config: dict = {}
@@ -1871,7 +2068,9 @@ class TestDiagonalCornerPanelGeneration:
         assert len(tops) == 1
 
     def test_generate_creates_bottom_panel(
-        self, diagonal_corner_component: DiagonalCornerComponent, standard_context: ComponentContext
+        self,
+        diagonal_corner_component: DiagonalCornerComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that BOTTOM panel is generated."""
         config: dict = {}
@@ -1881,7 +2080,9 @@ class TestDiagonalCornerPanelGeneration:
         assert len(bottoms) == 1
 
     def test_generate_panel_count_with_default_shelves(
-        self, diagonal_corner_component: DiagonalCornerComponent, standard_context: ComponentContext
+        self,
+        diagonal_corner_component: DiagonalCornerComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test total panel count with default shelf_count (2)."""
         config: dict = {}
@@ -1891,7 +2092,9 @@ class TestDiagonalCornerPanelGeneration:
         assert len(result.panels) == 7
 
     def test_generate_panel_count_no_shelves(
-        self, diagonal_corner_component: DiagonalCornerComponent, standard_context: ComponentContext
+        self,
+        diagonal_corner_component: DiagonalCornerComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test total panel count with shelf_count=0."""
         config = {"shelf_count": 0}
@@ -1901,7 +2104,9 @@ class TestDiagonalCornerPanelGeneration:
         assert len(result.panels) == 5
 
     def test_generate_panel_count_with_many_shelves(
-        self, diagonal_corner_component: DiagonalCornerComponent, standard_context: ComponentContext
+        self,
+        diagonal_corner_component: DiagonalCornerComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test total panel count with shelf_count=5."""
         config = {"shelf_count": 5}
@@ -1911,14 +2116,20 @@ class TestDiagonalCornerPanelGeneration:
         assert len(result.panels) == 10
 
     def test_generate_side_panels_have_angle_metadata(
-        self, diagonal_corner_component: DiagonalCornerComponent, standard_context: ComponentContext
+        self,
+        diagonal_corner_component: DiagonalCornerComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that side panels have angled cut metadata."""
         config: dict = {}
         result = diagonal_corner_component.generate(config, standard_context)
 
-        left_side = next(p for p in result.panels if p.panel_type == PanelType.LEFT_SIDE)
-        right_side = next(p for p in result.panels if p.panel_type == PanelType.RIGHT_SIDE)
+        left_side = next(
+            p for p in result.panels if p.panel_type == PanelType.LEFT_SIDE
+        )
+        right_side = next(
+            p for p in result.panels if p.panel_type == PanelType.RIGHT_SIDE
+        )
 
         assert left_side.metadata.get("is_angled") is True
         assert left_side.metadata.get("angle") == 45
@@ -1926,43 +2137,57 @@ class TestDiagonalCornerPanelGeneration:
         assert right_side.metadata.get("angle") == 45
 
     def test_generate_diagonal_face_has_angle_metadata(
-        self, diagonal_corner_component: DiagonalCornerComponent, standard_context: ComponentContext
+        self,
+        diagonal_corner_component: DiagonalCornerComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that diagonal face panel has angled metadata."""
         config: dict = {}
         result = diagonal_corner_component.generate(config, standard_context)
 
-        diagonal_face = next(p for p in result.panels if p.panel_type == PanelType.DIAGONAL_FACE)
+        diagonal_face = next(
+            p for p in result.panels if p.panel_type == PanelType.DIAGONAL_FACE
+        )
 
         assert diagonal_face.metadata.get("is_angled") is True
         assert diagonal_face.metadata.get("angle") == 45
 
     def test_generate_diagonal_face_width_auto_calculated(
-        self, diagonal_corner_component: DiagonalCornerComponent, standard_context: ComponentContext
+        self,
+        diagonal_corner_component: DiagonalCornerComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that diagonal face width is auto-calculated as depth * sqrt(2)."""
         config: dict = {}
         result = diagonal_corner_component.generate(config, standard_context)
 
-        diagonal_face = next(p for p in result.panels if p.panel_type == PanelType.DIAGONAL_FACE)
+        diagonal_face = next(
+            p for p in result.panels if p.panel_type == PanelType.DIAGONAL_FACE
+        )
 
         # For 24" depth: 24 * sqrt(2) = 33.94"
         expected_width = standard_context.depth * math.sqrt(2)
         assert diagonal_face.width == pytest.approx(expected_width)
 
     def test_generate_diagonal_face_width_explicit(
-        self, diagonal_corner_component: DiagonalCornerComponent, standard_context: ComponentContext
+        self,
+        diagonal_corner_component: DiagonalCornerComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that explicit face_width is used."""
         config = {"face_width": 30.0}
         result = diagonal_corner_component.generate(config, standard_context)
 
-        diagonal_face = next(p for p in result.panels if p.panel_type == PanelType.DIAGONAL_FACE)
+        diagonal_face = next(
+            p for p in result.panels if p.panel_type == PanelType.DIAGONAL_FACE
+        )
 
         assert diagonal_face.width == 30.0
 
     def test_generate_triangular_shelf_dimensions(
-        self, diagonal_corner_component: DiagonalCornerComponent, standard_context: ComponentContext
+        self,
+        diagonal_corner_component: DiagonalCornerComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test triangular shelf dimensions (depth x depth)."""
         config = {"shelf_shape": "triangular", "shelf_count": 1}
@@ -1975,7 +2200,9 @@ class TestDiagonalCornerPanelGeneration:
         assert shelves[0].metadata.get("shelf_shape") == "triangular"
 
     def test_generate_squared_shelf_dimensions(
-        self, diagonal_corner_component: DiagonalCornerComponent, standard_context: ComponentContext
+        self,
+        diagonal_corner_component: DiagonalCornerComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test squared shelf dimensions (depth * 0.8 x depth * 0.8)."""
         config = {"shelf_shape": "squared", "shelf_count": 1}
@@ -1989,7 +2216,9 @@ class TestDiagonalCornerPanelGeneration:
         assert shelves[0].metadata.get("shelf_shape") == "squared"
 
     def test_generate_shelves_have_index_metadata(
-        self, diagonal_corner_component: DiagonalCornerComponent, standard_context: ComponentContext
+        self,
+        diagonal_corner_component: DiagonalCornerComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that shelves have shelf_index in metadata."""
         config = {"shelf_count": 3}
@@ -2001,7 +2230,9 @@ class TestDiagonalCornerPanelGeneration:
         assert sorted(indices) == [0, 1, 2]
 
     def test_generate_includes_metadata(
-        self, diagonal_corner_component: DiagonalCornerComponent, standard_context: ComponentContext
+        self,
+        diagonal_corner_component: DiagonalCornerComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that metadata includes configuration info."""
         config = {"shelf_shape": "triangular", "shelf_count": 3}
@@ -2015,7 +2246,9 @@ class TestDiagonalCornerPanelGeneration:
         assert "footprint" in result.metadata
 
     def test_generate_footprint_metadata(
-        self, diagonal_corner_component: DiagonalCornerComponent, standard_context: ComponentContext
+        self,
+        diagonal_corner_component: DiagonalCornerComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test footprint metadata values (symmetric, both = depth)."""
         config: dict = {}
@@ -2032,7 +2265,9 @@ class TestDiagonalCornerHardwareGeneration:
     """Tests for DiagonalCornerComponent hardware generation."""
 
     def test_hardware_includes_shelf_pins_with_shelves(
-        self, diagonal_corner_component: DiagonalCornerComponent, standard_context: ComponentContext
+        self,
+        diagonal_corner_component: DiagonalCornerComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that hardware includes shelf pins when shelf_count > 0."""
         config = {"shelf_count": 2}
@@ -2043,7 +2278,9 @@ class TestDiagonalCornerHardwareGeneration:
         assert pins[0].quantity == 8  # 2 shelves * 4 pins
 
     def test_hardware_shelf_pin_count_scales_with_shelves(
-        self, diagonal_corner_component: DiagonalCornerComponent, standard_context: ComponentContext
+        self,
+        diagonal_corner_component: DiagonalCornerComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that shelf pin count is shelf_count * 4."""
         config = {"shelf_count": 5}
@@ -2054,7 +2291,9 @@ class TestDiagonalCornerHardwareGeneration:
         assert pins[0].quantity == 20  # 5 shelves * 4 pins
 
     def test_hardware_no_pins_when_no_shelves(
-        self, diagonal_corner_component: DiagonalCornerComponent, standard_context: ComponentContext
+        self,
+        diagonal_corner_component: DiagonalCornerComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that no shelf pins are returned when shelf_count=0."""
         config = {"shelf_count": 0}
@@ -2063,7 +2302,9 @@ class TestDiagonalCornerHardwareGeneration:
         assert len(hardware) == 0
 
     def test_hardware_shelf_pin_sku(
-        self, diagonal_corner_component: DiagonalCornerComponent, standard_context: ComponentContext
+        self,
+        diagonal_corner_component: DiagonalCornerComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that shelf pins have correct SKU."""
         config = {"shelf_count": 1}
@@ -2073,7 +2314,9 @@ class TestDiagonalCornerHardwareGeneration:
         assert pins[0].sku == "SP-5MM"
 
     def test_hardware_in_generate_result(
-        self, diagonal_corner_component: DiagonalCornerComponent, standard_context: ComponentContext
+        self,
+        diagonal_corner_component: DiagonalCornerComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that generate includes hardware in result."""
         config = {"shelf_count": 3}
@@ -2087,7 +2330,9 @@ class TestDiagonalCornerAutoCalculations:
     """Tests for DiagonalCornerComponent auto-calculations."""
 
     def test_auto_calculate_face_width(
-        self, diagonal_corner_component: DiagonalCornerComponent, standard_context: ComponentContext
+        self,
+        diagonal_corner_component: DiagonalCornerComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test auto-calculation of face_width when not specified."""
         config: dict = {}
@@ -2120,7 +2365,9 @@ class TestDiagonalCornerAutoCalculations:
         assert result.metadata["face_width"] == pytest.approx(expected)
 
     def test_explicit_face_width_overrides_auto(
-        self, diagonal_corner_component: DiagonalCornerComponent, standard_context: ComponentContext
+        self,
+        diagonal_corner_component: DiagonalCornerComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that explicit face_width overrides auto-calculation."""
         config = {"face_width": 28.0}
@@ -2133,7 +2380,9 @@ class TestDiagonalCornerEdgeCases:
     """Edge case tests for DiagonalCornerComponent."""
 
     def test_defaults_are_applied(
-        self, diagonal_corner_component: DiagonalCornerComponent, standard_context: ComponentContext
+        self,
+        diagonal_corner_component: DiagonalCornerComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that all defaults are correctly applied."""
         config: dict = {}
@@ -2167,7 +2416,9 @@ class TestDiagonalCornerEdgeCases:
         assert result.is_valid
 
     def test_all_shelf_counts_in_range(
-        self, diagonal_corner_component: DiagonalCornerComponent, standard_context: ComponentContext
+        self,
+        diagonal_corner_component: DiagonalCornerComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that all shelf counts 0-6 are valid."""
         for count in range(7):
@@ -2176,7 +2427,9 @@ class TestDiagonalCornerEdgeCases:
             assert result.is_valid, f"shelf_count={count} should be valid"
 
     def test_footprint_is_symmetric(
-        self, diagonal_corner_component: DiagonalCornerComponent, standard_context: ComponentContext
+        self,
+        diagonal_corner_component: DiagonalCornerComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that diagonal corner footprint is always symmetric."""
         config: dict = {}
@@ -2186,13 +2439,17 @@ class TestDiagonalCornerEdgeCases:
         assert footprint["left_wall"] == footprint["right_wall"]
 
     def test_side_panel_dimensions(
-        self, diagonal_corner_component: DiagonalCornerComponent, standard_context: ComponentContext
+        self,
+        diagonal_corner_component: DiagonalCornerComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test side panel dimensions are correct."""
         config: dict = {}
         result = diagonal_corner_component.generate(config, standard_context)
 
-        left_side = next(p for p in result.panels if p.panel_type == PanelType.LEFT_SIDE)
+        left_side = next(
+            p for p in result.panels if p.panel_type == PanelType.LEFT_SIDE
+        )
         thickness = standard_context.material.thickness
         expected_depth = standard_context.depth - thickness  # Interior depth
         expected_height = standard_context.height - (2 * thickness)  # Interior height
@@ -2201,7 +2458,9 @@ class TestDiagonalCornerEdgeCases:
         assert left_side.height == pytest.approx(expected_height)
 
     def test_top_bottom_panels_are_square(
-        self, diagonal_corner_component: DiagonalCornerComponent, standard_context: ComponentContext
+        self,
+        diagonal_corner_component: DiagonalCornerComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that top and bottom panels are square (depth x depth)."""
         config: dict = {}

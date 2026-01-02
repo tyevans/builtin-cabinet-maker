@@ -3,7 +3,7 @@
 import pytest
 
 from cabinets.domain.services import SkylightVoidService
-from cabinets.domain.value_objects import Skylight, NotchSpec
+from cabinets.domain.value_objects import Skylight
 
 
 class TestSkylightVoidServiceCalculateVoidIntersection:
@@ -69,7 +69,9 @@ class TestSkylightVoidServiceCalculateVoidIntersection:
         """Angled projection expands the void width."""
         service = SkylightVoidService()
         # 75 degree angle will expand void
-        skylight = Skylight(x_position=36, width=24, projection_depth=8, projection_angle=75)
+        skylight = Skylight(
+            x_position=36, width=24, projection_depth=8, projection_angle=75
+        )
 
         result = service.calculate_void_intersection(skylight, 24, 48, 12)
 
@@ -93,9 +95,9 @@ class TestSkylightVoidServiceCalculateAllIntersections:
         """Returns notches only for intersecting skylights."""
         service = SkylightVoidService()
         skylights = [
-            Skylight(x_position=0, width=10, projection_depth=8),   # No intersection
+            Skylight(x_position=0, width=10, projection_depth=8),  # No intersection
             Skylight(x_position=30, width=10, projection_depth=6),  # Intersects
-            Skylight(x_position=100, width=10, projection_depth=8), # No intersection
+            Skylight(x_position=100, width=10, projection_depth=8),  # No intersection
         ]
 
         result = service.calculate_all_intersections(skylights, 24, 48, 12)

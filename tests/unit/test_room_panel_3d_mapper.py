@@ -33,7 +33,9 @@ def back_material() -> MaterialSpec:
 
 
 @pytest.fixture
-def simple_cabinet(standard_material: MaterialSpec, back_material: MaterialSpec) -> Cabinet:
+def simple_cabinet(
+    standard_material: MaterialSpec, back_material: MaterialSpec
+) -> Cabinet:
     """Create a simple cabinet for testing."""
     return Cabinet(
         width=24.0,
@@ -239,8 +241,12 @@ class TestMapCabinetsToBoxes:
             rotation_z=-90.0,
         )
 
-        result_270 = room_mapper.map_cabinets_to_boxes([simple_cabinet], [transform_270])
-        result_neg90 = room_mapper.map_cabinets_to_boxes([simple_cabinet], [transform_neg90])
+        result_270 = room_mapper.map_cabinets_to_boxes(
+            [simple_cabinet], [transform_270]
+        )
+        result_neg90 = room_mapper.map_cabinets_to_boxes(
+            [simple_cabinet], [transform_neg90]
+        )
 
         assert len(result_270) == len(result_neg90)
         for box_270, box_neg90 in zip(result_270, result_neg90):
@@ -570,7 +576,9 @@ class TestIntegrationScenarios:
             SectionTransform(
                 section_index=1,
                 wall_index=1,
-                position=Position3D(x=48.0, y=50.0, z=0.0),  # Positioned to stay positive
+                position=Position3D(
+                    x=48.0, y=50.0, z=0.0
+                ),  # Positioned to stay positive
                 rotation_z=270.0,
             ),
         ]
@@ -658,8 +666,12 @@ class TestIntegrationScenarios:
             rotation_z=360.0,
         )
 
-        original = room_mapper.map_cabinets_to_boxes([simple_cabinet], [identity_transform])
-        rotated = room_mapper.map_cabinets_to_boxes([simple_cabinet], [full_rotation_transform])
+        original = room_mapper.map_cabinets_to_boxes(
+            [simple_cabinet], [identity_transform]
+        )
+        rotated = room_mapper.map_cabinets_to_boxes(
+            [simple_cabinet], [full_rotation_transform]
+        )
 
         assert len(original) == len(rotated)
         for orig, rot in zip(original, rotated):

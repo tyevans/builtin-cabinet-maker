@@ -54,7 +54,9 @@ class TestMergeConfigWithCli:
         assert merged.cabinet.width == base_config.cabinet.width
         assert merged.cabinet.height == base_config.cabinet.height
         assert merged.cabinet.depth == base_config.cabinet.depth
-        assert merged.cabinet.material.thickness == base_config.cabinet.material.thickness
+        assert (
+            merged.cabinet.material.thickness == base_config.cabinet.material.thickness
+        )
         assert merged.output.format == base_config.output.format
         assert merged.output.stl_file == base_config.output.stl_file
 

@@ -1,10 +1,9 @@
 """Unit tests for SlopedCeilingService."""
 
 import pytest
-from math import tan, radians
 
 from cabinets.domain.services import SlopedCeilingService
-from cabinets.domain.value_objects import CeilingSlope, TaperSpec
+from cabinets.domain.value_objects import CeilingSlope
 
 
 class TestSlopedCeilingServiceCalculateSectionHeights:
@@ -362,8 +361,10 @@ class TestSlopedCeilingServiceIntegration:
 
             if taper is not None:
                 # The midpoint height should be between start and end heights
-                assert taper.start_height >= heights[i] >= taper.end_height or \
-                       taper.end_height >= heights[i] >= taper.start_height
+                assert (
+                    taper.start_height >= heights[i] >= taper.end_height
+                    or taper.end_height >= heights[i] >= taper.start_height
+                )
 
             current_x += width
 

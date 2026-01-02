@@ -13,7 +13,6 @@ from cabinets.domain import MaterialEstimate
 from cabinets.domain.entities import Cabinet, Room, Section, WallSegment
 from cabinets.domain.value_objects import (
     CutPiece,
-    JointType,
     MaterialSpec,
     MaterialType,
     PanelType,
@@ -28,7 +27,9 @@ from cabinets.infrastructure.exporters.dxf import LAYERS
 # --- Helper Functions ---
 
 
-def make_material_estimate(area_sqft: float = 32.0, sheets: int = 1) -> MaterialEstimate:
+def make_material_estimate(
+    area_sqft: float = 32.0, sheets: int = 1
+) -> MaterialEstimate:
     """Create a MaterialEstimate for testing."""
     return MaterialEstimate(
         total_area_sqin=area_sqft * 144.0,
@@ -609,7 +610,9 @@ class TestDxfExporterLabels:
         mtexts = list(msp.query("MTEXT"))
         assert "My Custom Panel" in mtexts[0].text
 
-    def test_label_contains_dimensions_inches(self, material_spec: MaterialSpec) -> None:
+    def test_label_contains_dimensions_inches(
+        self, material_spec: MaterialSpec
+    ) -> None:
         """Label should contain dimensions in inches format."""
         exporter = DxfExporter(units="inches")
         doc = ezdxf.new("R2010")
@@ -704,7 +707,10 @@ class TestDxfExporterCombinedMode:
             assert path.exists()
 
     def test_export_combined_all_panels(
-        self, sample_cut_pieces: list[CutPiece], simple_cabinet: Cabinet, material_spec: MaterialSpec
+        self,
+        sample_cut_pieces: list[CutPiece],
+        simple_cabinet: Cabinet,
+        material_spec: MaterialSpec,
     ) -> None:
         """Combined mode should include all panels from cut list."""
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -713,7 +719,9 @@ class TestDxfExporterCombinedMode:
             output = LayoutOutput(
                 cabinet=simple_cabinet,
                 cut_list=sample_cut_pieces,
-                material_estimates={material_spec: make_material_estimate(area_sqft=32.0, sheets=1)},
+                material_estimates={
+                    material_spec: make_material_estimate(area_sqft=32.0, sheets=1)
+                },
                 total_estimate=make_material_estimate(area_sqft=32.0, sheets=1),
             )
 
@@ -734,7 +742,10 @@ class TestDxfExporterPerPanelMode:
     """Tests for per-panel mode export."""
 
     def test_export_per_panel_creates_multiple_files(
-        self, sample_cut_pieces: list[CutPiece], simple_cabinet: Cabinet, material_spec: MaterialSpec
+        self,
+        sample_cut_pieces: list[CutPiece],
+        simple_cabinet: Cabinet,
+        material_spec: MaterialSpec,
     ) -> None:
         """Per-panel mode should create separate files for each panel."""
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -743,7 +754,9 @@ class TestDxfExporterPerPanelMode:
             output = LayoutOutput(
                 cabinet=simple_cabinet,
                 cut_list=sample_cut_pieces,
-                material_estimates={material_spec: make_material_estimate(area_sqft=32.0, sheets=1)},
+                material_estimates={
+                    material_spec: make_material_estimate(area_sqft=32.0, sheets=1)
+                },
                 total_estimate=make_material_estimate(area_sqft=32.0, sheets=1),
             )
 
@@ -756,7 +769,10 @@ class TestDxfExporterPerPanelMode:
             assert len(dxf_files) == 3  # Side Panel, Top Panel, Shelf
 
     def test_per_panel_filenames_use_labels(
-        self, sample_cut_pieces: list[CutPiece], simple_cabinet: Cabinet, material_spec: MaterialSpec
+        self,
+        sample_cut_pieces: list[CutPiece],
+        simple_cabinet: Cabinet,
+        material_spec: MaterialSpec,
     ) -> None:
         """Per-panel files should be named using the panel labels."""
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -765,7 +781,9 @@ class TestDxfExporterPerPanelMode:
             output = LayoutOutput(
                 cabinet=simple_cabinet,
                 cut_list=sample_cut_pieces,
-                material_estimates={material_spec: make_material_estimate(area_sqft=32.0, sheets=1)},
+                material_estimates={
+                    material_spec: make_material_estimate(area_sqft=32.0, sheets=1)
+                },
                 total_estimate=make_material_estimate(area_sqft=32.0, sheets=1),
             )
 
@@ -800,7 +818,9 @@ class TestDxfExporterStringExport:
         output = LayoutOutput(
             cabinet=simple_cabinet,
             cut_list=[],
-            material_estimates={material_spec: make_material_estimate(area_sqft=0.0, sheets=0)},
+            material_estimates={
+                material_spec: make_material_estimate(area_sqft=0.0, sheets=0)
+            },
             total_estimate=make_material_estimate(area_sqft=0.0, sheets=0),
         )
 
@@ -860,7 +880,9 @@ class TestDxfExporterEdgeCases:
             output = LayoutOutput(
                 cabinet=simple_cabinet,
                 cut_list=[],
-                material_estimates={material_spec: make_material_estimate(area_sqft=0.0, sheets=0)},
+                material_estimates={
+                    material_spec: make_material_estimate(area_sqft=0.0, sheets=0)
+                },
                 total_estimate=make_material_estimate(area_sqft=0.0, sheets=0),
             )
 
@@ -891,7 +913,9 @@ class TestDxfExporterEdgeCases:
             output = LayoutOutput(
                 cabinet=simple_cabinet,
                 cut_list=cut_list,
-                material_estimates={material_spec: make_material_estimate(area_sqft=8.0, sheets=1)},
+                material_estimates={
+                    material_spec: make_material_estimate(area_sqft=8.0, sheets=1)
+                },
                 total_estimate=make_material_estimate(area_sqft=8.0, sheets=1),
             )
 
@@ -907,7 +931,10 @@ class TestDxfExporterIntegration:
     """Integration tests for the complete export workflow."""
 
     def test_full_export_with_all_features(
-        self, cut_piece_with_dados: CutPiece, simple_cabinet: Cabinet, material_spec: MaterialSpec
+        self,
+        cut_piece_with_dados: CutPiece,
+        simple_cabinet: Cabinet,
+        material_spec: MaterialSpec,
     ) -> None:
         """Test complete export with dados, holes, and labels."""
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -916,7 +943,9 @@ class TestDxfExporterIntegration:
             output = LayoutOutput(
                 cabinet=simple_cabinet,
                 cut_list=[cut_piece_with_dados],
-                material_estimates={material_spec: make_material_estimate(area_sqft=3.0, sheets=1)},
+                material_estimates={
+                    material_spec: make_material_estimate(area_sqft=3.0, sheets=1)
+                },
                 total_estimate=make_material_estimate(area_sqft=3.0, sheets=1),
             )
 
@@ -932,7 +961,7 @@ class TestDxfExporterIntegration:
 
             # Should have dado lines
             lines = list(msp.query("LINE"))
-            dados_lines = [l for l in lines if l.dxf.layer == "DADOS"]
+            dados_lines = [line for line in lines if line.dxf.layer == "DADOS"]
             assert len(dados_lines) == 4  # 2 dados * 2 lines
 
             # Should have holes (side panel)
@@ -943,7 +972,10 @@ class TestDxfExporterIntegration:
             assert len(list(msp.query("MTEXT"))) == 1
 
     def test_export_with_mm_units_complete(
-        self, sample_cut_pieces: list[CutPiece], simple_cabinet: Cabinet, material_spec: MaterialSpec
+        self,
+        sample_cut_pieces: list[CutPiece],
+        simple_cabinet: Cabinet,
+        material_spec: MaterialSpec,
     ) -> None:
         """Test complete export with mm units."""
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -952,7 +984,9 @@ class TestDxfExporterIntegration:
             output = LayoutOutput(
                 cabinet=simple_cabinet,
                 cut_list=sample_cut_pieces,
-                material_estimates={material_spec: make_material_estimate(area_sqft=32.0, sheets=1)},
+                material_estimates={
+                    material_spec: make_material_estimate(area_sqft=32.0, sheets=1)
+                },
                 total_estimate=make_material_estimate(area_sqft=32.0, sheets=1),
             )
 
@@ -973,5 +1007,4 @@ class TestDxfExporterIntegration:
             # Check that dimensions are larger than inches would be
             # Original: 24" x 48", in mm: ~609.6 x 1219.2
             max_x = max(v[0] for v in vertices)
-            max_y = max(v[1] for v in vertices)
             assert max_x > 500  # Should be in mm range, not inches

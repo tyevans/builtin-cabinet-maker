@@ -80,9 +80,7 @@ def l_shaped_room_left_turn() -> Room:
 class TestDetectCornerSections:
     """Tests for detect_corner_sections method."""
 
-    def test_no_corner_sections(
-        self, room_layout_service: RoomLayoutService
-    ) -> None:
+    def test_no_corner_sections(self, room_layout_service: RoomLayoutService) -> None:
         """Specs without corner components should return empty list."""
         specs = [
             SectionSpec(width=24.0, shelves=3),
@@ -122,9 +120,7 @@ class TestDetectCornerSections:
         assert len(result) == 1
         assert result[0] == (0, "corner.diagonal")
 
-    def test_detect_blind_corner(
-        self, room_layout_service: RoomLayoutService
-    ) -> None:
+    def test_detect_blind_corner(self, room_layout_service: RoomLayoutService) -> None:
         """Should detect blind corner component."""
         specs = [
             SectionSpec(
@@ -257,9 +253,7 @@ class TestCalculateCornerFootprint:
         assert footprint.left_wall == 27.0
         assert footprint.right_wall == 27.0
 
-    def test_diagonal_footprint(
-        self, room_layout_service: RoomLayoutService
-    ) -> None:
+    def test_diagonal_footprint(self, room_layout_service: RoomLayoutService) -> None:
         """Diagonal corner footprint equals depth on each wall."""
         footprint = room_layout_service.calculate_corner_footprint(
             "corner.diagonal", {}, 24.0
@@ -300,9 +294,7 @@ class TestCalculateCornerFootprint:
     ) -> None:
         """Unknown corner type should raise ValueError."""
         with pytest.raises(ValueError, match="Unknown corner component type"):
-            room_layout_service.calculate_corner_footprint(
-                "corner.unknown", {}, 24.0
-            )
+            room_layout_service.calculate_corner_footprint("corner.unknown", {}, 24.0)
 
 
 class TestGetCornerType:
@@ -310,11 +302,17 @@ class TestGetCornerType:
 
     def test_lazy_susan_type(self, room_layout_service: RoomLayoutService) -> None:
         """Should return LAZY_SUSAN type."""
-        assert room_layout_service.get_corner_type("corner.lazy_susan") == CornerType.LAZY_SUSAN
+        assert (
+            room_layout_service.get_corner_type("corner.lazy_susan")
+            == CornerType.LAZY_SUSAN
+        )
 
     def test_diagonal_type(self, room_layout_service: RoomLayoutService) -> None:
         """Should return DIAGONAL type."""
-        assert room_layout_service.get_corner_type("corner.diagonal") == CornerType.DIAGONAL
+        assert (
+            room_layout_service.get_corner_type("corner.diagonal")
+            == CornerType.DIAGONAL
+        )
 
     def test_blind_type(self, room_layout_service: RoomLayoutService) -> None:
         """Should return BLIND type."""
@@ -515,8 +513,10 @@ class TestAssignSectionsToWallsWithCorners:
             SectionSpec(width=24.0, shelves=3, wall=0),
             SectionSpec(width=36.0, shelves=4, wall=0),
         ]
-        regular, corners, reservations = room_layout_service.assign_sections_to_walls_with_corners(
-            l_shaped_room, specs
+        regular, corners, reservations = (
+            room_layout_service.assign_sections_to_walls_with_corners(
+                l_shaped_room, specs
+            )
         )
 
         assert len(regular) == 2
@@ -542,8 +542,10 @@ class TestAssignSectionsToWallsWithCorners:
             ),
             SectionSpec(width=24.0, shelves=3, wall=1),
         ]
-        regular, corners, reservations = room_layout_service.assign_sections_to_walls_with_corners(
-            l_shaped_room, specs
+        regular, corners, reservations = (
+            room_layout_service.assign_sections_to_walls_with_corners(
+                l_shaped_room, specs
+            )
         )
 
         assert len(corners) == 1
@@ -569,8 +571,10 @@ class TestAssignSectionsToWallsWithCorners:
                 component_config={"component": "corner.lazy_susan"},
             ),
         ]
-        regular, corners, reservations = room_layout_service.assign_sections_to_walls_with_corners(
-            l_shaped_room, specs
+        regular, corners, reservations = (
+            room_layout_service.assign_sections_to_walls_with_corners(
+                l_shaped_room, specs
+            )
         )
 
         assert len(corners) == 1
@@ -597,8 +601,10 @@ class TestAssignSectionsToWallsWithCorners:
             ),
             SectionSpec(width="fill", shelves=3, wall=1),  # Fill remaining on wall 1
         ]
-        regular, corners, reservations = room_layout_service.assign_sections_to_walls_with_corners(
-            l_shaped_room, specs
+        regular, corners, reservations = (
+            room_layout_service.assign_sections_to_walls_with_corners(
+                l_shaped_room, specs
+            )
         )
 
         assert len(corners) == 1
@@ -625,8 +631,10 @@ class TestAssignSectionsToWallsWithCorners:
             SectionSpec(width=24.0, shelves=3, wall=1),  # Section 3 on wall 1
             SectionSpec(width=24.0, shelves=3, wall=1),  # Section 4 on wall 1
         ]
-        regular, corners, reservations = room_layout_service.assign_sections_to_walls_with_corners(
-            l_shaped_room, specs
+        regular, corners, reservations = (
+            room_layout_service.assign_sections_to_walls_with_corners(
+                l_shaped_room, specs
+            )
         )
 
         assert len(corners) == 1
@@ -647,8 +655,8 @@ class TestAssignSectionsToWallsWithCorners:
         self, room_layout_service: RoomLayoutService, l_shaped_room: Room
     ) -> None:
         """Empty specs should return empty results."""
-        regular, corners, reservations = room_layout_service.assign_sections_to_walls_with_corners(
-            l_shaped_room, []
+        regular, corners, reservations = (
+            room_layout_service.assign_sections_to_walls_with_corners(l_shaped_room, [])
         )
         assert regular == []
         assert corners == []
@@ -764,8 +772,12 @@ class TestIntegrationScenarios:
         room = Room(
             name="kitchen",
             walls=[
-                WallSegment(length=120.0, height=96.0, angle=0, name="south", depth=24.0),
-                WallSegment(length=96.0, height=96.0, angle=90, name="west", depth=24.0),
+                WallSegment(
+                    length=120.0, height=96.0, angle=0, name="south", depth=24.0
+                ),
+                WallSegment(
+                    length=96.0, height=96.0, angle=90, name="west", depth=24.0
+                ),
             ],
         )
 
@@ -786,8 +798,8 @@ class TestIntegrationScenarios:
             SectionSpec(width=24.0, shelves=0, wall="west"),  # Base 4
         ]
 
-        regular, corners, reservations = room_layout_service.assign_sections_to_walls_with_corners(
-            room, specs
+        regular, corners, reservations = (
+            room_layout_service.assign_sections_to_walls_with_corners(room, specs)
         )
 
         # Should have 1 corner and 4 regular sections
@@ -841,8 +853,10 @@ class TestIntegrationScenarios:
             SectionSpec(width=24.0, shelves=0, wall="north"),
         ]
 
-        regular, corners, reservations = room_layout_service.assign_sections_to_walls_with_corners(
-            u_shaped_room, specs
+        regular, corners, reservations = (
+            room_layout_service.assign_sections_to_walls_with_corners(
+                u_shaped_room, specs
+            )
         )
 
         # Should have 2 corners

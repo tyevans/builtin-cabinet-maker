@@ -19,7 +19,7 @@ import pytest
 
 from cabinets.application.dtos import LayoutOutput, RoomLayoutOutput
 from cabinets.domain.components.results import HardwareItem
-from cabinets.domain.entities import Cabinet, Panel, Room, Section, Shelf, WallSegment
+from cabinets.domain.entities import Cabinet, Room, Section, Shelf, WallSegment
 from cabinets.domain.services import MaterialEstimate
 from cabinets.domain.value_objects import (
     CutPiece,
@@ -48,7 +48,9 @@ def back_material_spec() -> MaterialSpec:
 
 
 @pytest.fixture
-def sample_cabinet(material_spec: MaterialSpec, back_material_spec: MaterialSpec) -> Cabinet:
+def sample_cabinet(
+    material_spec: MaterialSpec, back_material_spec: MaterialSpec
+) -> Cabinet:
     """Create a sample cabinet for testing."""
     cabinet = Cabinet(
         width=48.0,
@@ -85,7 +87,9 @@ def sample_cabinet(material_spec: MaterialSpec, back_material_spec: MaterialSpec
 
 
 @pytest.fixture
-def sample_cut_list(material_spec: MaterialSpec, back_material_spec: MaterialSpec) -> list[CutPiece]:
+def sample_cut_list(
+    material_spec: MaterialSpec, back_material_spec: MaterialSpec
+) -> list[CutPiece]:
     """Create a sample cut list for testing."""
     return [
         CutPiece(
@@ -361,7 +365,9 @@ class TestCabinetStructure:
         assert cabinet["dimensions"]["height"] == 84.0
         assert cabinet["dimensions"]["depth"] == 12.0
 
-    def test_cabinet_includes_interior_dimensions(self, layout_output: LayoutOutput) -> None:
+    def test_cabinet_includes_interior_dimensions(
+        self, layout_output: LayoutOutput
+    ) -> None:
         """Cabinet should include interior dimensions."""
         exporter = EnhancedJsonExporter()
         result = json.loads(exporter.export_string(layout_output))
@@ -384,7 +390,9 @@ class TestCabinetStructure:
         assert section["width"] == 46.5
         assert section["shelf_count"] == 2
 
-    def test_room_layout_has_room_info(self, room_layout_output: RoomLayoutOutput) -> None:
+    def test_room_layout_has_room_info(
+        self, room_layout_output: RoomLayoutOutput
+    ) -> None:
         """Room layout should include room structure."""
         exporter = EnhancedJsonExporter()
         result = json.loads(exporter.export_string(room_layout_output))
@@ -396,7 +404,9 @@ class TestCabinetStructure:
         assert len(room["walls"]) == 1
         assert room["walls"][0]["length"] == 120.0
 
-    def test_room_layout_has_cabinets_list(self, room_layout_output: RoomLayoutOutput) -> None:
+    def test_room_layout_has_cabinets_list(
+        self, room_layout_output: RoomLayoutOutput
+    ) -> None:
         """Room layout should include cabinets as a list."""
         exporter = EnhancedJsonExporter()
         result = json.loads(exporter.export_string(room_layout_output))
@@ -470,7 +480,9 @@ class TestPiecesWithDimensions:
 class TestThreeDPositions:
     """Tests for FR-03.3: 3D positions for each panel."""
 
-    def test_pieces_have_3d_positions_by_default(self, layout_output: LayoutOutput) -> None:
+    def test_pieces_have_3d_positions_by_default(
+        self, layout_output: LayoutOutput
+    ) -> None:
         """Pieces should have 3D positions when enabled (default)."""
         exporter = EnhancedJsonExporter(include_3d_positions=True)
         result = json.loads(exporter.export_string(layout_output))
@@ -547,7 +559,9 @@ class TestCutList:
         assert "cut_list" in result
         assert isinstance(result["cut_list"], list)
 
-    def test_cut_list_items_have_required_fields(self, layout_output: LayoutOutput) -> None:
+    def test_cut_list_items_have_required_fields(
+        self, layout_output: LayoutOutput
+    ) -> None:
         """Each cut list item should have all required fields."""
         exporter = EnhancedJsonExporter()
         result = json.loads(exporter.export_string(layout_output))
@@ -671,7 +685,9 @@ class TestWarnings:
 class TestFileExport:
     """Tests for file export functionality."""
 
-    def test_export_creates_file(self, layout_output: LayoutOutput, tmp_path: Path) -> None:
+    def test_export_creates_file(
+        self, layout_output: LayoutOutput, tmp_path: Path
+    ) -> None:
         """export should create a file at the specified path."""
         exporter = EnhancedJsonExporter()
         output_path = tmp_path / "output.json"
@@ -681,7 +697,9 @@ class TestFileExport:
         assert output_path.exists()
         assert output_path.stat().st_size > 0
 
-    def test_export_file_is_valid_json(self, layout_output: LayoutOutput, tmp_path: Path) -> None:
+    def test_export_file_is_valid_json(
+        self, layout_output: LayoutOutput, tmp_path: Path
+    ) -> None:
         """Exported file should contain valid JSON."""
         exporter = EnhancedJsonExporter()
         output_path = tmp_path / "output.json"
@@ -723,7 +741,9 @@ class TestFileExport:
 class TestRoomLayoutOutput:
     """Tests for RoomLayoutOutput support."""
 
-    def test_room_layout_output_accepted(self, room_layout_output: RoomLayoutOutput) -> None:
+    def test_room_layout_output_accepted(
+        self, room_layout_output: RoomLayoutOutput
+    ) -> None:
         """Should accept RoomLayoutOutput as input."""
         exporter = EnhancedJsonExporter()
         result = exporter.export_string(room_layout_output)
@@ -732,7 +752,9 @@ class TestRoomLayoutOutput:
         data = json.loads(result)
         assert "schema_version" in data
 
-    def test_room_layout_has_room_section(self, room_layout_output: RoomLayoutOutput) -> None:
+    def test_room_layout_has_room_section(
+        self, room_layout_output: RoomLayoutOutput
+    ) -> None:
         """Room layout should have room section with walls."""
         exporter = EnhancedJsonExporter()
         result = json.loads(exporter.export_string(room_layout_output))
@@ -850,7 +872,9 @@ class TestJsonValidity:
         data = json.loads(result_str)
         assert isinstance(data, dict)
 
-    def test_all_values_are_json_serializable(self, layout_output: LayoutOutput) -> None:
+    def test_all_values_are_json_serializable(
+        self, layout_output: LayoutOutput
+    ) -> None:
         """All values should be JSON serializable."""
         exporter = EnhancedJsonExporter()
         result_str = exporter.export_string(layout_output)

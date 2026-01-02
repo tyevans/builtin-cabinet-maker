@@ -11,7 +11,7 @@ from typing import Any
 
 from pydantic import ValidationError as PydanticValidationError
 
-from cabinets.application.config.schema import CabinetConfiguration
+from cabinets.application.config.schemas import CabinetConfiguration
 
 
 class ConfigError(Exception):

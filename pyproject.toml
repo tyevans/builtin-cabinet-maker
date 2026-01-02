@@ -9,11 +9,15 @@ dependencies = [
     "typer>=0.21.0",
     "pydantic>=2.0",
     "ezdxf>=1.0.0",
+    "pydantic-ai>=0.0.15",  # LLM agent framework for assembly instructions
+    "httpx>=0.28.0",  # Async HTTP client for Ollama health checks
 ]
 
 [project.optional-dependencies]
 dev = [
     "pytest>=8.0",
+    "pytest-httpx>=0.30.0",  # HTTP mocking for Ollama client tests
+    "pytest-asyncio>=0.24.0",  # Async test support
 ]
 
 [project.scripts]
@@ -32,6 +36,9 @@ build-backend = "setuptools.build_meta"
 [dependency-groups]
 dev = [
     "pytest-cov>=7.0.0",
+    "pytest-xdist>=3.8.0",
+    "mypy>=1.10.0",
+    "pre-commit>=4.0.0",
 ]
 
 [tool.pytest.ini_options]
@@ -39,3 +46,9 @@ filterwarnings = [
     "ignore::DeprecationWarning:ezdxf.*:",
     "ignore::DeprecationWarning:pyparsing.*:",
 ]
+markers = [
+    "integration: tests requiring external services (Ollama, etc.)",
+    "slow: tests that take a long time to run",
+]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"

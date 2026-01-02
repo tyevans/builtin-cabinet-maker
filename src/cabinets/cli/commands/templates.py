@@ -41,7 +41,9 @@ def list_templates() -> None:
         typer.echo(f"  {name:<{max_name_width}}  - {description}")
 
     typer.echo()
-    typer.echo("Use 'cabinets templates init <name>' to create a configuration file from a template.")
+    typer.echo(
+        "Use 'cabinets templates init <name>' to create a configuration file from a template."
+    )
 
 
 @templates_app.command(name="init")

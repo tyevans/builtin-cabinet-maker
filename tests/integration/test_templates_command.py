@@ -8,7 +8,6 @@ import json
 import os
 from pathlib import Path
 
-import pytest
 from typer.testing import CliRunner
 
 from cabinets.cli.main import app
@@ -128,7 +127,14 @@ class TestTemplatesInitCommand:
 
         result = runner.invoke(
             app,
-            ["templates", "init", "simple-shelf", "--output", str(output_path), "--force"],
+            [
+                "templates",
+                "init",
+                "simple-shelf",
+                "--output",
+                str(output_path),
+                "--force",
+            ],
         )
 
         assert result.exit_code == 0

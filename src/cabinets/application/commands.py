@@ -5,44 +5,113 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from cabinets.domain import (
-    CutListGenerator,
-    LayoutCalculator,
     LayoutParameters,
-    MaterialEstimator,
-    SectionSpec,
     SectionWidthError,
     Wall,
-    validate_section_specs,
 )
-from cabinets.domain.section_resolver import RowSpec, SectionSpec, validate_row_specs
-from cabinets.domain.entities import Room, WallSegment
-from cabinets.domain.services import RoomLayoutService
-from cabinets.domain.value_objects import FitError, GeometryError, SectionTransform
+from cabinets.domain.section_resolver import RowSpec, SectionSpec
+from cabinets.domain.entities import Room
 
-from .dtos import LayoutOutput, LayoutParametersInput, RoomLayoutOutput, WallInput
+from .dtos import (
+    LayoutOutput,
+    LayoutParametersInput,
+    RoomLayoutOutput,
+    WallInput,
+)
+from .strategies import LayoutStrategyFactory
 
 if TYPE_CHECKING:
+    from cabinets.contracts.factory import InstallationServiceFactory
+    from cabinets.contracts.protocols import (
+        CutListGeneratorProtocol,
+        InputValidatorProtocol,
+        InstallationPlannerProtocol,
+        LayoutCalculatorProtocol,
+        MaterialEstimatorProtocol,
+        OutputAssemblerProtocol,
+        RoomLayoutOrchestratorProtocol,
+        RoomLayoutServiceProtocol,
+    )
     from cabinets.domain.services.installation import InstallationConfig
 
 
 class GenerateLayoutCommand:
     """Command to generate a complete cabinet layout.
 
+    This command orchestrates layout generation by delegating to focused services:
+    - InputValidatorService: Validates wall inputs, layout parameters, and specs
+    - OutputAssemblerService: Assembles LayoutOutput and RoomLayoutOutput DTOs
+    - InstallationPlannerService: Coordinates installation planning
+    - RoomLayoutOrchestratorService: Orchestrates multi-wall room layouts
+
     Supports both single-wall cabinet layouts and multi-wall room layouts.
     For room layouts, use execute_room_layout() method.
+
+    Use ServiceFactory.create_generate_command() for default instances with
+    all dependencies properly wired.
     """
 
     def __init__(
         self,
-        layout_calculator: LayoutCalculator | None = None,
-        cut_list_generator: CutListGenerator | None = None,
-        material_estimator: MaterialEstimator | None = None,
-        room_layout_service: RoomLayoutService | None = None,
+        layout_calculator: "LayoutCalculatorProtocol",
+        cut_list_generator: "CutListGeneratorProtocol",
+        material_estimator: "MaterialEstimatorProtocol",
+        room_layout_service: "RoomLayoutServiceProtocol",
+        input_validator: "InputValidatorProtocol | None" = None,
+        output_assembler: "OutputAssemblerProtocol | None" = None,
+        installation_planner: "InstallationPlannerProtocol | None" = None,
+        room_orchestrator: "RoomLayoutOrchestratorProtocol | None" = None,
+        # Legacy parameter for backward compatibility
+        installation_service_factory: "InstallationServiceFactory | None" = None,
     ) -> None:
-        self.layout_calculator = layout_calculator or LayoutCalculator()
-        self.cut_list_generator = cut_list_generator or CutListGenerator()
-        self.material_estimator = material_estimator or MaterialEstimator()
-        self.room_layout_service = room_layout_service or RoomLayoutService()
+        """Initialize command with required dependencies.
+
+        Args:
+            layout_calculator: Service for generating cabinet layouts.
+            cut_list_generator: Service for generating cut lists from cabinets.
+            material_estimator: Service for estimating material requirements.
+            room_layout_service: Service for multi-wall room layouts.
+            input_validator: Service for validating inputs. If not provided,
+                creates a default InputValidatorService.
+            output_assembler: Service for assembling output DTOs. If not provided,
+                creates a default OutputAssemblerService.
+            installation_planner: Optional service for installation planning.
+                Required when using installation_config in execute().
+            room_orchestrator: Optional service for room layout orchestration.
+                If provided, execute_room_layout() delegates to it.
+            installation_service_factory: DEPRECATED. Use installation_planner instead.
+                For backward compatibility, if this is provided and installation_planner
+                is not, an InstallationPlannerService will be created using this factory.
+        """
+        from cabinets.application.services import (
+            InputValidatorService,
+            InstallationPlannerService,
+            OutputAssemblerService,
+        )
+
+        self._layout_calculator = layout_calculator
+        self._cut_list_generator = cut_list_generator
+        self._material_estimator = material_estimator
+        self._room_layout_service = room_layout_service
+
+        # Use provided services or create defaults
+        self._input_validator = input_validator or InputValidatorService()
+        self._output_assembler = output_assembler or OutputAssemblerService()
+
+        # Handle installation planner - prefer new parameter, fall back to legacy factory
+        # Explicitly type as Optional since it can be None
+        self._installation_planner: "InstallationPlannerProtocol | None"
+        if installation_planner is not None:
+            self._installation_planner = installation_planner
+        elif installation_service_factory is not None:
+            # Legacy compatibility: create planner from factory
+            self._installation_planner = InstallationPlannerService(
+                installation_service_factory
+            )
+        else:
+            self._installation_planner = None
+
+        self._room_orchestrator = room_orchestrator
 
     def execute(
         self,
@@ -77,43 +146,21 @@ class GenerateLayoutCommand:
         Returns:
             LayoutOutput with the generated cabinet, cut list, and material estimates.
         """
-        # Validate inputs
-        errors = wall_input.validate() + params_input.validate()
-
-        # Validate that only one of section_specs or row_specs is provided
-        if section_specs is not None and row_specs is not None:
-            errors.append(
-                "Cannot specify both section_specs and row_specs. "
-                "Use section_specs for single-row layout or row_specs for multi-row layout."
+        # Validate inputs using the validator service
+        errors = self._input_validator.validate_wall_input(wall_input)
+        errors.extend(self._input_validator.validate_params_input(params_input))
+        errors.extend(
+            self._input_validator.validate_specs(
+                section_specs=section_specs,
+                row_specs=row_specs,
+                wall_width=wall_input.width,
+                wall_height=wall_input.height,
+                material_thickness=params_input.material_thickness,
             )
-
-        # Validate section specs if provided
-        if section_specs is not None:
-            spec_errors = validate_section_specs(
-                section_specs,
-                wall_input.width,
-                params_input.material_thickness,
-            )
-            errors.extend(spec_errors)
-
-        # Validate row specs if provided
-        if row_specs is not None:
-            row_errors = validate_row_specs(
-                row_specs,
-                wall_input.height,
-                params_input.material_thickness,
-            )
-            errors.extend(row_errors)
+        )
 
         if errors:
-            # Return empty output with errors
-            return LayoutOutput(
-                cabinet=None,  # type: ignore
-                cut_list=[],
-                material_estimates={},
-                total_estimate=None,  # type: ignore
-                errors=errors,
-            )
+            return self._output_assembler.create_error_output(errors)
 
         # Create domain objects
         wall = Wall(
@@ -128,79 +175,51 @@ class GenerateLayoutCommand:
             back_material=params_input.to_back_material_spec(),
         )
 
-        # Generate layout based on what was provided
-        hardware: list = []
+        # Generate layout using the appropriate strategy
         try:
-            if row_specs is not None:
-                # Multi-row layout
-                cabinet, hardware = self.layout_calculator.generate_cabinet_from_row_specs(
-                    wall, layout_params, row_specs, zone_configs=zone_configs
-                )
-            elif section_specs is not None:
-                # Single-row layout with explicit section specs
-                cabinet, hardware = self.layout_calculator.generate_cabinet_from_specs(
-                    wall, layout_params, section_specs, zone_configs=zone_configs
-                )
-            else:
-                # Legacy uniform sections approach
-                cabinet = self.layout_calculator.generate_cabinet(wall, layout_params)
-        except SectionWidthError as e:
-            return LayoutOutput(
-                cabinet=None,  # type: ignore
-                cut_list=[],
-                material_estimates={},
-                total_estimate=None,  # type: ignore
-                errors=[str(e)],
+            strategy_factory = LayoutStrategyFactory(self._layout_calculator)
+            strategy = strategy_factory.create_strategy(
+                section_specs=section_specs,
+                row_specs=row_specs,
             )
+            cabinet, hardware = strategy.execute(
+                wall=wall,
+                layout_params=layout_params,
+                zone_configs=zone_configs,
+            )
+        except SectionWidthError as e:
+            return self._output_assembler.create_error_output([str(e)])
 
         # Generate cut list
-        cut_list = self.cut_list_generator.generate(cabinet)
+        cut_list = self._cut_list_generator.generate(cabinet)
 
-        # Installation support
-        installation_hardware = None
-        installation_instructions = None
-        installation_warnings = None
-        stud_analysis = None
-
-        if installation_config:
-            from cabinets.domain.services.installation import InstallationService
-
-            installation_service = InstallationService(installation_config)
-            installation_plan = installation_service.generate_plan(
-                cabinet, left_edge_position=left_edge_position
+        # Installation planning (requires installation_planner to be configured)
+        installation_result = None
+        if installation_config is not None:
+            if self._installation_planner is None:
+                return self._output_assembler.create_error_output(
+                    [
+                        "installation_config provided but no installation_planner configured"
+                    ]
+                )
+            installation_result = self._installation_planner.plan_installation(
+                cabinet=cabinet,
+                cut_list=cut_list,
+                installation_config=installation_config,
+                left_edge_position=left_edge_position,
             )
+            cut_list = installation_result.augmented_cut_list
 
-            # Add cleat cut pieces to main cut list
-            cut_list = list(cut_list) + list(installation_plan.cleat_cut_pieces)
+        # Sort cut list
+        cut_list = self._cut_list_generator.sort_by_size(cut_list)
 
-            installation_hardware = list(installation_plan.mounting_hardware)
-            installation_instructions = installation_plan.instructions
-            installation_warnings = list(installation_plan.warnings)
-            stud_analysis = {
-                "cabinet_left_edge": installation_plan.stud_analysis.cabinet_left_edge,
-                "cabinet_width": installation_plan.stud_analysis.cabinet_width,
-                "stud_positions": list(installation_plan.stud_analysis.stud_positions),
-                "non_stud_positions": list(installation_plan.stud_analysis.non_stud_positions),
-                "stud_hit_count": installation_plan.stud_analysis.stud_hit_count,
-                "recommendation": installation_plan.stud_analysis.recommendation,
-            }
-
-        cut_list = self.cut_list_generator.sort_by_size(cut_list)
-
-        # Estimate materials
-        material_estimates = self.material_estimator.estimate(cut_list)
-        total_estimate = self.material_estimator.estimate_total(cut_list)
-
-        return LayoutOutput(
+        # Assemble and return output
+        return self._output_assembler.assemble_layout_output(
             cabinet=cabinet,
             cut_list=cut_list,
-            material_estimates=material_estimates,
-            total_estimate=total_estimate,
             hardware=hardware,
-            installation_hardware=installation_hardware,
-            installation_instructions=installation_instructions,
-            installation_warnings=installation_warnings,
-            stud_analysis=stud_analysis,
+            material_estimator=self._material_estimator,
+            installation_result=installation_result,
         )
 
     def execute_room_layout(
@@ -223,6 +242,30 @@ class GenerateLayoutCommand:
         Returns:
             RoomLayoutOutput with cabinets, transforms, cut lists, and estimates.
         """
+        # Delegate to room orchestrator if available
+        if self._room_orchestrator is not None:
+            return self._room_orchestrator.orchestrate(
+                room=room,
+                section_specs=section_specs,
+                params_input=params_input,
+            )
+
+        # Fallback: inline implementation for backward compatibility
+        # This preserves existing behavior when orchestrator is not provided
+        return self._execute_room_layout_inline(room, section_specs, params_input)
+
+    def _execute_room_layout_inline(
+        self,
+        room: Room,
+        section_specs: list[SectionSpec],
+        params_input: LayoutParametersInput,
+    ) -> RoomLayoutOutput:
+        """Inline room layout implementation for backward compatibility.
+
+        This method contains the original execute_room_layout logic for
+        cases where RoomLayoutOrchestratorService is not provided.
+        """
+
         errors: list[str] = []
 
         # Validate parameters input
@@ -230,32 +273,32 @@ class GenerateLayoutCommand:
         errors.extend(param_errors)
 
         if errors:
-            return self._create_error_room_output(room, errors)
+            return self._output_assembler.create_error_room_output(room, errors)
 
         # Validate fit - check that sections fit on their assigned walls
-        fit_errors = self.room_layout_service.validate_fit(room, section_specs)
+        fit_errors = self._room_layout_service.validate_fit(room, section_specs)
         if fit_errors:
             for fit_error in fit_errors:
                 errors.append(fit_error.message)
-            return self._create_error_room_output(room, errors)
+            return self._output_assembler.create_error_room_output(room, errors)
 
         # Validate room geometry - check for self-intersection, closure gaps
         geometry_errors = room.validate_geometry()
         if geometry_errors:
             for geom_error in geometry_errors:
                 errors.append(geom_error.message)
-            return self._create_error_room_output(room, errors)
+            return self._output_assembler.create_error_room_output(room, errors)
 
         # Assign sections to walls
         try:
-            assignments = self.room_layout_service.assign_sections_to_walls(
+            assignments = self._room_layout_service.assign_sections_to_walls(
                 room, section_specs
             )
         except ValueError as e:
-            return self._create_error_room_output(room, [str(e)])
+            return self._output_assembler.create_error_room_output(room, [str(e)])
 
         # Compute section transforms
-        transforms = self.room_layout_service.compute_section_transforms(
+        transforms = self._room_layout_service.compute_section_transforms(
             room, assignments, section_specs
         )
 
@@ -263,20 +306,11 @@ class GenerateLayoutCommand:
         cabinets: list = []
         all_cut_pieces: list = []
 
-        layout_params = LayoutParameters(
-            num_sections=1,  # Each wall section is its own cabinet
-            shelves_per_section=params_input.shelves_per_section,
-            material=params_input.to_material_spec(),
-            back_material=params_input.to_back_material_spec(),
-        )
-
-        # Group section specs by wall index for width resolution
         for assignment in assignments:
             section_spec = section_specs[assignment.section_index]
             wall_segment = room.walls[assignment.wall_index]
 
-            # Create a Wall object for this section
-            # Width is determined by the section spec
+            # Resolve section width
             section_width = self._resolve_section_width(
                 section_spec, wall_segment, section_specs, room
             )
@@ -287,7 +321,6 @@ class GenerateLayoutCommand:
                 depth=wall_segment.depth,
             )
 
-            # Create section-specific layout params
             section_params = LayoutParameters(
                 num_sections=1,
                 shelves_per_section=section_spec.shelves,
@@ -295,63 +328,41 @@ class GenerateLayoutCommand:
                 back_material=params_input.to_back_material_spec(),
             )
 
-            # Generate cabinet for this section using section specs for component support
             try:
-                # Create a single-section spec list for this cabinet
-                # Use "fill" width since this is a single-section cabinet that should fill the space
-                # Preserve row_specs if the section has nested rows for vertical stacking
-                single_section_spec = [SectionSpec(
-                    width="fill",
-                    shelves=section_spec.shelves,
-                    section_type=section_spec.section_type,
-                    component_config=section_spec.component_config,
-                    row_specs=section_spec.row_specs,  # Preserve nested rows
-                )]
-                cabinet, _hardware = self.layout_calculator.generate_cabinet_from_specs(
-                    wall, section_params, single_section_spec
+                single_section_spec = [
+                    SectionSpec(
+                        width="fill",
+                        shelves=section_spec.shelves,
+                        section_type=section_spec.section_type,
+                        component_config=section_spec.component_config,
+                        row_specs=section_spec.row_specs,
+                    )
+                ]
+                cabinet, _hardware = (
+                    self._layout_calculator.generate_cabinet_from_specs(
+                        wall, section_params, single_section_spec
+                    )
                 )
                 cabinets.append(cabinet)
-
-                # Generate cut list for this cabinet
-                cut_list = self.cut_list_generator.generate(cabinet)
+                cut_list = self._cut_list_generator.generate(cabinet)
                 all_cut_pieces.extend(cut_list)
             except SectionWidthError as e:
-                return self._create_error_room_output(room, [str(e)])
+                return self._output_assembler.create_error_room_output(room, [str(e)])
 
-        # Sort combined cut list by size
-        all_cut_pieces = self.cut_list_generator.sort_by_size(all_cut_pieces)
+        all_cut_pieces = self._cut_list_generator.sort_by_size(all_cut_pieces)
 
-        # Estimate materials for all cut pieces combined
-        material_estimates = self.material_estimator.estimate(all_cut_pieces)
-        total_estimate = self.material_estimator.estimate_total(all_cut_pieces)
-
-        return RoomLayoutOutput(
+        return self._output_assembler.assemble_room_layout_output(
             room=room,
             cabinets=cabinets,
             transforms=transforms,
             cut_list=all_cut_pieces,
-            material_estimates=material_estimates,
-            total_estimate=total_estimate,
-        )
-
-    def _create_error_room_output(
-        self, room: Room, errors: list[str]
-    ) -> RoomLayoutOutput:
-        """Create an error RoomLayoutOutput with no cabinets."""
-        return RoomLayoutOutput(
-            room=room,
-            cabinets=[],
-            transforms=[],
-            cut_list=[],
-            material_estimates={},
-            total_estimate=None,  # type: ignore
-            errors=errors,
+            material_estimator=self._material_estimator,
         )
 
     def _resolve_section_width(
         self,
         section_spec: SectionSpec,
-        wall_segment: WallSegment,
+        wall_segment,
         all_specs: list[SectionSpec],
         room: Room,
     ) -> float:
@@ -359,55 +370,30 @@ class GenerateLayoutCommand:
 
         For fixed widths, returns the width directly.
         For fill widths, calculates based on remaining space on the wall.
-
-        Args:
-            section_spec: The section specification to resolve.
-            wall_segment: The wall segment this section is on.
-            all_specs: All section specifications (for calculating fill widths).
-            room: The room containing the walls.
-
-        Returns:
-            The resolved section width in inches.
         """
         if not section_spec.is_fill:
             return section_spec.fixed_width or 0.0
 
-        # Find all sections on the same wall
         wall_index = self._get_wall_index_for_spec(section_spec, room)
         sections_on_wall = [
-            s for s in all_specs
-            if self._get_wall_index_for_spec(s, room) == wall_index
+            s for s in all_specs if self._get_wall_index_for_spec(s, room) == wall_index
         ]
 
-        # Calculate fixed widths and fill count
         fixed_widths = sum(
             s.fixed_width or 0.0 for s in sections_on_wall if not s.is_fill
         )
         fill_count = sum(1 for s in sections_on_wall if s.is_fill)
 
-        # Calculate fill width
         remaining = wall_segment.length - fixed_widths
         return remaining / fill_count if fill_count > 0 else 0.0
 
     def _get_wall_index_for_spec(self, spec: SectionSpec, room: Room) -> int:
-        """Get the wall index for a section spec.
-
-        Args:
-            spec: The section specification.
-            room: The room containing the walls.
-
-        Returns:
-            The wall index (0-based).
-        """
+        """Get the wall index for a section spec."""
         if spec.wall is None:
             return 0
-
         if isinstance(spec.wall, int):
             return spec.wall
-
-        # Look up by name
         for i, wall in enumerate(room.walls):
             if wall.name == spec.wall:
                 return i
-
-        return 0  # Default to first wall if not found
+        return 0

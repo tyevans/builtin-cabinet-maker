@@ -8,11 +8,9 @@ from cabinets.domain.components import (
     ComponentContext,
     GenerationResult,
     HardwareItem,
-    ValidationResult,
     component_registry,
 )
 from cabinets.domain.components.desk import (
-    MIN_KNEE_CLEARANCE_HEIGHT,
     KeyboardTrayComponent,
 )
 from cabinets.domain.value_objects import MaterialSpec, PanelType, Position
@@ -106,7 +104,9 @@ class TestKeyboardTrayComponentValidation:
     """Tests for KeyboardTrayComponent.validate()."""
 
     def test_validate_returns_ok_for_valid_default_config(
-        self, keyboard_tray_component: KeyboardTrayComponent, standard_context: ComponentContext
+        self,
+        keyboard_tray_component: KeyboardTrayComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that validate returns ok for config with adequate knee clearance.
 
@@ -121,7 +121,9 @@ class TestKeyboardTrayComponentValidation:
         assert len(result.errors) == 0
 
     def test_validate_returns_ok_for_valid_custom_config(
-        self, keyboard_tray_component: KeyboardTrayComponent, standard_context: ComponentContext
+        self,
+        keyboard_tray_component: KeyboardTrayComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that validate returns ok for valid custom configuration."""
         config = {
@@ -137,7 +139,9 @@ class TestKeyboardTrayComponentValidation:
         assert len(result.errors) == 0
 
     def test_validate_errors_when_knee_clearance_below_minimum(
-        self, keyboard_tray_component: KeyboardTrayComponent, standard_context: ComponentContext
+        self,
+        keyboard_tray_component: KeyboardTrayComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that validate errors when effective knee clearance < 22"."""
         # With knee_height=24, tray_clearance=2, tray_thickness=0.75
@@ -153,7 +157,9 @@ class TestKeyboardTrayComponentValidation:
         assert any("knee clearance" in err and "21.2" in err for err in result.errors)
 
     def test_validate_passes_when_knee_clearance_at_minimum(
-        self, keyboard_tray_component: KeyboardTrayComponent, standard_context: ComponentContext
+        self,
+        keyboard_tray_component: KeyboardTrayComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that validate passes when effective knee clearance exactly 22"."""
         # effective = 24.75 - 2.0 - 0.75 = 22.0"
@@ -189,7 +195,9 @@ class TestKeyboardTrayComponentValidation:
         assert any("exceeds desk width" in err for err in result.errors)
 
     def test_validate_warns_on_shallow_depth(
-        self, keyboard_tray_component: KeyboardTrayComponent, standard_context: ComponentContext
+        self,
+        keyboard_tray_component: KeyboardTrayComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that validate warns when depth < 8 inches."""
         config = {"depth": 7.0, "knee_clearance_height": 25.0}
@@ -201,7 +209,9 @@ class TestKeyboardTrayComponentValidation:
         assert any("too shallow" in warn for warn in result.warnings)
 
     def test_validate_warns_on_deep_tray(
-        self, keyboard_tray_component: KeyboardTrayComponent, standard_context: ComponentContext
+        self,
+        keyboard_tray_component: KeyboardTrayComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that validate warns when depth > 14 inches."""
         config = {"depth": 15.0, "knee_clearance_height": 25.0}
@@ -213,7 +223,9 @@ class TestKeyboardTrayComponentValidation:
         assert any("unusually deep" in warn for warn in result.warnings)
 
     def test_validate_no_warning_for_standard_depth_range(
-        self, keyboard_tray_component: KeyboardTrayComponent, standard_context: ComponentContext
+        self,
+        keyboard_tray_component: KeyboardTrayComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that validate has no warnings for depth in 8-14 inch range."""
         for depth in [8.0, 10.0, 12.0, 14.0]:
@@ -225,7 +237,9 @@ class TestKeyboardTrayComponentValidation:
             assert len(result.warnings) == 0, f"Unexpected warning for depth {depth}"
 
     def test_validate_errors_on_invalid_slide_length(
-        self, keyboard_tray_component: KeyboardTrayComponent, standard_context: ComponentContext
+        self,
+        keyboard_tray_component: KeyboardTrayComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that validate errors for invalid slide_length."""
         config = {"slide_length": 22}  # Not in valid list
@@ -236,7 +250,9 @@ class TestKeyboardTrayComponentValidation:
         assert any("Invalid slide_length" in err for err in result.errors)
 
     def test_validate_accepts_all_valid_slide_lengths(
-        self, keyboard_tray_component: KeyboardTrayComponent, standard_context: ComponentContext
+        self,
+        keyboard_tray_component: KeyboardTrayComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that validate accepts all valid slide lengths."""
         for slide_length in KeyboardTrayComponent.VALID_SLIDE_LENGTHS:
@@ -277,7 +293,9 @@ class TestKeyboardTrayComponentGeneration:
     """Tests for KeyboardTrayComponent.generate()."""
 
     def test_generate_returns_generation_result(
-        self, keyboard_tray_component: KeyboardTrayComponent, standard_context: ComponentContext
+        self,
+        keyboard_tray_component: KeyboardTrayComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that generate returns a GenerationResult instance."""
         config = {}
@@ -287,121 +305,161 @@ class TestKeyboardTrayComponentGeneration:
         assert isinstance(result, GenerationResult)
 
     def test_generate_creates_keyboard_tray_panel(
-        self, keyboard_tray_component: KeyboardTrayComponent, standard_context: ComponentContext
+        self,
+        keyboard_tray_component: KeyboardTrayComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that generate creates a KEYBOARD_TRAY panel."""
         config = {}
 
         result = keyboard_tray_component.generate(config, standard_context)
 
-        tray_panels = [p for p in result.panels if p.panel_type == PanelType.KEYBOARD_TRAY]
+        tray_panels = [
+            p for p in result.panels if p.panel_type == PanelType.KEYBOARD_TRAY
+        ]
         assert len(tray_panels) == 1
 
     def test_generate_tray_dimensions_default(
-        self, keyboard_tray_component: KeyboardTrayComponent, standard_context: ComponentContext
+        self,
+        keyboard_tray_component: KeyboardTrayComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that tray panel has default dimensions (20" x 10")."""
         config = {}
 
         result = keyboard_tray_component.generate(config, standard_context)
 
-        tray_panel = next(p for p in result.panels if p.panel_type == PanelType.KEYBOARD_TRAY)
+        tray_panel = next(
+            p for p in result.panels if p.panel_type == PanelType.KEYBOARD_TRAY
+        )
         assert tray_panel.width == KeyboardTrayComponent.STANDARD_WIDTH  # 20"
         assert tray_panel.height == KeyboardTrayComponent.STANDARD_DEPTH  # 10"
 
     def test_generate_tray_dimensions_custom(
-        self, keyboard_tray_component: KeyboardTrayComponent, standard_context: ComponentContext
+        self,
+        keyboard_tray_component: KeyboardTrayComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that tray panel has custom dimensions when specified."""
         config = {"width": 24.0, "depth": 12.0}
 
         result = keyboard_tray_component.generate(config, standard_context)
 
-        tray_panel = next(p for p in result.panels if p.panel_type == PanelType.KEYBOARD_TRAY)
+        tray_panel = next(
+            p for p in result.panels if p.panel_type == PanelType.KEYBOARD_TRAY
+        )
         assert tray_panel.width == 24.0
         assert tray_panel.height == 12.0
 
     def test_generate_tray_material_is_3_4_inch(
-        self, keyboard_tray_component: KeyboardTrayComponent, standard_context: ComponentContext
+        self,
+        keyboard_tray_component: KeyboardTrayComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that tray panel uses 3/4 inch material."""
         config = {}
 
         result = keyboard_tray_component.generate(config, standard_context)
 
-        tray_panel = next(p for p in result.panels if p.panel_type == PanelType.KEYBOARD_TRAY)
+        tray_panel = next(
+            p for p in result.panels if p.panel_type == PanelType.KEYBOARD_TRAY
+        )
         assert tray_panel.material.thickness == 0.75
 
     def test_generate_tray_metadata(
-        self, keyboard_tray_component: KeyboardTrayComponent, standard_context: ComponentContext
+        self,
+        keyboard_tray_component: KeyboardTrayComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that tray panel has correct metadata."""
         config = {}
 
         result = keyboard_tray_component.generate(config, standard_context)
 
-        tray_panel = next(p for p in result.panels if p.panel_type == PanelType.KEYBOARD_TRAY)
+        tray_panel = next(
+            p for p in result.panels if p.panel_type == PanelType.KEYBOARD_TRAY
+        )
         assert tray_panel.metadata["component"] == "desk.keyboard_tray"
         assert tray_panel.metadata["is_keyboard_tray"] is True
 
     def test_generate_no_enclosure_panels_by_default(
-        self, keyboard_tray_component: KeyboardTrayComponent, standard_context: ComponentContext
+        self,
+        keyboard_tray_component: KeyboardTrayComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that no enclosure panels are created by default."""
         config = {}
 
         result = keyboard_tray_component.generate(config, standard_context)
 
-        enclosure_panels = [p for p in result.panels if p.panel_type == PanelType.KEYBOARD_ENCLOSURE]
+        enclosure_panels = [
+            p for p in result.panels if p.panel_type == PanelType.KEYBOARD_ENCLOSURE
+        ]
         assert len(enclosure_panels) == 0
         assert len(result.panels) == 1  # Only tray panel
 
     def test_generate_enclosure_panels_when_enclosed(
-        self, keyboard_tray_component: KeyboardTrayComponent, standard_context: ComponentContext
+        self,
+        keyboard_tray_component: KeyboardTrayComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that enclosure panels are created when enclosed=True."""
         config = {"enclosed": True}
 
         result = keyboard_tray_component.generate(config, standard_context)
 
-        enclosure_panels = [p for p in result.panels if p.panel_type == PanelType.KEYBOARD_ENCLOSURE]
+        enclosure_panels = [
+            p for p in result.panels if p.panel_type == PanelType.KEYBOARD_ENCLOSURE
+        ]
         assert len(enclosure_panels) == 2  # Left and right
         assert len(result.panels) == 3  # Tray + 2 enclosure
 
     def test_generate_enclosure_panel_dimensions(
-        self, keyboard_tray_component: KeyboardTrayComponent, standard_context: ComponentContext
+        self,
+        keyboard_tray_component: KeyboardTrayComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that enclosure panels have correct dimensions."""
         config = {"enclosed": True, "depth": 10.0}
 
         result = keyboard_tray_component.generate(config, standard_context)
 
-        enclosure_panels = [p for p in result.panels if p.panel_type == PanelType.KEYBOARD_ENCLOSURE]
+        enclosure_panels = [
+            p for p in result.panels if p.panel_type == PanelType.KEYBOARD_ENCLOSURE
+        ]
         for panel in enclosure_panels:
             assert panel.width == 10.0  # Runs front to back (depth)
             assert panel.height == KeyboardTrayComponent.ENCLOSURE_HEIGHT  # 3"
 
     def test_generate_enclosure_material_is_1_2_inch(
-        self, keyboard_tray_component: KeyboardTrayComponent, standard_context: ComponentContext
+        self,
+        keyboard_tray_component: KeyboardTrayComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that enclosure panels use 1/2 inch material."""
         config = {"enclosed": True}
 
         result = keyboard_tray_component.generate(config, standard_context)
 
-        enclosure_panels = [p for p in result.panels if p.panel_type == PanelType.KEYBOARD_ENCLOSURE]
+        enclosure_panels = [
+            p for p in result.panels if p.panel_type == PanelType.KEYBOARD_ENCLOSURE
+        ]
         for panel in enclosure_panels:
             assert panel.material.thickness == 0.5
 
     def test_generate_enclosure_metadata(
-        self, keyboard_tray_component: KeyboardTrayComponent, standard_context: ComponentContext
+        self,
+        keyboard_tray_component: KeyboardTrayComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that enclosure panels have correct metadata."""
         config = {"enclosed": True}
 
         result = keyboard_tray_component.generate(config, standard_context)
 
-        enclosure_panels = [p for p in result.panels if p.panel_type == PanelType.KEYBOARD_ENCLOSURE]
+        enclosure_panels = [
+            p for p in result.panels if p.panel_type == PanelType.KEYBOARD_ENCLOSURE
+        ]
         sides = set()
         for panel in enclosure_panels:
             assert panel.metadata["component"] == "desk.keyboard_tray"
@@ -410,7 +468,9 @@ class TestKeyboardTrayComponentGeneration:
         assert sides == {"left", "right"}
 
     def test_generate_metadata_includes_enclosed_and_slide_length(
-        self, keyboard_tray_component: KeyboardTrayComponent, standard_context: ComponentContext
+        self,
+        keyboard_tray_component: KeyboardTrayComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that result metadata includes enclosed and slide_length."""
         config = {"enclosed": True, "slide_length": 16}
@@ -425,7 +485,9 @@ class TestKeyboardTrayComponentHardware:
     """Tests for KeyboardTrayComponent hardware generation."""
 
     def test_generate_includes_hardware(
-        self, keyboard_tray_component: KeyboardTrayComponent, standard_context: ComponentContext
+        self,
+        keyboard_tray_component: KeyboardTrayComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that generate includes hardware items."""
         config = {}
@@ -435,7 +497,9 @@ class TestKeyboardTrayComponentHardware:
         assert len(result.hardware) > 0
 
     def test_generate_includes_keyboard_slide(
-        self, keyboard_tray_component: KeyboardTrayComponent, standard_context: ComponentContext
+        self,
+        keyboard_tray_component: KeyboardTrayComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that hardware includes keyboard slide."""
         config = {"slide_length": 14}
@@ -450,7 +514,9 @@ class TestKeyboardTrayComponentHardware:
         assert "pair" in slide_items[0].notes.lower()
 
     def test_generate_slide_length_in_hardware_name(
-        self, keyboard_tray_component: KeyboardTrayComponent, standard_context: ComponentContext
+        self,
+        keyboard_tray_component: KeyboardTrayComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that slide length is reflected in hardware name."""
         for slide_length in [10, 14, 18]:
@@ -463,7 +529,9 @@ class TestKeyboardTrayComponentHardware:
             assert slide_item.sku == f"KB-SLIDE-{slide_length}"
 
     def test_generate_includes_mounting_screws(
-        self, keyboard_tray_component: KeyboardTrayComponent, standard_context: ComponentContext
+        self,
+        keyboard_tray_component: KeyboardTrayComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that hardware includes mounting screws."""
         config = {}
@@ -476,7 +544,9 @@ class TestKeyboardTrayComponentHardware:
         assert screw_items[0].sku == "SCREW-6-1/2-PAN"
 
     def test_generate_no_wrist_rest_by_default(
-        self, keyboard_tray_component: KeyboardTrayComponent, standard_context: ComponentContext
+        self,
+        keyboard_tray_component: KeyboardTrayComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that no wrist rest is included by default."""
         config = {}
@@ -487,7 +557,9 @@ class TestKeyboardTrayComponentHardware:
         assert len(wrist_rest_items) == 0
 
     def test_generate_includes_wrist_rest_when_enabled(
-        self, keyboard_tray_component: KeyboardTrayComponent, standard_context: ComponentContext
+        self,
+        keyboard_tray_component: KeyboardTrayComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that wrist rest is included when wrist_rest=True."""
         config = {"wrist_rest": True}
@@ -500,7 +572,9 @@ class TestKeyboardTrayComponentHardware:
         assert wrist_rest_items[0].sku == "WRIST-REST-20"
 
     def test_hardware_method_returns_list(
-        self, keyboard_tray_component: KeyboardTrayComponent, standard_context: ComponentContext
+        self,
+        keyboard_tray_component: KeyboardTrayComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that hardware() method returns a list."""
         config = {}
@@ -511,7 +585,9 @@ class TestKeyboardTrayComponentHardware:
         assert all(isinstance(item, HardwareItem) for item in result)
 
     def test_hardware_method_matches_generate_hardware(
-        self, keyboard_tray_component: KeyboardTrayComponent, standard_context: ComponentContext
+        self,
+        keyboard_tray_component: KeyboardTrayComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test that hardware() returns same items as generate().hardware."""
         config = {"wrist_rest": True}
@@ -522,7 +598,9 @@ class TestKeyboardTrayComponentHardware:
         assert len(hardware_result) == len(generate_result.hardware)
 
     def test_hardware_count_without_wrist_rest(
-        self, keyboard_tray_component: KeyboardTrayComponent, standard_context: ComponentContext
+        self,
+        keyboard_tray_component: KeyboardTrayComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test hardware count without wrist rest (slide + screws = 2 items)."""
         config = {"wrist_rest": False}
@@ -532,7 +610,9 @@ class TestKeyboardTrayComponentHardware:
         assert len(result) == 2
 
     def test_hardware_count_with_wrist_rest(
-        self, keyboard_tray_component: KeyboardTrayComponent, standard_context: ComponentContext
+        self,
+        keyboard_tray_component: KeyboardTrayComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test hardware count with wrist rest (slide + screws + wrist rest = 3 items)."""
         config = {"wrist_rest": True}
@@ -576,14 +656,18 @@ class TestKeyboardTrayComponentIntegration:
         assert len(hardware) == 3  # Slide + screws + wrist rest
 
     def test_keyboard_tray_with_different_slide_lengths(
-        self, keyboard_tray_component: KeyboardTrayComponent, standard_context: ComponentContext
+        self,
+        keyboard_tray_component: KeyboardTrayComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test keyboard tray with all valid slide lengths."""
         for slide_length in KeyboardTrayComponent.VALID_SLIDE_LENGTHS:
             config = {"slide_length": slide_length, "knee_clearance_height": 25.0}
 
             validation = keyboard_tray_component.validate(config, standard_context)
-            assert validation.is_valid, f"Failed validation for slide_length: {slide_length}"
+            assert validation.is_valid, (
+                f"Failed validation for slide_length: {slide_length}"
+            )
 
             generation = keyboard_tray_component.generate(config, standard_context)
             assert generation.metadata["slide_length"] == slide_length
@@ -593,7 +677,9 @@ class TestKeyboardTrayComponentEdgeCases:
     """Edge case tests for KeyboardTrayComponent."""
 
     def test_minimum_depth_boundary(
-        self, keyboard_tray_component: KeyboardTrayComponent, standard_context: ComponentContext
+        self,
+        keyboard_tray_component: KeyboardTrayComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test keyboard tray at minimum depth boundary (8")."""
         config = {"depth": 8.0, "knee_clearance_height": 25.0}
@@ -604,7 +690,9 @@ class TestKeyboardTrayComponentEdgeCases:
         assert len(result.warnings) == 0
 
     def test_maximum_depth_boundary(
-        self, keyboard_tray_component: KeyboardTrayComponent, standard_context: ComponentContext
+        self,
+        keyboard_tray_component: KeyboardTrayComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test keyboard tray at maximum depth boundary (14")."""
         config = {"depth": 14.0, "knee_clearance_height": 25.0}
@@ -636,7 +724,9 @@ class TestKeyboardTrayComponentEdgeCases:
         assert result.is_valid
 
     def test_effective_knee_clearance_calculation(
-        self, keyboard_tray_component: KeyboardTrayComponent, standard_context: ComponentContext
+        self,
+        keyboard_tray_component: KeyboardTrayComponent,
+        standard_context: ComponentContext,
     ) -> None:
         """Test effective knee clearance calculation with various inputs."""
         # effective = knee_height - tray_clearance - tray_thickness (0.75)
@@ -681,7 +771,9 @@ class TestKeyboardTrayComponentEdgeCases:
 
         result = keyboard_tray_component.generate(config, context)
 
-        enclosure_panels = [p for p in result.panels if p.panel_type == PanelType.KEYBOARD_ENCLOSURE]
+        enclosure_panels = [
+            p for p in result.panels if p.panel_type == PanelType.KEYBOARD_ENCLOSURE
+        ]
         right_panel = next(p for p in enclosure_panels if p.metadata["side"] == "right")
 
         # Right panel should be offset by tray width from context position

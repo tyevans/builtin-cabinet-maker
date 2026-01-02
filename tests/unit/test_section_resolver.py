@@ -11,9 +11,13 @@ from the domain layer. It covers various scenarios including:
 import pytest
 
 from cabinets.domain.section_resolver import (
+    RowHeightError,
+    RowSpec,
     SectionSpec,
     SectionWidthError,
+    resolve_row_heights,
     resolve_section_widths,
+    validate_row_specs,
     validate_section_specs,
 )
 from cabinets.domain.value_objects import SectionType
@@ -78,7 +82,9 @@ class TestResolveSectionWidthsAllFill:
         """Test single fill section takes all available width."""
         specs = [SectionSpec(width="fill", shelves=3)]
         # 48" total - 2*0.75" walls = 46.5" available
-        widths = resolve_section_widths(specs, total_width=48.0, material_thickness=0.75)
+        widths = resolve_section_widths(
+            specs, total_width=48.0, material_thickness=0.75
+        )
         assert len(widths) == 1
         assert widths[0] == pytest.approx(46.5, rel=1e-6)
 
@@ -90,7 +96,9 @@ class TestResolveSectionWidthsAllFill:
         ]
         # 48" - 2*0.75" walls - 1*0.75" divider = 45.75"
         # Each section: 45.75 / 2 = 22.875"
-        widths = resolve_section_widths(specs, total_width=48.0, material_thickness=0.75)
+        widths = resolve_section_widths(
+            specs, total_width=48.0, material_thickness=0.75
+        )
         assert len(widths) == 2
         assert widths[0] == pytest.approx(22.875, rel=1e-6)
         assert widths[1] == pytest.approx(22.875, rel=1e-6)
@@ -104,7 +112,9 @@ class TestResolveSectionWidthsAllFill:
         ]
         # 72" - 2*0.75" walls - 2*0.75" dividers = 69"
         # Each section: 69 / 3 = 23"
-        widths = resolve_section_widths(specs, total_width=72.0, material_thickness=0.75)
+        widths = resolve_section_widths(
+            specs, total_width=72.0, material_thickness=0.75
+        )
         assert len(widths) == 3
         assert widths[0] == pytest.approx(23.0, rel=1e-6)
         assert widths[1] == pytest.approx(23.0, rel=1e-6)
@@ -123,7 +133,9 @@ class TestResolveSectionWidthsMixed:
         # 72" - 2*0.75" walls - 1*0.75" divider = 69.75"
         # Fixed: 24"
         # Fill: 69.75 - 24 = 45.75"
-        widths = resolve_section_widths(specs, total_width=72.0, material_thickness=0.75)
+        widths = resolve_section_widths(
+            specs, total_width=72.0, material_thickness=0.75
+        )
         assert len(widths) == 2
         assert widths[0] == pytest.approx(24.0, rel=1e-6)
         assert widths[1] == pytest.approx(45.75, rel=1e-6)
@@ -139,7 +151,9 @@ class TestResolveSectionWidthsMixed:
         # Fixed: 24"
         # Remaining: 69 - 24 = 45"
         # Each fill: 45 / 2 = 22.5"
-        widths = resolve_section_widths(specs, total_width=72.0, material_thickness=0.75)
+        widths = resolve_section_widths(
+            specs, total_width=72.0, material_thickness=0.75
+        )
         assert len(widths) == 3
         assert widths[0] == pytest.approx(24.0, rel=1e-6)
         assert widths[1] == pytest.approx(22.5, rel=1e-6)
@@ -155,7 +169,9 @@ class TestResolveSectionWidthsMixed:
         # 72" - 2*0.75" walls - 2*0.75" dividers = 69"
         # Fixed: 20 + 20 = 40"
         # Fill: 69 - 40 = 29"
-        widths = resolve_section_widths(specs, total_width=72.0, material_thickness=0.75)
+        widths = resolve_section_widths(
+            specs, total_width=72.0, material_thickness=0.75
+        )
         assert len(widths) == 3
         assert widths[0] == pytest.approx(20.0, rel=1e-6)
         assert widths[1] == pytest.approx(29.0, rel=1e-6)
@@ -169,7 +185,9 @@ class TestResolveSectionWidthsAllFixed:
         """Test single fixed section that exactly fits available width."""
         specs = [SectionSpec(width=46.5, shelves=3)]
         # 48" - 2*0.75" = 46.5" available, matches fixed width
-        widths = resolve_section_widths(specs, total_width=48.0, material_thickness=0.75)
+        widths = resolve_section_widths(
+            specs, total_width=48.0, material_thickness=0.75
+        )
         assert len(widths) == 1
         assert widths[0] == pytest.approx(46.5, rel=1e-6)
 
@@ -181,7 +199,9 @@ class TestResolveSectionWidthsAllFixed:
         ]
         # 48" - 2*0.75" walls - 1*0.75" divider = 45.75"
         # 22.875 + 22.875 = 45.75" matches
-        widths = resolve_section_widths(specs, total_width=48.0, material_thickness=0.75)
+        widths = resolve_section_widths(
+            specs, total_width=48.0, material_thickness=0.75
+        )
         assert len(widths) == 2
         assert widths[0] == pytest.approx(22.875, rel=1e-6)
         assert widths[1] == pytest.approx(22.875, rel=1e-6)
@@ -232,7 +252,9 @@ class TestResolveSectionWidthsErrors:
     def test_zero_material_thickness_raises_error(self) -> None:
         """Test that zero material thickness raises error."""
         specs = [SectionSpec(width="fill", shelves=3)]
-        with pytest.raises(SectionWidthError, match="Material thickness must be positive"):
+        with pytest.raises(
+            SectionWidthError, match="Material thickness must be positive"
+        ):
             resolve_section_widths(specs, total_width=48.0, material_thickness=0)
 
     def test_no_interior_space_raises_error(self) -> None:
@@ -263,7 +285,9 @@ class TestValidateSectionSpecs:
             SectionSpec(width=24.0, shelves=3),
             SectionSpec(width="fill", shelves=4),
         ]
-        errors = validate_section_specs(specs, total_width=72.0, material_thickness=0.75)
+        errors = validate_section_specs(
+            specs, total_width=72.0, material_thickness=0.75
+        )
         assert errors == []
 
     def test_empty_specs_return_error(self) -> None:
@@ -285,7 +309,9 @@ class TestValidateSectionSpecs:
             SectionSpec(width=50.0, shelves=3),
             SectionSpec(width=50.0, shelves=4),
         ]
-        errors = validate_section_specs(specs, total_width=72.0, material_thickness=0.75)
+        errors = validate_section_specs(
+            specs, total_width=72.0, material_thickness=0.75
+        )
         assert len(errors) >= 1
         assert any("exceed" in e.lower() for e in errors)
 
@@ -298,7 +324,9 @@ class TestResolveSectionWidthsEdgeCases:
         specs = [SectionSpec(width="fill", shelves=i) for i in range(10)]
         # 120" - 2*0.75" - 9*0.75" = 120 - 8.25 = 111.75"
         # Each: 111.75 / 10 = 11.175"
-        widths = resolve_section_widths(specs, total_width=120.0, material_thickness=0.75)
+        widths = resolve_section_widths(
+            specs, total_width=120.0, material_thickness=0.75
+        )
         assert len(widths) == 10
         for width in widths:
             assert width == pytest.approx(11.175, rel=1e-6)
@@ -311,7 +339,9 @@ class TestResolveSectionWidthsEdgeCases:
         ]
         # 48" - 2*0.25" - 1*0.25" = 48 - 0.75 = 47.25"
         # Each: 47.25 / 2 = 23.625"
-        widths = resolve_section_widths(specs, total_width=48.0, material_thickness=0.25)
+        widths = resolve_section_widths(
+            specs, total_width=48.0, material_thickness=0.25
+        )
         assert widths[0] == pytest.approx(23.625, rel=1e-6)
         assert widths[1] == pytest.approx(23.625, rel=1e-6)
 
@@ -330,7 +360,9 @@ class TestResolveSectionWidthsEdgeCases:
         ]
         # 72" - 2*0.75" - 1*0.75" = 69.75"
         # Fill: 69.75 - 24 = 45.75"
-        widths = resolve_section_widths(specs, total_width=72.0, material_thickness=0.75)
+        widths = resolve_section_widths(
+            specs, total_width=72.0, material_thickness=0.75
+        )
         assert widths[0] == pytest.approx(45.75, rel=1e-6)
         assert widths[1] == pytest.approx(24.0, rel=1e-6)
 
@@ -345,7 +377,9 @@ class TestResolveSectionWidthsEdgeCases:
         # Fixed: 20"
         # Remaining: 49"
         # Each fill: 49 / 2 = 24.5"
-        widths = resolve_section_widths(specs, total_width=72.0, material_thickness=0.75)
+        widths = resolve_section_widths(
+            specs, total_width=72.0, material_thickness=0.75
+        )
         assert widths[0] == pytest.approx(24.5, rel=1e-6)
         assert widths[1] == pytest.approx(20.0, rel=1e-6)
         assert widths[2] == pytest.approx(24.5, rel=1e-6)
@@ -359,7 +393,9 @@ class TestResolveSectionWidthsEdgeCases:
         ]
         # 100" - 2*0.75" - 2*0.75" = 97"
         # Each: 97 / 3 = 32.333...
-        widths = resolve_section_widths(specs, total_width=100.0, material_thickness=0.75)
+        widths = resolve_section_widths(
+            specs, total_width=100.0, material_thickness=0.75
+        )
         total_resolved = sum(widths)
         # Should approximately equal available width
         assert total_resolved == pytest.approx(97.0, rel=1e-6)
@@ -582,7 +618,9 @@ class TestResolveSectionWidthsMinWidthConstraint:
         # 48" - 2*0.75" walls - 1*0.75" divider = 45.75" available
         # Fixed takes 25.5", leaving 20.25" for fill
         # 20.25" >= 20.0" min_width, should succeed
-        widths = resolve_section_widths(specs, total_width=48.0, material_thickness=0.75)
+        widths = resolve_section_widths(
+            specs, total_width=48.0, material_thickness=0.75
+        )
         assert len(widths) == 2
         assert widths[0] == pytest.approx(25.5, rel=1e-6)
         assert widths[1] == pytest.approx(20.25, rel=1e-6)
@@ -596,7 +634,9 @@ class TestResolveSectionWidthsMinWidthConstraint:
         # 48" - 2*0.75" walls - 1*0.75" divider = 45.75" available
         # Fixed takes 20", leaving 25.75" for fill
         # 25.75" > 10.0" min_width
-        widths = resolve_section_widths(specs, total_width=48.0, material_thickness=0.75)
+        widths = resolve_section_widths(
+            specs, total_width=48.0, material_thickness=0.75
+        )
         assert widths[1] == pytest.approx(25.75, rel=1e-6)
 
 
@@ -622,7 +662,9 @@ class TestResolveSectionWidthsMaxWidthConstraint:
         # 48" - 2*0.75" walls - 1*0.75" divider = 45.75" available
         # Fixed takes 26.5", leaving 19.25" for fill
         # 19.25" <= 20.0" max_width, should succeed
-        widths = resolve_section_widths(specs, total_width=48.0, material_thickness=0.75)
+        widths = resolve_section_widths(
+            specs, total_width=48.0, material_thickness=0.75
+        )
         assert len(widths) == 2
         assert widths[0] == pytest.approx(26.5, rel=1e-6)
         assert widths[1] == pytest.approx(19.25, rel=1e-6)
@@ -636,7 +678,9 @@ class TestResolveSectionWidthsMaxWidthConstraint:
         # 48" - 2*0.75" walls - 1*0.75" divider = 45.75" available
         # Fixed takes 30", leaving 15.75" for fill
         # 15.75" < 20.0" max_width
-        widths = resolve_section_widths(specs, total_width=48.0, material_thickness=0.75)
+        widths = resolve_section_widths(
+            specs, total_width=48.0, material_thickness=0.75
+        )
         assert widths[1] == pytest.approx(15.75, rel=1e-6)
 
     def test_multiple_fill_sections_above_max_width(self) -> None:
@@ -659,7 +703,9 @@ class TestResolveSectionWidthsMaxWidthConstraint:
         # 48" - 2*0.75" walls - 1*0.75" divider = 45.75" available
         # Fixed takes 25", leaving 20.75" for fill
         # 10" <= 20.75" <= 25", should succeed
-        widths = resolve_section_widths(specs, total_width=48.0, material_thickness=0.75)
+        widths = resolve_section_widths(
+            specs, total_width=48.0, material_thickness=0.75
+        )
         assert widths[1] == pytest.approx(20.75, rel=1e-6)
 
 
@@ -672,7 +718,9 @@ class TestValidateSectionSpecsMinMaxWidth:
             SectionSpec(width=80.0, shelves=3),
             SectionSpec(width="fill", shelves=4, min_width=15.0),
         ]
-        errors = validate_section_specs(specs, total_width=96.0, material_thickness=0.75)
+        errors = validate_section_specs(
+            specs, total_width=96.0, material_thickness=0.75
+        )
         assert len(errors) >= 1
         assert any("min_width" in e.lower() for e in errors)
 
@@ -681,7 +729,9 @@ class TestValidateSectionSpecsMinMaxWidth:
         specs = [
             SectionSpec(width="fill", shelves=3, max_width=20.0),
         ]
-        errors = validate_section_specs(specs, total_width=48.0, material_thickness=0.75)
+        errors = validate_section_specs(
+            specs, total_width=48.0, material_thickness=0.75
+        )
         assert len(errors) >= 1
         assert any("max_width" in e.lower() for e in errors)
 
@@ -690,7 +740,9 @@ class TestValidateSectionSpecsMinMaxWidth:
         # This test checks validation logic for specs that manage to exist
         # In practice, __post_init__ would catch min_width <= 0
         specs = [SectionSpec(width="fill", shelves=3, min_width=8.0)]
-        errors = validate_section_specs(specs, total_width=48.0, material_thickness=0.75)
+        errors = validate_section_specs(
+            specs, total_width=48.0, material_thickness=0.75
+        )
         assert len(errors) == 0  # Valid spec
 
     def test_valid_specs_with_constraints_returns_empty(self) -> None:
@@ -699,20 +751,15 @@ class TestValidateSectionSpecsMinMaxWidth:
             SectionSpec(width=20.0, shelves=3),
             SectionSpec(width="fill", shelves=4, min_width=10.0, max_width=30.0),
         ]
-        errors = validate_section_specs(specs, total_width=48.0, material_thickness=0.75)
+        errors = validate_section_specs(
+            specs, total_width=48.0, material_thickness=0.75
+        )
         assert errors == []
 
 
 # ==============================================================================
 # Tests for RowSpec and resolve_row_heights
 # ==============================================================================
-
-from cabinets.domain.section_resolver import (
-    RowSpec,
-    RowHeightError,
-    resolve_row_heights,
-    validate_row_specs,
-)
 
 
 class TestRowSpec:
@@ -776,7 +823,9 @@ class TestResolveRowHeightsAllFill:
         section_specs = (SectionSpec(width="fill", shelves=3),)
         row_specs = [RowSpec(height="fill", section_specs=section_specs)]
         # 95" total - 2*0.75" panels = 93.5" available
-        heights = resolve_row_heights(row_specs, total_height=95.0, material_thickness=0.75)
+        heights = resolve_row_heights(
+            row_specs, total_height=95.0, material_thickness=0.75
+        )
         assert len(heights) == 1
         assert heights[0] == pytest.approx(93.5, rel=1e-6)
 
@@ -789,7 +838,9 @@ class TestResolveRowHeightsAllFill:
         ]
         # 95" - 2*0.75" panels - 1*0.75" divider = 92.75"
         # Each row: 92.75 / 2 = 46.375"
-        heights = resolve_row_heights(row_specs, total_height=95.0, material_thickness=0.75)
+        heights = resolve_row_heights(
+            row_specs, total_height=95.0, material_thickness=0.75
+        )
         assert len(heights) == 2
         assert heights[0] == pytest.approx(46.375, rel=1e-6)
         assert heights[1] == pytest.approx(46.375, rel=1e-6)
@@ -805,7 +856,9 @@ class TestResolveRowHeightsAllFill:
         ]
         # 95" - 2*0.75" panels - 3*0.75" dividers = 91.25"
         # Each row: 91.25 / 4 = 22.8125"
-        heights = resolve_row_heights(row_specs, total_height=95.0, material_thickness=0.75)
+        heights = resolve_row_heights(
+            row_specs, total_height=95.0, material_thickness=0.75
+        )
         assert len(heights) == 4
         for h in heights:
             assert h == pytest.approx(22.8125, rel=1e-6)
@@ -824,7 +877,9 @@ class TestResolveRowHeightsMixed:
         # 95" - 2*0.75" panels - 1*0.75" divider = 92.75"
         # Fixed: 30"
         # Fill: 92.75 - 30 = 62.75"
-        heights = resolve_row_heights(row_specs, total_height=95.0, material_thickness=0.75)
+        heights = resolve_row_heights(
+            row_specs, total_height=95.0, material_thickness=0.75
+        )
         assert len(heights) == 2
         assert heights[0] == pytest.approx(30.0, rel=1e-6)
         assert heights[1] == pytest.approx(62.75, rel=1e-6)
@@ -841,7 +896,9 @@ class TestResolveRowHeightsMixed:
         # 95" - 2*0.75" panels - 3*0.75" dividers = 91.25"
         # Fixed: 30 + 10 + 12 = 52"
         # Fill: 91.25 - 52 = 39.25"
-        heights = resolve_row_heights(row_specs, total_height=95.0, material_thickness=0.75)
+        heights = resolve_row_heights(
+            row_specs, total_height=95.0, material_thickness=0.75
+        )
         assert len(heights) == 4
         assert heights[0] == pytest.approx(30.0, rel=1e-6)
         assert heights[1] == pytest.approx(10.0, rel=1e-6)
@@ -927,7 +984,9 @@ class TestValidateRowSpecs:
             RowSpec(height=30.0, section_specs=section_specs),
             RowSpec(height="fill", section_specs=section_specs),
         ]
-        errors = validate_row_specs(row_specs, total_height=95.0, material_thickness=0.75)
+        errors = validate_row_specs(
+            row_specs, total_height=95.0, material_thickness=0.75
+        )
         assert errors == []
 
     def test_empty_specs_return_error(self) -> None:
@@ -943,6 +1002,8 @@ class TestValidateRowSpecs:
             RowSpec(height=50.0, section_specs=section_specs),
             RowSpec(height=50.0, section_specs=section_specs),
         ]
-        errors = validate_row_specs(row_specs, total_height=95.0, material_thickness=0.75)
+        errors = validate_row_specs(
+            row_specs, total_height=95.0, material_thickness=0.75
+        )
         assert len(errors) >= 1
         assert any("exceed" in e.lower() for e in errors)

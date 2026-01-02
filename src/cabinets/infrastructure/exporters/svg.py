@@ -14,7 +14,7 @@ from cabinets.infrastructure.cut_diagram_renderer import CutDiagramRenderer
 from cabinets.infrastructure.exporters.base import ExporterRegistry
 
 if TYPE_CHECKING:
-    from cabinets.application.dtos import LayoutOutput, RoomLayoutOutput
+    from cabinets.contracts.dtos import LayoutOutput, RoomLayoutOutput
 
 
 @ExporterRegistry.register("svg")
@@ -102,6 +102,19 @@ class SvgExporter:
             )
 
         return self.renderer.render_combined_svg(packing_result)
+
+    def format_for_console(self, output: LayoutOutput | RoomLayoutOutput) -> str:
+        """SVG format does not support console output.
+
+        SVG cut diagrams are graphical and not suitable for terminal display.
+
+        Raises:
+            NotImplementedError: Always raises this exception.
+        """
+        raise NotImplementedError(
+            "SVG format is graphical and does not support console output. "
+            "Use export() to write to a file instead."
+        )
 
     def export_individual_sheets(
         self, output: LayoutOutput | RoomLayoutOutput, base_path: Path

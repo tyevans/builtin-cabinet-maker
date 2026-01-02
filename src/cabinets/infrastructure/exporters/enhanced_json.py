@@ -19,7 +19,7 @@ from cabinets.domain.value_objects import BoundingBox3D, PanelType
 from cabinets.infrastructure.exporters.base import ExporterRegistry
 
 if TYPE_CHECKING:
-    from cabinets.application.dtos import LayoutOutput, RoomLayoutOutput
+    from cabinets.contracts.dtos import LayoutOutput, RoomLayoutOutput
     from cabinets.domain.entities import Cabinet, Panel
     from cabinets.domain.services.woodworking import ConnectionJoinery
 
@@ -98,6 +98,19 @@ class EnhancedJsonExporter:
         data = self._build_output(output)
         return json.dumps(data, indent=self.indent, default=str)
 
+    def format_for_console(self, output: LayoutOutput | RoomLayoutOutput) -> str:
+        """Format enhanced JSON for console display.
+
+        Uses indentation for readable console output.
+
+        Args:
+            output: The layout output to export.
+
+        Returns:
+            Formatted JSON string suitable for console display.
+        """
+        return self.export_string(output)
+
     def _build_output(self, output: LayoutOutput | RoomLayoutOutput) -> dict[str, Any]:
         """Build the complete JSON structure.
 
@@ -107,7 +120,7 @@ class EnhancedJsonExporter:
         Returns:
             Dictionary containing all export data.
         """
-        from cabinets.application.dtos import LayoutOutput, RoomLayoutOutput
+        from cabinets.contracts.dtos import RoomLayoutOutput
 
         result: dict[str, Any] = {
             "schema_version": SCHEMA_VERSION,
@@ -116,19 +129,23 @@ class EnhancedJsonExporter:
 
         if isinstance(output, RoomLayoutOutput):
             result["room"] = self._extract_room(output)
-            result["cabinets"] = [
-                self._extract_cabinet(cab) for cab in output.cabinets
-            ]
+            result["cabinets"] = [self._extract_cabinet(cab) for cab in output.cabinets]
             # Combine pieces from all cabinets
             all_pieces: list[dict[str, Any]] = []
             for i, cab in enumerate(output.cabinets):
-                joinery_list = self._get_joinery_list(cab) if self.include_joinery else []
-                cabinet_pieces = self._extract_pieces(cab, joinery_list, cabinet_index=i)
+                joinery_list = (
+                    self._get_joinery_list(cab) if self.include_joinery else []
+                )
+                cabinet_pieces = self._extract_pieces(
+                    cab, joinery_list, cabinet_index=i
+                )
                 all_pieces.extend(cabinet_pieces)
             result["pieces"] = all_pieces
         else:  # LayoutOutput
             result["cabinet"] = self._extract_cabinet(output.cabinet)
-            joinery_list = self._get_joinery_list(output.cabinet) if self.include_joinery else []
+            joinery_list = (
+                self._get_joinery_list(output.cabinet) if self.include_joinery else []
+            )
             result["pieces"] = self._extract_pieces(output.cabinet, joinery_list)
 
         result["cut_list"] = self._extract_cut_list(output)
@@ -143,7 +160,9 @@ class EnhancedJsonExporter:
 
         return result
 
-    def _extract_config(self, output: LayoutOutput | RoomLayoutOutput) -> dict[str, Any]:
+    def _extract_config(
+        self, output: LayoutOutput | RoomLayoutOutput
+    ) -> dict[str, Any]:
         """Extract normalized configuration from output.
 
         Captures the resolved configuration including all defaults.
@@ -154,7 +173,7 @@ class EnhancedJsonExporter:
         Returns:
             Dictionary with normalized configuration values.
         """
-        from cabinets.application.dtos import LayoutOutput, RoomLayoutOutput
+        from cabinets.contracts.dtos import RoomLayoutOutput
 
         if isinstance(output, RoomLayoutOutput):
             if not output.cabinets:
@@ -172,7 +191,9 @@ class EnhancedJsonExporter:
                 "back_material": {
                     "type": cabinet.back_material.material_type.value,
                     "thickness": cabinet.back_material.thickness,
-                } if cabinet.back_material else None,
+                }
+                if cabinet.back_material
+                else None,
             }
         else:  # LayoutOutput
             cabinet = output.cabinet
@@ -190,7 +211,9 @@ class EnhancedJsonExporter:
                 "back_material": {
                     "type": cabinet.back_material.material_type.value,
                     "thickness": cabinet.back_material.thickness,
-                } if cabinet.back_material else None,
+                }
+                if cabinet.back_material
+                else None,
                 "section_count": len(cabinet.sections),
                 "default_shelf_count": cabinet.default_shelf_count,
             }
@@ -207,13 +230,15 @@ class EnhancedJsonExporter:
         room = output.room
         walls = []
         for wall in room.walls:
-            walls.append({
-                "length": wall.length,
-                "height": wall.height,
-                "depth": wall.depth,
-                "angle": wall.angle,
-                "name": wall.name,
-            })
+            walls.append(
+                {
+                    "length": wall.length,
+                    "height": wall.height,
+                    "depth": wall.depth,
+                    "angle": wall.angle,
+                    "name": wall.name,
+                }
+            )
 
         return {
             "name": room.name,
@@ -237,15 +262,17 @@ class EnhancedJsonExporter:
         """
         sections = []
         for section in cabinet.sections:
-            sections.append({
-                "width": section.width,
-                "height": section.height,
-                "depth": section.depth,
-                "position": {"x": section.position.x, "y": section.position.y},
-                "shelf_count": len(section.shelves),
-                "panel_count": len(section.panels),
-                "section_type": section.section_type.value,
-            })
+            sections.append(
+                {
+                    "width": section.width,
+                    "height": section.height,
+                    "depth": section.depth,
+                    "position": {"x": section.position.x, "y": section.position.y},
+                    "shelf_count": len(section.shelves),
+                    "panel_count": len(section.panels),
+                    "section_type": section.section_type.value,
+                }
+            )
 
         result: dict[str, Any] = {
             "dimensions": {
@@ -289,9 +316,10 @@ class EnhancedJsonExporter:
         Returns:
             List of piece dictionaries with full details.
         """
-        from cabinets.domain.services import Panel3DMapper
+        from cabinets.domain.services import Panel3DMapper, PanelGenerationService
 
-        panels = cabinet.get_all_panels()
+        panel_service = PanelGenerationService()
+        panels = panel_service.get_all_panels(cabinet)
         mapper = Panel3DMapper(cabinet)
 
         pieces: list[dict[str, Any]] = []
@@ -382,23 +410,27 @@ class EnhancedJsonExporter:
         for joint in joinery_list:
             # Check if this panel is involved in the joint
             if joint.from_panel == panel.panel_type:
-                connections.append({
-                    "connection_to": joint.to_panel.value,
-                    "role": "receives",  # This panel receives the joint (e.g., has dado)
-                    "joint_type": joint.joint.joint_type.value,
-                    "depth": joint.joint.depth,
-                    "width": joint.joint.width,
-                    "location": joint.location_description,
-                })
+                connections.append(
+                    {
+                        "connection_to": joint.to_panel.value,
+                        "role": "receives",  # This panel receives the joint (e.g., has dado)
+                        "joint_type": joint.joint.joint_type.value,
+                        "depth": joint.joint.depth,
+                        "width": joint.joint.width,
+                        "location": joint.location_description,
+                    }
+                )
             elif joint.to_panel == panel.panel_type:
-                connections.append({
-                    "connection_to": joint.from_panel.value,
-                    "role": "fits_into",  # This panel fits into the joint
-                    "joint_type": joint.joint.joint_type.value,
-                    "depth": joint.joint.depth,
-                    "width": joint.joint.width,
-                    "location": joint.location_description,
-                })
+                connections.append(
+                    {
+                        "connection_to": joint.from_panel.value,
+                        "role": "fits_into",  # This panel fits into the joint
+                        "joint_type": joint.joint.joint_type.value,
+                        "depth": joint.joint.depth,
+                        "width": joint.joint.width,
+                        "location": joint.location_description,
+                    }
+                )
 
         return connections
 
@@ -420,7 +452,9 @@ class EnhancedJsonExporter:
             logger.debug(f"Could not get joinery information: {e}")
             return []
 
-    def _extract_cut_list(self, output: LayoutOutput | RoomLayoutOutput) -> list[dict[str, Any]]:
+    def _extract_cut_list(
+        self, output: LayoutOutput | RoomLayoutOutput
+    ) -> list[dict[str, Any]]:
         """Extract cut list with all details.
 
         Args:
@@ -429,7 +463,7 @@ class EnhancedJsonExporter:
         Returns:
             List of cut piece dictionaries.
         """
-        from cabinets.application.dtos import LayoutOutput, RoomLayoutOutput
+        from cabinets.contracts.dtos import RoomLayoutOutput
 
         if isinstance(output, RoomLayoutOutput):
             cut_list = output.cut_list
@@ -472,29 +506,33 @@ class EnhancedJsonExporter:
         Returns:
             Dictionary with sheet goods, hardware, and edge banding.
         """
-        from cabinets.application.dtos import LayoutOutput, RoomLayoutOutput
+        from cabinets.contracts.dtos import LayoutOutput
 
         # Sheet goods calculation
         sheet_goods: list[dict[str, Any]] = []
         for material_spec, estimate in output.material_estimates.items():
-            sheet_goods.append({
-                "material": material_spec.material_type.value,
-                "thickness": material_spec.thickness,
-                "total_area_sqft": estimate.total_area_sqft,
-                "sheet_count_4x8": estimate.sheet_count_4x8,
-                "waste_percentage": estimate.waste_percentage,
-            })
+            sheet_goods.append(
+                {
+                    "material": material_spec.material_type.value,
+                    "thickness": material_spec.thickness,
+                    "total_area_sqft": estimate.total_area_sqft,
+                    "sheet_count_4x8": estimate.sheet_count_4x8,
+                    "waste_percentage": estimate.waste_percentage,
+                }
+            )
 
         # Hardware list
         hardware: list[dict[str, Any]] = []
         if isinstance(output, LayoutOutput) and output.hardware:
             for item in output.hardware:
-                hardware.append({
-                    "name": item.name,
-                    "quantity": item.quantity,
-                    "sku": item.sku,
-                    "notes": item.notes,
-                })
+                hardware.append(
+                    {
+                        "name": item.name,
+                        "quantity": item.quantity,
+                        "sku": item.sku,
+                        "notes": item.notes,
+                    }
+                )
 
         # Edge banding estimate (approximate based on perimeter)
         edge_banding = self._estimate_edge_banding(output)
@@ -523,7 +561,7 @@ class EnhancedJsonExporter:
         Returns:
             List of edge banding requirements by material.
         """
-        from cabinets.application.dtos import LayoutOutput, RoomLayoutOutput
+        from cabinets.contracts.dtos import RoomLayoutOutput
 
         # Panel types that typically need edge banding on front edges
         banded_types = {
@@ -546,7 +584,11 @@ class EnhancedJsonExporter:
         for piece in cut_list:
             if piece.panel_type in banded_types:
                 # Estimate front edge length (width for horizontal, height for vertical)
-                if piece.panel_type in (PanelType.LEFT_SIDE, PanelType.RIGHT_SIDE, PanelType.DIVIDER):
+                if piece.panel_type in (
+                    PanelType.LEFT_SIDE,
+                    PanelType.RIGHT_SIDE,
+                    PanelType.DIVIDER,
+                ):
                     edge_length = piece.height * piece.quantity
                 else:
                     edge_length = piece.width * piece.quantity
@@ -559,16 +601,20 @@ class EnhancedJsonExporter:
         # Convert to list format
         result: list[dict[str, Any]] = []
         for thickness, length_inches in banding_by_thickness.items():
-            result.append({
-                "thickness": thickness,
-                "length_inches": length_inches,
-                "length_feet": length_inches / 12,
-                "length_with_waste": (length_inches / 12) * 1.1,  # 10% waste
-            })
+            result.append(
+                {
+                    "thickness": thickness,
+                    "length_inches": length_inches,
+                    "length_feet": length_inches / 12,
+                    "length_with_waste": (length_inches / 12) * 1.1,  # 10% waste
+                }
+            )
 
         return result
 
-    def _extract_warnings(self, output: LayoutOutput | RoomLayoutOutput) -> list[dict[str, Any]]:
+    def _extract_warnings(
+        self, output: LayoutOutput | RoomLayoutOutput
+    ) -> list[dict[str, Any]]:
         """Extract validation warnings.
 
         Compiles warnings from errors, span warnings, and advisory messages.
@@ -579,23 +625,27 @@ class EnhancedJsonExporter:
         Returns:
             List of warning dictionaries with type and message.
         """
-        from cabinets.application.dtos import LayoutOutput, RoomLayoutOutput
+        from cabinets.contracts.dtos import RoomLayoutOutput
 
         warnings: list[dict[str, Any]] = []
 
         # Add any errors from output
         if isinstance(output, RoomLayoutOutput):
             for error in output.errors:
-                warnings.append({
-                    "type": "error",
-                    "message": error,
-                })
+                warnings.append(
+                    {
+                        "type": "error",
+                        "message": error,
+                    }
+                )
         else:
             for error in output.errors:
-                warnings.append({
-                    "type": "error",
-                    "message": error,
-                })
+                warnings.append(
+                    {
+                        "type": "error",
+                        "message": error,
+                    }
+                )
 
         # Check for span warnings using WoodworkingIntelligence
         try:
@@ -609,13 +659,15 @@ class EnhancedJsonExporter:
                 cabinets = [output.cabinet]
 
             for cabinet in cabinets:
-                span_warnings = intel.check_span_limits(cabinet)
+                span_warnings = intel.check_spans(cabinet)
                 for span_warning in span_warnings:
-                    warnings.append({
-                        "type": "span_warning",
-                        "message": f"{span_warning.panel_label}: span of {span_warning.span:.1f}\" exceeds max {span_warning.max_span:.1f}\" for {span_warning.material.material_type.value}",
-                        "suggestion": span_warning.suggestion,
-                    })
+                    warnings.append(
+                        {
+                            "type": "span_warning",
+                            "message": f'{span_warning.panel_label}: span of {span_warning.span:.1f}" exceeds max {span_warning.max_span:.1f}" for {span_warning.material.material_type.value}',
+                            "suggestion": span_warning.suggestion,
+                        }
+                    )
         except Exception as e:
             logger.debug(f"Could not check span warnings: {e}")
 
@@ -635,7 +687,7 @@ class EnhancedJsonExporter:
         Returns:
             List of advisory warning dictionaries.
         """
-        from cabinets.application.dtos import LayoutOutput, RoomLayoutOutput
+        from cabinets.contracts.dtos import RoomLayoutOutput
 
         advisories: list[dict[str, Any]] = []
 
@@ -649,18 +701,22 @@ class EnhancedJsonExporter:
             for section in cabinet.sections:
                 for shelf in section.shelves:
                     if shelf.width > 30:
-                        advisories.append({
-                            "type": "advisory",
-                            "message": f"Shelf spanning {shelf.width:.1f}\" may benefit from center support or cleats for heavy loads",
-                        })
+                        advisories.append(
+                            {
+                                "type": "advisory",
+                                "message": f'Shelf spanning {shelf.width:.1f}" may benefit from center support or cleats for heavy loads',
+                            }
+                        )
                         break  # One advisory per cabinet is enough
 
             # Check for tall narrow sections that might need anchoring
             if cabinet.height > 72 and cabinet.depth < 16:
-                advisories.append({
-                    "type": "advisory",
-                    "message": "Tall cabinet with shallow depth - consider wall anchoring for stability",
-                })
+                advisories.append(
+                    {
+                        "type": "advisory",
+                        "message": "Tall cabinet with shallow depth - consider wall anchoring for stability",
+                    }
+                )
 
         return advisories
 

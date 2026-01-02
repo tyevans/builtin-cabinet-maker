@@ -365,15 +365,15 @@ class LazySusanCornerComponent:
         max_diameter = self._calculate_max_tray_diameter(context.depth)
         if tray_diameter > max_diameter:
             errors.append(
-                f"Tray diameter {tray_diameter:.1f}\" exceeds maximum "
-                f"{max_diameter:.1f}\" for {context.depth:.1f}\" depth"
+                f'Tray diameter {tray_diameter:.1f}" exceeds maximum '
+                f'{max_diameter:.1f}" for {context.depth:.1f}" depth'
             )
 
         # Warning for small tray diameter
         if tray_diameter < self.MIN_PRACTICAL_TRAY_DIAMETER:
             warnings.append(
-                f"Tray diameter {tray_diameter:.1f}\" is less than recommended "
-                f"minimum of {self.MIN_PRACTICAL_TRAY_DIAMETER:.1f}\" - "
+                f'Tray diameter {tray_diameter:.1f}" is less than recommended '
+                f'minimum of {self.MIN_PRACTICAL_TRAY_DIAMETER:.1f}" - '
                 "may be impractical for storage"
             )
 
@@ -543,7 +543,7 @@ class LazySusanCornerComponent:
                 name="Lazy Susan Center Pole",
                 quantity=1,
                 sku="LS-POLE-ADJ",
-                notes=f"Adjustable pole for {context.height:.1f}\" cabinet height",
+                notes=f'Adjustable pole for {context.height:.1f}" cabinet height',
             )
         )
 
@@ -553,7 +553,7 @@ class LazySusanCornerComponent:
                 name="Lazy Susan Tray",
                 quantity=tray_count,
                 sku=f"LS-TRAY-{int(tray_diameter)}",
-                notes=f"{tray_diameter:.1f}\" diameter rotating tray",
+                notes=f'{tray_diameter:.1f}" diameter rotating tray',
             )
         )
 
@@ -705,12 +705,16 @@ class DiagonalCornerComponent:
         # Validate face_width
         if face_width < self.MIN_FACE_WIDTH:
             errors.append(
-                f"face_width must be at least {self.MIN_FACE_WIDTH:.0f}\" "
-                f"(got {face_width:.1f}\")"
+                f'face_width must be at least {self.MIN_FACE_WIDTH:.0f}" '
+                f'(got {face_width:.1f}")'
             )
 
         # Validate shelf_count (0-6)
-        if not isinstance(shelf_count, int) or shelf_count < 0 or shelf_count > self.MAX_SHELF_COUNT:
+        if (
+            not isinstance(shelf_count, int)
+            or shelf_count < 0
+            or shelf_count > self.MAX_SHELF_COUNT
+        ):
             errors.append(f"shelf_count must be between 0 and {self.MAX_SHELF_COUNT}")
 
         # Validate shelf_shape
@@ -986,15 +990,15 @@ class BlindCornerComponent:
         # Validate accessible_width
         if accessible_width < self.MIN_ACCESSIBLE_WIDTH:
             errors.append(
-                f"accessible_width must be at least {self.MIN_ACCESSIBLE_WIDTH:.0f}\" "
-                f"(got {accessible_width:.1f}\")"
+                f'accessible_width must be at least {self.MIN_ACCESSIBLE_WIDTH:.0f}" '
+                f'(got {accessible_width:.1f}")'
             )
 
         # Warning for wide accessible width
         if accessible_width > self.MAX_RECOMMENDED_WIDTH:
             warnings.append(
-                f"accessible_width {accessible_width:.1f}\" exceeds recommended maximum "
-                f"of {self.MAX_RECOMMENDED_WIDTH:.0f}\" - may reduce pull-out effectiveness"
+                f'accessible_width {accessible_width:.1f}" exceeds recommended maximum '
+                f'of {self.MAX_RECOMMENDED_WIDTH:.0f}" - may reduce pull-out effectiveness'
             )
 
         # Validate filler_width
@@ -1169,7 +1173,7 @@ class BlindCornerComponent:
                     name="Blind Corner Pull-out Slides",
                     quantity=1,
                     sku="BC-PULLOUT-SLIDE",
-                    notes=f"Heavy-duty slides for {accessible_width:.0f}\" pull-out",
+                    notes=f'Heavy-duty slides for {accessible_width:.0f}" pull-out',
                 )
             )
 
@@ -1179,7 +1183,7 @@ class BlindCornerComponent:
                     name="Blind Corner Pull-out Tray",
                     quantity=1,
                     sku=f"BC-TRAY-{int(accessible_width)}",
-                    notes=f"{accessible_width:.1f}\" wide pull-out tray for {blind_side} blind corner",
+                    notes=f'{accessible_width:.1f}" wide pull-out tray for {blind_side} blind corner',
                 )
             )
 

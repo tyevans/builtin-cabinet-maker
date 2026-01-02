@@ -32,14 +32,11 @@ from typing import Any, Literal
 from ..entities import Panel
 from ..value_objects import (
     CutoutShape,
-    EquipmentType,
     MaterialSpec,
     PanelCutout,
     PanelType,
     Point2D,
     Position,
-    SoundbarType,
-    SpeakerType,
 )
 from .context import ComponentContext
 from .registry import component_registry
@@ -277,10 +274,10 @@ class EquipmentShelfComponent:
 
         # Depth validation
         if shelf_depth < MIN_EQUIPMENT_DEPTH:
-            errors.append(f"Shelf depth {shelf_depth}\" too shallow for equipment")
+            errors.append(f'Shelf depth {shelf_depth}" too shallow for equipment')
         elif shelf_depth < RECOMMENDED_EQUIPMENT_DEPTH:
             warnings.append(
-                f"Shelf depth {shelf_depth}\" may be tight for A/V receivers"
+                f'Shelf depth {shelf_depth}" may be tight for A/V receivers'
             )
 
         # Clearance validation for heat sources
@@ -288,14 +285,14 @@ class EquipmentShelfComponent:
             effective_clearance = vertical_clearance - equipment.height
             if effective_clearance < HEAT_SOURCE_CLEARANCE:
                 warnings.append(
-                    f"{equipment_type} generates heat; {effective_clearance:.1f}\" clearance "
-                    f"may be insufficient (recommend {HEAT_SOURCE_CLEARANCE}\"+)"
+                    f'{equipment_type} generates heat; {effective_clearance:.1f}" clearance '
+                    f'may be insufficient (recommend {HEAT_SOURCE_CLEARANCE}"+)'
                 )
 
         # Width validation
         if equipment.width > context.width:
             errors.append(
-                f"Equipment width {equipment.width}\" exceeds section width {context.width}\""
+                f'Equipment width {equipment.width}" exceeds section width {context.width}"'
             )
 
         return ValidationResult(tuple(errors), tuple(warnings))
@@ -658,16 +655,16 @@ class SoundbarShelfComponent:
         # Side clearance validation
         if side_clearance < 6:
             warnings.append(
-                f"Side clearance {side_clearance}\" may affect sound projection"
+                f'Side clearance {side_clearance}" may affect sound projection'
             )
         elif side_clearance < 12:
-            warnings.append("Consider 12\"+ side clearance for optimal sound")
+            warnings.append('Consider 12"+ side clearance for optimal sound')
 
         # Atmos ceiling clearance
         if has_atmos and ceiling_clearance < 24:
             warnings.append(
-                f"Ceiling clearance {ceiling_clearance}\" may affect Atmos height effects; "
-                "recommend 24\"+"
+                f'Ceiling clearance {ceiling_clearance}" may affect Atmos height effects; '
+                'recommend 24"+'
             )
 
         # Check if soundbar is below equipment (bad for sound)
@@ -816,8 +813,8 @@ class SpeakerAlcoveComponent:
         # Center channel ear level validation
         if speaker_type == "center_channel" and alcove_height < 30:
             warnings.append(
-                f"Center channel at {alcove_height}\" may be below ear level; "
-                "recommend 36-42\" for seated viewing"
+                f'Center channel at {alcove_height}" may be below ear level; '
+                'recommend 36-42" for seated viewing'
             )
 
         # Subwoofer port clearance validation
@@ -825,8 +822,8 @@ class SpeakerAlcoveComponent:
             port_clearance = config.get("port_clearance", 4.0)
             if port_clearance < self.MIN_SUBWOOFER_PORT_CLEARANCE:
                 errors.append(
-                    f"Subwoofer port clearance {port_clearance}\" insufficient; "
-                    f"minimum {self.MIN_SUBWOOFER_PORT_CLEARANCE}\" required"
+                    f'Subwoofer port clearance {port_clearance}" insufficient; '
+                    f'minimum {self.MIN_SUBWOOFER_PORT_CLEARANCE}" required'
                 )
 
         return ValidationResult(tuple(errors), tuple(warnings))
@@ -878,7 +875,9 @@ class SpeakerAlcoveComponent:
                 width=sp_depth + 2,
                 height=sp_height + 2,
                 material=context.material,
-                position=Position(context.position.x + sp_width + 2, context.position.y),
+                position=Position(
+                    context.position.x + sp_width + 2, context.position.y
+                ),
                 metadata={
                     "component": "media.speaker_alcove",
                     "speaker_type": speaker_type,

@@ -1,23 +1,35 @@
-"""Data Transfer Objects for the application layer."""
+"""Data Transfer Objects for the application layer.
+
+This module provides DTOs for the application layer, including input DTOs
+for validation and output DTOs for layout results.
+
+Note: LayoutOutput, RoomLayoutOutput, and related output DTOs are now
+defined in cabinets.contracts.dtos and re-exported here for backward
+compatibility. New code should import from cabinets.contracts.
+"""
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
-from typing import TYPE_CHECKING
+from dataclasses import dataclass
+from typing import TYPE_CHECKING, Any
 
 from cabinets.domain import (
-    Cabinet,
-    CutPiece,
-    MaterialEstimate,
     MaterialSpec,
     MaterialType,
 )
-from cabinets.domain.components.results import HardwareItem
-from cabinets.domain.entities import Room
-from cabinets.domain.value_objects import SectionTransform
+
+# Re-export output DTOs from contracts for backward compatibility
+from cabinets.contracts.dtos import (
+    CoreLayoutOutput,
+    InstallationOutput,
+    LayoutOutput,
+    PackingOutput,
+    RoomLayoutOutput,
+    WoodworkingOutput,
+)
 
 if TYPE_CHECKING:
-    from cabinets.infrastructure.bin_packing import PackingResult
+    pass
 
 
 @dataclass
@@ -92,77 +104,50 @@ class LayoutParametersInput:
 
 
 @dataclass
-class LayoutOutput:
-    """Output DTO containing the generated layout results.
+class SafetyOutput:
+    """Safety analysis output data.
+
+    Data transfer object for safety assessment results, suitable
+    for serialization and CLI output.
 
     Attributes:
-        cabinet: Generated cabinet entity with sections, panels, and shelves.
-        cut_list: List of cut pieces required to build the cabinet.
-        material_estimates: Material estimates grouped by material type.
-        total_estimate: Total material estimate across all materials.
-        hardware: List of hardware items required.
-        errors: List of error messages if generation failed.
-        packing_result: Result from bin packing optimization, if enabled.
-        installation_hardware: List of installation hardware items.
-        installation_instructions: Installation instructions in markdown format.
-        installation_warnings: List of installation-related warnings.
-        stud_analysis: Stud alignment analysis results as a dictionary.
+        weight_capacities: List of weight capacity dictionaries.
+        anti_tip_required: Whether anti-tip restraint is required.
+        anti_tip_hardware: Recommended anti-tip hardware (if required).
+        accessibility_report: Accessibility report dictionary (if enabled).
+        clearance_violations: List of clearance violation messages.
+        material_compliance: Material certification status message.
+        seismic_requirements: List of seismic requirements (if applicable).
+        safety_labels: List of safety label dictionaries.
+        safety_report_markdown: Full safety report in markdown format.
+        warnings: List of warning messages.
+        errors: List of error messages.
     """
 
-    cabinet: Cabinet
-    cut_list: list[CutPiece]
-    material_estimates: dict[MaterialSpec, MaterialEstimate]
-    total_estimate: MaterialEstimate
-    hardware: list[HardwareItem] = field(default_factory=list)
-    errors: list[str] = field(default_factory=list)
-    packing_result: PackingResult | None = None
-    installation_hardware: list[HardwareItem] | None = None
-    installation_instructions: str | None = None
-    installation_warnings: list[str] | None = None
-    stud_analysis: dict | None = None
-
-    @property
-    def is_valid(self) -> bool:
-        """Check if the layout was generated successfully."""
-        return len(self.errors) == 0
+    weight_capacities: list[dict[str, Any]]
+    anti_tip_required: bool
+    anti_tip_hardware: list[str] | None
+    accessibility_report: dict[str, Any] | None
+    clearance_violations: list[str]
+    material_compliance: str
+    seismic_requirements: list[str] | None
+    safety_labels: list[dict[str, str]]
+    safety_report_markdown: str
+    warnings: list[str]
+    errors: list[str]
 
 
-@dataclass
-class RoomLayoutOutput:
-    """Output DTO from room layout generation.
-
-    Contains the complete room layout with cabinets positioned on multiple walls,
-    their 3D transforms for rendering, and combined material estimates.
-
-    Attributes:
-        room: The Room entity with wall segment definitions.
-        cabinets: List of Cabinet entities, one per wall section.
-        transforms: List of SectionTransform objects for 3D positioning.
-        cut_list: Combined cut list from all cabinets.
-        material_estimates: Material estimates grouped by material type.
-        total_estimate: Total material estimate across all cabinets.
-        errors: List of error messages if generation failed.
-        packing_result: Result from bin packing optimization, if enabled.
-        installation_hardware: List of installation hardware items.
-        installation_instructions: Installation instructions in markdown format.
-        installation_warnings: List of installation-related warnings.
-        stud_analysis: Stud alignment analysis results as a dictionary.
-    """
-
-    room: Room
-    cabinets: list[Cabinet]
-    transforms: list[SectionTransform]
-    cut_list: list[CutPiece]
-    material_estimates: dict[MaterialSpec, MaterialEstimate]
-    total_estimate: MaterialEstimate
-    errors: list[str] = field(default_factory=list)
-    packing_result: "PackingResult | None" = None
-    installation_hardware: list[HardwareItem] | None = None
-    installation_instructions: str | None = None
-    installation_warnings: list[str] | None = None
-    stud_analysis: dict | None = None
-
-    @property
-    def is_valid(self) -> bool:
-        """Check if the room layout was generated successfully."""
-        return len(self.errors) == 0
+__all__ = [
+    # Input DTOs
+    "LayoutParametersInput",
+    "WallInput",
+    # Output DTOs (re-exported from contracts)
+    "CoreLayoutOutput",
+    "InstallationOutput",
+    "LayoutOutput",
+    "PackingOutput",
+    "RoomLayoutOutput",
+    "WoodworkingOutput",
+    # Safety output
+    "SafetyOutput",
+]

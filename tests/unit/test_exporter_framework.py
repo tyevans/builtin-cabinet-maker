@@ -66,6 +66,7 @@ class TestExporterRegistry:
 
     def test_clear_removes_all_exporters(self) -> None:
         """clear() should remove all registered exporters."""
+
         # Register a test exporter
         @ExporterRegistry.register("temp_test")
         class TempExporter:

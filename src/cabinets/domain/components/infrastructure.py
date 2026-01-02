@@ -19,7 +19,6 @@ from typing import Any
 
 from ..value_objects import (
     CutoutShape,
-    GrommetSize,
     LightingLocation,
     LightingType,
     OutletType,
@@ -236,23 +235,23 @@ class _InfrastructureBase:
         # Check each edge
         if left < min_edge:
             errors.append(
-                f"Cutout left edge ({left:.2f}\") too close to panel edge "
-                f"(minimum {min_edge}\" required)"
+                f'Cutout left edge ({left:.2f}") too close to panel edge '
+                f'(minimum {min_edge}" required)'
             )
         if right > panel_width - min_edge:
             errors.append(
-                f"Cutout right edge ({right:.2f}\") too close to panel edge "
-                f"(maximum {panel_width - min_edge:.2f}\" allowed)"
+                f'Cutout right edge ({right:.2f}") too close to panel edge '
+                f'(maximum {panel_width - min_edge:.2f}" allowed)'
             )
         if bottom < min_edge:
             errors.append(
-                f"Cutout bottom edge ({bottom:.2f}\") too close to panel edge "
-                f"(minimum {min_edge}\" required)"
+                f'Cutout bottom edge ({bottom:.2f}") too close to panel edge '
+                f'(minimum {min_edge}" required)'
             )
         if top > panel_height - min_edge:
             errors.append(
-                f"Cutout top edge ({top:.2f}\") too close to panel edge "
-                f"(maximum {panel_height - min_edge:.2f}\" allowed)"
+                f'Cutout top edge ({top:.2f}") too close to panel edge '
+                f'(maximum {panel_height - min_edge:.2f}" allowed)'
             )
 
         return errors
@@ -275,9 +274,7 @@ class _InfrastructureBase:
         if index < 0:
             errors.append(f"Section index {index} cannot be negative")
         if index >= max_sections:
-            errors.append(
-                f"Section index {index} exceeds maximum {max_sections - 1}"
-            )
+            errors.append(f"Section index {index} exceeds maximum {max_sections - 1}")
         return errors
 
     def _check_cutout_overlap(
@@ -438,7 +435,7 @@ class LightingComponent(_InfrastructureBase):
                 errors.append("LED strip length must be positive")
             elif length > context.width * len(section_indices):
                 warnings.append(
-                    f"LED strip length ({length}\") may exceed available space"
+                    f'LED strip length ({length}") may exceed available space'
                 )
 
         # Puck lights - validate positions if provided
@@ -507,7 +504,7 @@ class LightingComponent(_InfrastructureBase):
                     name="LED Strip Light",
                     quantity=1,
                     sku="LED-STRIP-WW",
-                    notes=f"{length:.1f}\" warm white LED strip",
+                    notes=f'{length:.1f}" warm white LED strip',
                 )
             )
             hardware.append(
@@ -515,7 +512,7 @@ class LightingComponent(_InfrastructureBase):
                     name="LED Aluminum Channel",
                     quantity=1,
                     sku="LED-CHANNEL-AL",
-                    notes=f"{length:.1f}\" aluminum channel with diffuser",
+                    notes=f'{length:.1f}" aluminum channel with diffuser',
                 )
             )
             hardware.append(
@@ -571,7 +568,7 @@ class LightingComponent(_InfrastructureBase):
             if puck_positions:
                 hardware.append(
                     HardwareItem(
-                        name=f"Puck Light ({puck_diameter}\")",
+                        name=f'Puck Light ({puck_diameter}")',
                         quantity=len(puck_positions),
                         sku=f"PUCK-LED-{puck_diameter:.1f}",
                         notes="LED puck light with mounting ring",
@@ -871,7 +868,7 @@ class CableManagementComponent(_InfrastructureBase):
             size = grommet.get("size", 2.5)
             if size not in self.VALID_GROMMET_SIZES:
                 errors.append(
-                    f"Grommet {i + 1}: invalid size {size}\". "
+                    f'Grommet {i + 1}: invalid size {size}". '
                     f"Must be one of: {sorted(self.VALID_GROMMET_SIZES)}"
                 )
 
@@ -975,7 +972,7 @@ class CableManagementComponent(_InfrastructureBase):
                 height=size,
                 shape=CutoutShape.CIRCULAR,
                 diameter=size,
-                notes=f"{size}\" cable grommet",
+                notes=f'{size}" cable grommet',
             )
             cutouts.append(self._cutout_to_dict(cutout))
 
@@ -1174,15 +1171,6 @@ class VentilationComponent(_InfrastructureBase):
         vent_height = config.get("height", 2.0)
         hole_size = config.get("hole_size", 0.25)
 
-        vent_spec = VentilationSpec(
-            pattern=pattern,
-            panel=panel,
-            position=position,
-            width=vent_width,
-            height=vent_height,
-            hole_size=hole_size,
-        )
-
         # Calculate hole count for different patterns
         hole_count = 0
         if pattern == VentilationPattern.GRID:
@@ -1200,7 +1188,10 @@ class VentilationComponent(_InfrastructureBase):
             radius = min(vent_width, vent_height) / 2
             rings = int(radius / (hole_size * 3))
             # Approximate hole count per ring
-            hole_count = sum(int(2 * math.pi * (i + 1) * hole_size * 3 / (hole_size * 2)) for i in range(rings))
+            hole_count = sum(
+                int(2 * math.pi * (i + 1) * hole_size * 3 / (hole_size * 2))
+                for i in range(rings)
+            )
 
         # Create a rectangular cutout entry for the ventilation area
         # The actual holes are specified in the pattern metadata
