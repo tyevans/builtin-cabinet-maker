@@ -12,10 +12,18 @@ export class DimensionsForm extends LitElement {
       display: block;
     }
 
+    /* Mobile-first: single column */
     .form-grid {
       display: grid;
-      grid-template-columns: repeat(3, 1fr);
+      grid-template-columns: 1fr;
       gap: 0.75rem;
+    }
+
+    /* Desktop: 3 columns */
+    @media (min-width: 768px) {
+      .form-grid {
+        grid-template-columns: repeat(3, 1fr);
+      }
     }
 
     sl-input::part(form-control-label) {

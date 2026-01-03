@@ -76,14 +76,22 @@ export class SectionCard extends LitElement {
       margin-left: 0.5rem;
     }
 
+    /* Mobile-first: single column */
     .section-fields {
       display: grid;
-      grid-template-columns: 5rem 1fr;
+      grid-template-columns: 1fr;
       gap: 0.5rem;
     }
 
-    .section-fields.three-col {
-      grid-template-columns: 5rem 5rem 1fr;
+    /* Desktop: multi-column layouts */
+    @media (min-width: 768px) {
+      .section-fields {
+        grid-template-columns: 5rem 1fr;
+      }
+
+      .section-fields.three-col {
+        grid-template-columns: 5rem 5rem 1fr;
+      }
     }
 
     sl-input::part(form-control-label),

@@ -5,18 +5,28 @@ import { api } from '@/api/api';
 import { debounce } from '@/state/store';
 
 import '@shoelace-style/shoelace/dist/components/icon/icon.js';
+import '@shoelace-style/shoelace/dist/components/drawer/drawer.js';
+import '@shoelace-style/shoelace/dist/components/icon-button/icon-button.js';
 import './error-banner.js';
 
 @customElement('app-shell')
 export class AppShell extends LitElement {
   static styles = css`
+    /* Mobile-first: single column layout */
     :host {
       display: grid;
-      grid-template-columns: 440px 1fr;
+      grid-template-columns: 1fr;
       grid-template-rows: auto 1fr;
       height: 100vh;
       overflow: hidden;
       background: var(--sl-color-neutral-100);
+    }
+
+    /* Desktop: two-column layout */
+    @media (min-width: 768px) {
+      :host {
+        grid-template-columns: 440px 1fr;
+      }
     }
 
     .header {
@@ -24,35 +34,84 @@ export class AppShell extends LitElement {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 0.75rem 1.5rem;
+      padding: 0.5rem 1rem;
       background: var(--sl-color-neutral-0);
       border-bottom: 1px solid var(--sl-color-neutral-200);
       box-shadow: var(--sl-shadow-x-small);
     }
 
+    @media (min-width: 768px) {
+      .header {
+        padding: 0.75rem 1.5rem;
+      }
+    }
+
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .mobile-menu-btn {
+      display: flex;
+    }
+
+    @media (min-width: 768px) {
+      .mobile-menu-btn {
+        display: none;
+      }
+    }
+
     .logo {
       display: flex;
       align-items: center;
-      gap: 0.75rem;
-      font-size: 1.25rem;
+      gap: 0.5rem;
+      font-size: 1.1rem;
       font-weight: 600;
       color: var(--sl-color-neutral-900);
     }
 
+    @media (min-width: 768px) {
+      .logo {
+        gap: 0.75rem;
+        font-size: 1.25rem;
+      }
+    }
+
     .logo-icon {
-      font-size: 1.5rem;
+      font-size: 1.25rem;
+    }
+
+    @media (min-width: 768px) {
+      .logo-icon {
+        font-size: 1.5rem;
+      }
     }
 
     .header-actions {
       display: flex;
       align-items: center;
-      gap: 0.75rem;
+      gap: 0.5rem;
     }
 
+    @media (min-width: 768px) {
+      .header-actions {
+        gap: 0.75rem;
+      }
+    }
+
+    /* Desktop sidebar - hidden on mobile */
     .sidebar {
+      display: none;
       overflow-y: auto;
       background: var(--sl-color-neutral-0);
       border-right: 1px solid var(--sl-color-neutral-200);
+    }
+
+    @media (min-width: 768px) {
+      .sidebar {
+        display: block;
+      }
     }
 
     .main {
@@ -62,12 +121,19 @@ export class AppShell extends LitElement {
     }
 
     .status-badge {
-      display: flex;
+      display: none;
       align-items: center;
       gap: 0.5rem;
       padding: 0.25rem 0.75rem;
       border-radius: var(--sl-border-radius-pill);
-      font-size: 0.875rem;
+      font-size: 0.75rem;
+    }
+
+    @media (min-width: 768px) {
+      .status-badge {
+        display: flex;
+        font-size: 0.875rem;
+      }
     }
 
     .status-badge.generating {
@@ -96,10 +162,22 @@ export class AppShell extends LitElement {
       flex: 1;
       overflow: hidden;
     }
+
+    /* Drawer styling for mobile */
+    sl-drawer::part(panel) {
+      width: min(400px, 85vw);
+    }
+
+    sl-drawer::part(body) {
+      padding: 0;
+    }
   `;
 
   @state()
   private cabinetState: CabinetState = cabinetStore.getState();
+
+  @state()
+  private drawerOpen = false;
 
   private unsubscribe?: () => void;
   private debouncedGenerate: () => void;
@@ -156,12 +234,28 @@ export class AppShell extends LitElement {
     return null;
   }
 
+  private openDrawer(): void {
+    this.drawerOpen = true;
+  }
+
+  private closeDrawer(): void {
+    this.drawerOpen = false;
+  }
+
   render() {
     return html`
       <header class="header">
-        <div class="logo">
-          <span class="logo-icon">&#128452;</span>
-          Cabinet Designer
+        <div class="header-left">
+          <sl-icon-button
+            class="mobile-menu-btn"
+            name="list"
+            label="Open configuration"
+            @click=${this.openDrawer}
+          ></sl-icon-button>
+          <div class="logo">
+            <span class="logo-icon">&#128452;</span>
+            Cabinet Designer
+          </div>
         </div>
         <div class="header-actions">
           ${this.getStatusBadge()}
@@ -169,9 +263,19 @@ export class AppShell extends LitElement {
         </div>
       </header>
 
+      <!-- Desktop sidebar -->
       <aside class="sidebar">
         <config-sidebar></config-sidebar>
       </aside>
+
+      <!-- Mobile drawer -->
+      <sl-drawer
+        label="Configuration"
+        ?open=${this.drawerOpen}
+        @sl-hide=${this.closeDrawer}
+      >
+        <config-sidebar></config-sidebar>
+      </sl-drawer>
 
       <main class="main">
         <div class="main-content">

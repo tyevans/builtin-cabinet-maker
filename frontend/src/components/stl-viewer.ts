@@ -23,13 +23,21 @@ const EDGE_MATERIAL = new THREE.LineBasicMaterial({ color: 0x8b6914 });
 @customElement('stl-viewer')
 export class StlViewer extends LitElement {
   static styles = css`
+    /* Mobile-first: smaller min-height */
     :host {
       display: block;
       width: 100%;
       height: 100%;
-      min-height: 400px;
+      min-height: 300px;
       position: relative;
       background: linear-gradient(135deg, #f5f7fa 0%, #e4e8ec 100%);
+      touch-action: none; /* Prevent browser handling of touch gestures */
+    }
+
+    @media (min-width: 768px) {
+      :host {
+        min-height: 400px;
+      }
     }
 
     .canvas-container {
@@ -41,12 +49,13 @@ export class StlViewer extends LitElement {
       display: block;
       width: 100%;
       height: 100%;
+      touch-action: none;
     }
 
     .loading-indicator {
       position: absolute;
-      top: 1rem;
-      left: 1rem;
+      top: 0.5rem;
+      left: 0.5rem;
       display: flex;
       align-items: center;
       gap: 0.5rem;
@@ -58,6 +67,13 @@ export class StlViewer extends LitElement {
       z-index: 10;
       opacity: 0;
       transition: opacity 0.15s ease-in-out;
+    }
+
+    @media (min-width: 768px) {
+      .loading-indicator {
+        top: 1rem;
+        left: 1rem;
+      }
     }
 
     .loading-indicator.visible {
@@ -73,6 +89,8 @@ export class StlViewer extends LitElement {
       justify-content: center;
       background: rgba(255, 255, 255, 0.9);
       z-index: 10;
+      padding: 1rem;
+      text-align: center;
     }
 
     .empty-state.hidden {
@@ -80,9 +98,16 @@ export class StlViewer extends LitElement {
     }
 
     .empty-state-icon {
-      font-size: 3rem;
+      font-size: 2.5rem;
       color: var(--sl-color-neutral-400);
-      margin-bottom: 1rem;
+      margin-bottom: 0.75rem;
+    }
+
+    @media (min-width: 768px) {
+      .empty-state-icon {
+        font-size: 3rem;
+        margin-bottom: 1rem;
+      }
     }
 
     .empty-state-text {
@@ -90,7 +115,9 @@ export class StlViewer extends LitElement {
       font-size: 0.875rem;
     }
 
+    /* Hide controls hint on mobile - touch is intuitive */
     .controls-hint {
+      display: none;
       position: absolute;
       bottom: 1rem;
       left: 1rem;
@@ -102,11 +129,35 @@ export class StlViewer extends LitElement {
       pointer-events: none;
     }
 
+    @media (min-width: 768px) {
+      .controls-hint {
+        display: block;
+      }
+    }
+
+    /* Larger tap target for reset button on mobile */
     .reset-button {
       position: absolute;
-      top: 1rem;
-      right: 1rem;
+      top: 0.5rem;
+      right: 0.5rem;
       z-index: 5;
+    }
+
+    .reset-button sl-icon-button::part(base) {
+      font-size: 1.25rem;
+      padding: 0.5rem;
+    }
+
+    @media (min-width: 768px) {
+      .reset-button {
+        top: 1rem;
+        right: 1rem;
+      }
+
+      .reset-button sl-icon-button::part(base) {
+        font-size: 1rem;
+        padding: 0.25rem;
+      }
     }
   `;
 

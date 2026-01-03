@@ -10,51 +10,93 @@ import '@shoelace-style/shoelace/dist/components/button/button.js';
 @customElement('bom-panel')
 export class BomPanel extends LitElement {
   static styles = css`
+    /* Mobile-first: reduced padding */
     :host {
       display: block;
-      padding: 1rem;
+      padding: 0.5rem;
       height: 100%;
       overflow: auto;
+    }
+
+    @media (min-width: 768px) {
+      :host {
+        padding: 1rem;
+      }
     }
 
     .markdown-content {
       background: var(--sl-color-neutral-0);
       border-radius: var(--sl-border-radius-medium);
       border: 1px solid var(--sl-color-neutral-200);
-      padding: 1.5rem 2rem;
-      font-size: 0.9rem;
+      padding: 1rem;
+      font-size: 0.85rem;
       line-height: 1.6;
       color: var(--sl-color-neutral-800);
     }
 
+    @media (min-width: 768px) {
+      .markdown-content {
+        padding: 1.5rem 2rem;
+        font-size: 0.9rem;
+      }
+    }
+
     .markdown-content h1 {
-      font-size: 1.75rem;
+      font-size: 1.4rem;
       font-weight: 700;
       color: var(--sl-color-neutral-900);
-      margin: 0 0 1rem 0;
+      margin: 0 0 0.75rem 0;
       padding-bottom: 0.5rem;
       border-bottom: 2px solid var(--sl-color-primary-500);
     }
 
-    .markdown-content h2 {
-      font-size: 1.35rem;
-      font-weight: 600;
-      color: var(--sl-color-neutral-900);
-      margin: 1.5rem 0 0.75rem 0;
+    @media (min-width: 768px) {
+      .markdown-content h1 {
+        font-size: 1.75rem;
+        margin: 0 0 1rem 0;
+      }
     }
 
-    .markdown-content h3 {
-      font-size: 1.1rem;
+    .markdown-content h2 {
+      font-size: 1.15rem;
       font-weight: 600;
-      color: var(--sl-color-neutral-800);
+      color: var(--sl-color-neutral-900);
       margin: 1.25rem 0 0.5rem 0;
     }
 
-    .markdown-content h4 {
+    @media (min-width: 768px) {
+      .markdown-content h2 {
+        font-size: 1.35rem;
+        margin: 1.5rem 0 0.75rem 0;
+      }
+    }
+
+    .markdown-content h3 {
       font-size: 1rem;
       font-weight: 600;
-      color: var(--sl-color-neutral-700);
+      color: var(--sl-color-neutral-800);
       margin: 1rem 0 0.5rem 0;
+    }
+
+    @media (min-width: 768px) {
+      .markdown-content h3 {
+        font-size: 1.1rem;
+        margin: 1.25rem 0 0.5rem 0;
+      }
+    }
+
+    .markdown-content h4 {
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: var(--sl-color-neutral-700);
+      margin: 0.75rem 0 0.5rem 0;
+    }
+
+    @media (min-width: 768px) {
+      .markdown-content h4 {
+        font-size: 1rem;
+        margin: 1rem 0 0.5rem 0;
+      }
     }
 
     .markdown-content p {
@@ -64,7 +106,14 @@ export class BomPanel extends LitElement {
     .markdown-content ul,
     .markdown-content ol {
       margin: 0.5rem 0;
-      padding-left: 1.5rem;
+      padding-left: 1.25rem;
+    }
+
+    @media (min-width: 768px) {
+      .markdown-content ul,
+      .markdown-content ol {
+        padding-left: 1.5rem;
+      }
     }
 
     .markdown-content li {
@@ -83,20 +132,39 @@ export class BomPanel extends LitElement {
     .markdown-content hr {
       border: none;
       border-top: 1px solid var(--sl-color-neutral-200);
-      margin: 1.5rem 0;
+      margin: 1rem 0;
     }
 
+    @media (min-width: 768px) {
+      .markdown-content hr {
+        margin: 1.5rem 0;
+      }
+    }
+
+    /* Table wrapper for horizontal scroll on mobile */
     .markdown-content table {
+      display: block;
       width: 100%;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
       border-collapse: collapse;
       margin: 1rem 0;
     }
 
     .markdown-content th,
     .markdown-content td {
-      padding: 0.5rem 0.75rem;
+      padding: 0.375rem 0.5rem;
       border: 1px solid var(--sl-color-neutral-200);
       text-align: left;
+      white-space: nowrap;
+    }
+
+    @media (min-width: 768px) {
+      .markdown-content th,
+      .markdown-content td {
+        padding: 0.5rem 0.75rem;
+        white-space: normal;
+      }
     }
 
     .markdown-content th {

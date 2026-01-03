@@ -14,10 +14,18 @@ import '@shoelace-style/shoelace/dist/components/badge/badge.js';
 @customElement('config-sidebar')
 export class ConfigSidebar extends LitElement {
   static styles = css`
+    /* Mobile-first: reduced padding */
     :host {
       display: block;
-      padding: 1rem;
+      padding: 0.75rem;
       overflow-y: auto;
+    }
+
+    /* Desktop: more padding */
+    @media (min-width: 768px) {
+      :host {
+        padding: 1rem;
+      }
     }
 
     .summary {

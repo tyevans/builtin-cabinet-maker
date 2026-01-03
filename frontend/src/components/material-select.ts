@@ -30,10 +30,18 @@ export class MaterialSelect extends LitElement {
       display: block;
     }
 
+    /* Mobile-first: single column */
     .form-grid {
       display: grid;
-      grid-template-columns: 1fr 1fr;
+      grid-template-columns: 1fr;
       gap: 0.75rem;
+    }
+
+    /* Desktop: 2 columns */
+    @media (min-width: 768px) {
+      .form-grid {
+        grid-template-columns: 1fr 1fr;
+      }
     }
 
     sl-select::part(form-control-label) {

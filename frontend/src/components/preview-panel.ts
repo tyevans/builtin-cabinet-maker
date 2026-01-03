@@ -44,7 +44,28 @@ export class PreviewPanel extends LitElement {
     sl-tab-group::part(nav) {
       background: var(--sl-color-neutral-0);
       border-bottom: 1px solid var(--sl-color-neutral-200);
-      padding: 0 1rem;
+      padding: 0 0.5rem;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    @media (min-width: 768px) {
+      sl-tab-group::part(nav) {
+        padding: 0 1rem;
+      }
+    }
+
+    /* Smaller tabs on mobile */
+    sl-tab::part(base) {
+      font-size: 0.8rem;
+      padding: 0.5rem 0.75rem;
+    }
+
+    @media (min-width: 768px) {
+      sl-tab::part(base) {
+        font-size: 0.875rem;
+        padding: 0.75rem 1rem;
+      }
     }
 
     sl-tab-panel {

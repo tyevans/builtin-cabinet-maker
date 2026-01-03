@@ -14,27 +14,42 @@ import '@shoelace-style/shoelace/dist/components/alert/alert.js';
 @customElement('cut-list-panel')
 export class CutListPanel extends LitElement {
   static styles = css`
+    /* Mobile-first: reduced padding */
     :host {
       display: block;
-      padding: 1rem;
+      padding: 0.5rem;
+    }
+
+    @media (min-width: 768px) {
+      :host {
+        padding: 1rem;
+      }
     }
 
     .table-container {
       overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
       background: var(--sl-color-neutral-0);
       border-radius: var(--sl-border-radius-medium);
       border: 1px solid var(--sl-color-neutral-200);
     }
 
+    /* Mobile-first: smaller font and tighter padding */
     table {
       width: 100%;
       border-collapse: collapse;
-      font-size: 0.875rem;
+      font-size: 0.75rem;
+    }
+
+    @media (min-width: 768px) {
+      table {
+        font-size: 0.875rem;
+      }
     }
 
     th {
       text-align: left;
-      padding: 0.75rem 1rem;
+      padding: 0.5rem;
       background: var(--sl-color-neutral-50);
       border-bottom: 2px solid var(--sl-color-neutral-200);
       font-weight: 600;
@@ -42,10 +57,22 @@ export class CutListPanel extends LitElement {
       white-space: nowrap;
     }
 
+    @media (min-width: 768px) {
+      th {
+        padding: 0.75rem 1rem;
+      }
+    }
+
     td {
-      padding: 0.75rem 1rem;
+      padding: 0.5rem;
       border-bottom: 1px solid var(--sl-color-neutral-100);
       color: var(--sl-color-neutral-800);
+    }
+
+    @media (min-width: 768px) {
+      td {
+        padding: 0.75rem 1rem;
+      }
     }
 
     tr:last-child td {

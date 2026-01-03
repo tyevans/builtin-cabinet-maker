@@ -58,6 +58,7 @@ export function setDimensions(dimensions: Dimensions): void {
       cabinet: { ...prev.config.cabinet, ...dimensions },
     },
     isDirty: true,
+    lastError: null,
   }));
 }
 
@@ -68,6 +69,7 @@ export function setMaterial(material: MaterialSpec): void {
       cabinet: { ...prev.config.cabinet, material },
     },
     isDirty: true,
+    lastError: null,
   }));
 }
 
@@ -78,6 +80,7 @@ export function setSections(sections: SectionSpec[]): void {
       cabinet: { ...prev.config.cabinet, sections },
     },
     isDirty: true,
+    lastError: null,
   }));
 }
 
@@ -99,6 +102,7 @@ export function addSection(wall?: number | null): void {
         },
       },
       isDirty: true,
+      lastError: null,
     };
   });
 }
@@ -116,6 +120,7 @@ export function removeSection(index: number): void {
         },
       },
       isDirty: true,
+      lastError: null,
     };
   });
 }
@@ -135,6 +140,7 @@ export function updateSection(index: number, updates: Partial<SectionSpec>): voi
         },
       },
       isDirty: true,
+      lastError: null,
     };
   });
 }
@@ -175,6 +181,7 @@ export function setBackMaterial(material: MaterialSpec): void {
       cabinet: { ...prev.config.cabinet, back_material: material },
     },
     isDirty: true,
+    lastError: null,
   }));
 }
 
@@ -189,6 +196,7 @@ export function setRoom(room: RoomSpec | null): void {
       room: room || undefined,
     },
     isDirty: true,
+    lastError: null,
   }));
 }
 
@@ -204,6 +212,7 @@ export function addWallSegment(segment: WallSegmentSpec): void {
         },
       },
       isDirty: true,
+      lastError: null,
     };
   });
 }
@@ -222,6 +231,7 @@ export function updateWallSegment(index: number, updates: Partial<WallSegmentSpe
         room: { ...currentRoom, walls: updatedWalls },
       },
       isDirty: true,
+      lastError: null,
     };
   });
 }
@@ -240,6 +250,7 @@ export function removeWallSegment(index: number): void {
           : undefined,
       },
       isDirty: true,
+      lastError: null,
     };
   });
 }
@@ -257,6 +268,7 @@ export function addObstacle(obstacle: ObstacleSpec): void {
         obstacles: [...currentObstacles, obstacle],
       },
       isDirty: true,
+      lastError: null,
     };
   });
 }
@@ -273,6 +285,7 @@ export function updateObstacle(index: number, updates: Partial<ObstacleSpec>): v
         obstacles: updatedObstacles,
       },
       isDirty: true,
+      lastError: null,
     };
   });
 }
@@ -287,6 +300,7 @@ export function removeObstacle(index: number): void {
         obstacles: updatedObstacles.length > 0 ? updatedObstacles : undefined,
       },
       isDirty: true,
+      lastError: null,
     };
   });
 }
@@ -305,6 +319,7 @@ export function setFaceFrame(config: FaceFrameSpec | null): void {
       },
     },
     isDirty: true,
+    lastError: null,
   }));
 }
 
@@ -318,6 +333,7 @@ export function setCrownMolding(config: CrownMoldingSpec | null): void {
       },
     },
     isDirty: true,
+    lastError: null,
   }));
 }
 
@@ -331,6 +347,7 @@ export function setBaseZone(config: BaseZoneSpec | null): void {
       },
     },
     isDirty: true,
+    lastError: null,
   }));
 }
 
@@ -344,6 +361,7 @@ export function setLightRail(config: LightRailSpec | null): void {
       },
     },
     isDirty: true,
+    lastError: null,
   }));
 }
 
@@ -384,6 +402,7 @@ export function setSectionComponentConfig(
         },
       },
       isDirty: true,
+      lastError: null,
     };
   });
 }
@@ -399,6 +418,7 @@ export function setInfrastructure(infrastructure: InfrastructureSpec | null): vo
       infrastructure: infrastructure || undefined,
     },
     isDirty: true,
+    lastError: null,
   }));
 }
 
@@ -413,6 +433,7 @@ export function setInstallation(installation: InstallationSpec | null): void {
       installation: installation || undefined,
     },
     isDirty: true,
+    lastError: null,
   }));
 }
 
@@ -462,6 +483,7 @@ export function addSectionRow(sectionIndex: number): void {
         cabinet: { ...prev.config.cabinet, sections: updatedSections },
       },
       isDirty: true,
+      lastError: null,
     };
   });
 }
@@ -497,6 +519,7 @@ export function removeSectionRow(sectionIndex: number, rowIndex: number): void {
         cabinet: { ...prev.config.cabinet, sections: updatedSections },
       },
       isDirty: true,
+      lastError: null,
     };
   });
 }
@@ -525,6 +548,7 @@ export function updateSectionRow(
         cabinet: { ...prev.config.cabinet, sections: updatedSections },
       },
       isDirty: true,
+      lastError: null,
     };
   });
 }
@@ -561,6 +585,7 @@ export function convertToComposite(sectionIndex: number): void {
         cabinet: { ...prev.config.cabinet, sections: updatedSections },
       },
       isDirty: true,
+      lastError: null,
     };
   });
 }
@@ -590,6 +615,7 @@ export function convertToSimple(sectionIndex: number): void {
         cabinet: { ...prev.config.cabinet, sections: updatedSections },
       },
       isDirty: true,
+      lastError: null,
     };
   });
 }
@@ -634,6 +660,7 @@ export function reorderSections(fromIndex: number, toIndex: number): void {
         cabinet: { ...prev.config.cabinet, sections },
       },
       isDirty: true,
+      lastError: null,
       selectedSection,
     };
   });
@@ -685,6 +712,7 @@ export function reorderSectionRows(
         cabinet: { ...prev.config.cabinet, sections: updatedSections },
       },
       isDirty: true,
+      lastError: null,
       selectedSection,
     };
   });
