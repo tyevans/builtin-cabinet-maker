@@ -3,7 +3,8 @@ import '@shoelace-style/shoelace/dist/themes/light.css';
 import { setBasePath } from '@shoelace-style/shoelace/dist/utilities/base-path.js';
 
 // Set Shoelace base path for assets (icons, etc.)
-setBasePath('/node_modules/@shoelace-style/shoelace/dist');
+// Use CDN for production compatibility
+setBasePath('https://cdn.jsdelivr.net/npm/@shoelace-style/shoelace@2.19.1/cdn');
 
 // Styles
 import './styles/main.css';
