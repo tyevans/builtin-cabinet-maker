@@ -670,13 +670,17 @@ class TestGuillotineBinPackerErrors:
     def test_oversized_piece_raises(
         self, packer: GuillotineBinPacker, standard_material: MaterialSpec
     ) -> None:
-        """Test piece too large for sheet raises ValueError."""
+        """Test non-splittable piece too large for sheet raises ValueError.
+
+        Note: Splittable panel types (top, bottom, back, etc.) get automatically
+        split. SHELF is not splittable, so oversized shelves raise errors.
+        """
         piece = CutPiece(
             width=100.0,
             height=100.0,
             quantity=1,
             label="Huge",
-            panel_type=PanelType.TOP,
+            panel_type=PanelType.SHELF,  # SHELF is not splittable
             material=standard_material,
         )
 
@@ -686,7 +690,11 @@ class TestGuillotineBinPackerErrors:
     def test_piece_exceeds_width_only(
         self, packer: GuillotineBinPacker, standard_material: MaterialSpec
     ) -> None:
-        """Test piece that exceeds width in both orientations raises error."""
+        """Test non-splittable piece that exceeds both dimensions raises error.
+
+        Note: Splittable panel types get automatically split. SHELF is not
+        splittable, so oversized shelves raise errors.
+        """
         # A piece that is too wide even when rotated
         # Usable width is 47, usable height is 95
         # 50x100 - too wide (50>47) and too tall when rotated (100>95)
@@ -695,7 +703,7 @@ class TestGuillotineBinPackerErrors:
             height=100.0,  # > 95 usable height, so rotation doesn't help
             quantity=1,
             label="Too Wide",
-            panel_type=PanelType.TOP,
+            panel_type=PanelType.SHELF,  # SHELF is not splittable
             material=standard_material,
         )
 
@@ -705,13 +713,17 @@ class TestGuillotineBinPackerErrors:
     def test_piece_exceeds_height_only(
         self, packer: GuillotineBinPacker, standard_material: MaterialSpec
     ) -> None:
-        """Test piece that exceeds only height raises error."""
+        """Test non-splittable piece that exceeds only height raises error.
+
+        Note: Splittable panel types get automatically split. SHELF is not
+        splittable, so oversized shelves raise errors.
+        """
         piece = CutPiece(
             width=10.0,
             height=100.0,  # > 95 usable height
             quantity=1,
             label="Too Tall",
-            panel_type=PanelType.TOP,
+            panel_type=PanelType.SHELF,  # SHELF is not splittable
             material=standard_material,
         )
 

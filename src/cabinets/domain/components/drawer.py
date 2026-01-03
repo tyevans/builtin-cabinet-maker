@@ -452,20 +452,23 @@ class _DrawerBase:
         # Add structural top panel above the drawer stack to close off the top drawer
         # Uses HORIZONTAL_DIVIDER (not SHELF) so it doesn't create a cubby above
         # Uses standard 1" front setback
-        top_panel_setback = 1.0
-        top_panel_y = context.position.y + (count * front_height)
-        panels.append(
-            Panel(
-                panel_type=PanelType.HORIZONTAL_DIVIDER,
-                width=context.width,
-                height=context.depth - top_panel_setback,  # depth becomes height in 2D
-                material=context.material,
-                position=Position(
-                    x=context.position.x,
-                    y=top_panel_y,
-                ),
+        # Skip if the cabinet handles row-level dividers (multi-row layouts)
+        if not context.skip_top_divider:
+            top_panel_setback = 1.0
+            top_panel_y = context.position.y + (count * front_height)
+            panels.append(
+                Panel(
+                    panel_type=PanelType.HORIZONTAL_DIVIDER,
+                    width=context.width,
+                    height=context.depth
+                    - top_panel_setback,  # depth becomes height in 2D
+                    material=context.material,
+                    position=Position(
+                        x=context.position.x,
+                        y=top_panel_y,
+                    ),
+                )
             )
-        )
 
         # Hardware - Drawer slides (multiply by count for multiple drawers)
         slide_qty = (1 if slide_type == "center_mount" else 2) * count

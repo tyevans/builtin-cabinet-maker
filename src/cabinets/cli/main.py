@@ -150,5 +150,38 @@ def diagram(
     typer.echo(formatter.format(result.cabinet))
 
 
+@app.command()
+def serve(
+    host: Annotated[str, typer.Option("--host", help="Host to bind to")] = "127.0.0.1",
+    port: Annotated[int, typer.Option("--port", "-p", help="Port to bind to")] = 8000,
+    reload: Annotated[
+        bool, typer.Option("--reload", help="Enable auto-reload for development")
+    ] = False,
+) -> None:
+    """Start the REST API server.
+
+    Requires the 'web' optional dependencies:
+        uv pip install -e ".[web]"
+    """
+    try:
+        import uvicorn
+    except ImportError:
+        typer.echo(
+            "Error: FastAPI/uvicorn not installed. "
+            "Install with: uv pip install -e '.[web]'",
+            err=True,
+        )
+        raise typer.Exit(code=1)
+
+    typer.echo(f"Starting Cabinet API server at http://{host}:{port}")
+    typer.echo("API docs available at http://{host}:{port}/docs")
+    uvicorn.run(
+        "cabinets.web:app",
+        host=host,
+        port=port,
+        reload=reload,
+    )
+
+
 if __name__ == "__main__":
     app()

@@ -43,9 +43,20 @@ BUILD_PHASES: list[tuple[str, str, list[PanelType]]] = [
         "Attach Horizontal Panels",
         [PanelType.TOP, PanelType.BOTTOM],
     ),
+    ("toe_kick", "Install Toe Kick", [PanelType.TOE_KICK]),
     ("dividers", "Install Dividers", [PanelType.DIVIDER, PanelType.HORIZONTAL_DIVIDER]),
     ("back", "Attach Back Panel", [PanelType.BACK]),
     ("fixed_shelves", "Install Fixed Shelves", [PanelType.SHELF]),
+    (
+        "crown_and_light_rail",
+        "Install Crown Nailer and Light Rail",
+        [PanelType.NAILER, PanelType.LIGHT_RAIL],
+    ),
+    (
+        "face_frame",
+        "Attach Face Frame",
+        [PanelType.FACE_FRAME_STILE, PanelType.FACE_FRAME_RAIL],
+    ),
     ("adjustable_shelves", "Prepare Adjustable Shelves", []),
     ("doors", "Mount Doors", [PanelType.DOOR]),
     (
@@ -86,6 +97,11 @@ PHASE_NOTES: dict[str, dict[str, str]] = {
         "tips": "Check for square using diagonal measurements",
         "clamp_time": "Clamp for minimum 30 minutes before proceeding",
     },
+    "toe_kick": {
+        "glue": "Apply glue to mating edges where toe kick meets side panels",
+        "fasteners": 'Use #8 x 1-1/4" pocket screws or finish nails from inside',
+        "tips": 'Ensure toe kick is recessed proper distance from front edge (typically 3")',
+    },
     "dividers": {
         "glue": "Apply glue to dado grooves before inserting dividers",
         "fasteners": "Optional: add pocket screws from underside for extra strength",
@@ -100,6 +116,17 @@ PHASE_NOTES: dict[str, dict[str, str]] = {
         "glue": "Apply glue to dado grooves for permanent shelf installation",
         "fasteners": "No additional fasteners needed for dado-mounted shelves",
         "tips": "Insert shelves before back panel for easier alignment",
+    },
+    "crown_and_light_rail": {
+        "glue": "Apply glue sparingly to nailer strip mounting surface",
+        "fasteners": 'Use #8 x 1-1/4" screws for nailer, finish nails for light rail',
+        "tips": "Nailer provides mounting surface for crown molding - ensure it's level",
+    },
+    "face_frame": {
+        "glue": "Apply glue to all face frame joints and cabinet front edges",
+        "fasteners": "Use pocket screws, dowels, or biscuits per joinery specification",
+        "tips": "Face frame should overhang cabinet sides slightly for flush trimming",
+        "clamp_time": "Clamp for minimum 30 minutes before proceeding",
     },
     "adjustable_shelves": {
         "glue": "No glue - shelves must remain removable",
@@ -571,6 +598,20 @@ class AssemblyInstructionGenerator:
             )
             lines.append("")
 
+        elif phase_id == "toe_kick":
+            if pieces:
+                lines.append("**Instructions:**")
+                lines.append(
+                    "1. Position toe kick panel at front bottom, recessed from cabinet front"
+                )
+                lines.append(
+                    '2. Verify setback distance matches design (typically 3" from front edge)'
+                )
+                lines.append("3. Apply glue to mating edges")
+                lines.append("4. Secure with pocket screws from inside or finish nails")
+                lines.append("5. Verify toe kick is level and flush with side panels")
+                lines.append("")
+
         elif phase_id == "dividers":
             if pieces:
                 lines.append("**Instructions:**")
@@ -598,6 +639,43 @@ class AssemblyInstructionGenerator:
                 lines.append("2. Slide shelves into position from front")
                 lines.append("3. Verify shelves are level")
                 lines.append("4. Wipe away excess glue")
+                lines.append("")
+
+        elif phase_id == "crown_and_light_rail":
+            if pieces:
+                lines.append("**Instructions:**")
+                lines.append(
+                    "1. Position crown nailer strip at top back of cabinet interior"
+                )
+                lines.append(
+                    "2. Ensure nailer is set back from front edge per design specification"
+                )
+                lines.append("3. Secure nailer with screws through sides and top panel")
+                lines.append(
+                    "4. For light rail: position strip at bottom front of upper cabinet"
+                )
+                lines.append("5. Attach light rail with finish nails or brads")
+                lines.append(
+                    "6. Verify both pieces are level - crown molding will attach to nailer"
+                )
+                lines.append("")
+
+        elif phase_id == "face_frame":
+            if pieces:
+                lines.append("**Instructions:**")
+                lines.append(
+                    "1. Dry fit face frame assembly to cabinet front to verify fit"
+                )
+                lines.append(
+                    '2. Face frame should overhang cabinet sides by 1/16" for flush trimming'
+                )
+                lines.append("3. Apply glue to cabinet front edges")
+                lines.append("4. Position face frame and align with cabinet edges")
+                lines.append(
+                    "5. Secure with pocket screws, dowels, or biscuits from inside"
+                )
+                lines.append("6. Clamp until glue sets, checking for square")
+                lines.append("7. Trim overhang flush with router and flush-trim bit")
                 lines.append("")
 
         elif phase_id == "adjustable_shelves":

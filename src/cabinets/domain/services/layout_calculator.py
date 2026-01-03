@@ -151,6 +151,7 @@ class LayoutCalculator:
                           - base_zone: Toe kick zone config
                           - crown_molding: Crown molding zone config
                           - light_rail: Light rail zone config
+                          - face_frame: Face frame config
 
         Returns:
             A tuple of (Cabinet, list[HardwareItem]) containing the cabinet entity
@@ -178,6 +179,7 @@ class LayoutCalculator:
             base_zone=zones.get("base_zone"),
             crown_molding=zones.get("crown_molding"),
             light_rail=zones.get("light_rail"),
+            face_frame=zones.get("face_frame"),
         )
 
         # Collect hardware from all components
@@ -350,6 +352,7 @@ class LayoutCalculator:
                           - base_zone: Toe kick zone config
                           - crown_molding: Crown molding zone config
                           - light_rail: Light rail zone config
+                          - face_frame: Face frame config
 
         Returns:
             A tuple of (Cabinet, list[HardwareItem]) containing the cabinet entity
@@ -394,6 +397,7 @@ class LayoutCalculator:
             base_zone=zones.get("base_zone"),
             crown_molding=zones.get("crown_molding"),
             light_rail=zones.get("light_rail"),
+            face_frame=zones.get("face_frame"),
         )
 
         # Collect hardware from all components
@@ -442,6 +446,9 @@ class LayoutCalculator:
                 )
 
                 # Build component context
+                # For rows with horizontal dividers above them (all but the last row),
+                # set skip_top_divider=True so components don't generate their own
+                is_not_last_row = row_idx < len(row_specs) - 1
                 context = ComponentContext(
                     width=section_width,
                     height=row_height,
@@ -452,6 +459,7 @@ class LayoutCalculator:
                     cabinet_width=cabinet.width,
                     cabinet_height=cabinet.height,
                     cabinet_depth=cabinet.depth,
+                    skip_top_divider=is_not_last_row,
                 )
 
                 # Generate primary component based on section type
@@ -591,6 +599,9 @@ class LayoutCalculator:
             )
 
             # Build component context for this row
+            # For rows with horizontal dividers above them (all but the last row),
+            # set skip_top_divider=True so components don't generate their own
+            is_not_last_row = row_idx < len(spec.row_specs) - 1
             context = ComponentContext(
                 width=section_width,
                 height=row_height,
@@ -601,12 +612,13 @@ class LayoutCalculator:
                 cabinet_width=section_width,  # Within section context
                 cabinet_height=section_height,
                 cabinet_depth=section_depth,
+                skip_top_divider=is_not_last_row,
             )
 
             # Generate primary component based on row's section type
-            primary_component_id = row_spec.component_config.get(
-                "component", self._resolve_component_id(row_spec.section_type)
-            )
+            # Note: component_config may have a "component" field that's a style (e.g., "overlay")
+            # not a full component ID (e.g., "door.hinged.overlay"), so we always resolve from section_type
+            primary_component_id = self._resolve_component_id(row_spec.section_type)
 
             if (
                 shelf_count > 0

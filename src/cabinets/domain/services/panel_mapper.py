@@ -213,8 +213,13 @@ class Panel3DMapper:
                 # panel.height is the depth (bottom_depth) for horizontal panels
                 bottom_depth = panel.height
                 # Align with drawer sides - box front is flush behind decorative front
-                # Using a reference box thickness of 0.5" for standard drawer sides
-                box_side_thickness = 0.5
+                # Use drawer_side_thickness from metadata if available, otherwise default
+                # to standard 0.5" drawer side thickness
+                box_side_thickness = (
+                    panel.metadata.get("drawer_side_thickness", 0.5)
+                    if panel.metadata
+                    else 0.5
+                )
                 box_front_y = (
                     self.cabinet.depth - self.material_thickness - box_side_thickness
                 )
@@ -280,12 +285,13 @@ class Panel3DMapper:
 
             case PanelType.NAILER:
                 # Horizontal nailer strip at top back for crown molding mounting
+                # Sits on top of the cabinet top panel, at the back
                 # panel.height is the nailer depth (how far it extends from back)
                 return BoundingBox3D(
                     origin=Position3D(
                         x=0,
                         y=self.back_thickness,  # Just in front of back panel
-                        z=self.cabinet.height - thickness,  # At top of cabinet
+                        z=self.cabinet.height,  # On top of cabinet (above top panel)
                     ),
                     size_x=panel.width,
                     size_y=panel.height,  # Nailer depth
@@ -306,6 +312,38 @@ class Panel3DMapper:
                     size_x=panel.width,
                     size_y=thickness,
                     size_z=panel.height,
+                )
+
+            case PanelType.FACE_FRAME_STILE:
+                # Vertical stile at cabinet front (left or right)
+                # Face frame attaches to front of cabinet, extending outward
+                # panel.width is the stile width, panel.height is the cabinet height
+                # Position.x indicates left (0) or right (cabinet.width - stile_width)
+                return BoundingBox3D(
+                    origin=Position3D(
+                        x=panel.position.x,
+                        y=self.cabinet.depth,  # Flush with front, extends outward
+                        z=panel.position.y,  # Typically 0 (starts at bottom)
+                    ),
+                    size_x=panel.width,  # Stile width
+                    size_y=thickness,  # Stile depth (material thickness)
+                    size_z=panel.height,  # Full cabinet height
+                )
+
+            case PanelType.FACE_FRAME_RAIL:
+                # Horizontal rail at cabinet front (top or bottom)
+                # Face frame attaches to front of cabinet, extending outward
+                # panel.width is the rail length, panel.height is the rail width
+                # Position.x is the x offset (stile_width), Position.y is z position
+                return BoundingBox3D(
+                    origin=Position3D(
+                        x=panel.position.x,  # Offset by stile width
+                        y=self.cabinet.depth,  # Flush with front, extends outward
+                        z=panel.position.y,  # 0 for bottom, cabinet.height - rail_width for top
+                    ),
+                    size_x=panel.width,  # Rail length (between stiles)
+                    size_y=thickness,  # Rail depth (material thickness)
+                    size_z=panel.height,  # Rail width (height dimension)
                 )
 
             # --- Desk panels (FRD-18) ---
@@ -397,11 +435,12 @@ class Panel3DMapper:
                 # A tall, narrow vertical panel at the rear of the cabinet
                 # Used for routing cables from floor to equipment shelves
                 # Typical dimensions: 3-4" wide, full height, thin (1/4") depth representation
+                # Position at rear (y=0 is against wall, y=cabinet.depth is front)
                 chase_depth = thickness  # Use panel thickness (typically 0.25")
                 return BoundingBox3D(
                     origin=Position3D(
                         x=panel.position.x,
-                        y=self.cabinet.depth - chase_depth,  # At rear of cabinet
+                        y=self.back_thickness,  # At rear, just in front of back panel
                         z=panel.position.y,  # Vertical position (bottom of chase)
                     ),
                     size_x=panel.width,  # Chase width (typically 3-4")

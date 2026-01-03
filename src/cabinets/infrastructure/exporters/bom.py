@@ -51,6 +51,10 @@ VISIBLE_EDGES: dict[str, list[str]] = {
     "drawer_front": ["top", "bottom", "left", "right"],  # All edges
     "face_frame_rail": ["front"],  # Visible face
     "face_frame_stile": ["front"],  # Visible face
+    # Decorative/trim components
+    "toe_kick": ["front"],  # Front edge of toe kick panel
+    "nailer": ["front"],  # Front edge of crown nailer
+    "light_rail": ["front"],  # Front edge of light rail strip
 }
 
 # Hardware categories for grouping
@@ -284,6 +288,7 @@ class BomGenerator:
             "text": "txt",
             "csv": "csv",
             "json": "json",
+            "markdown": "md",
         }.get(output_format, "txt")
 
     @property
@@ -348,6 +353,8 @@ class BomGenerator:
             return self.format_csv(bom)
         elif self.output_format == "json":
             return self.format_json(bom)
+        elif self.output_format == "markdown":
+            return self.format_markdown(bom)
         else:
             return self.format_text(bom)
 
@@ -643,6 +650,144 @@ class BomGenerator:
             }
 
         return json.dumps(data, indent=2)
+
+    def format_markdown(self, bom: BillOfMaterials) -> str:
+        """Format BOM as Markdown.
+
+        Args:
+            bom: Bill of materials to format.
+
+        Returns:
+            Markdown formatted string.
+        """
+        lines: list[str] = []
+        lines.append("# Bill of Materials")
+        lines.append("")
+
+        # Sheet Goods Section
+        lines.append("## Sheet Goods")
+        lines.append("")
+
+        if bom.sheet_goods:
+            # Build table header
+            if self.include_costs:
+                lines.append(
+                    "| Material | Thickness | Qty | Sheet Size | Area | Unit Cost | Total |"
+                )
+                lines.append(
+                    "|----------|-----------|-----|------------|------|-----------|-------|"
+                )
+            else:
+                lines.append("| Material | Thickness | Qty | Sheet Size | Area |")
+                lines.append("|----------|-----------|-----|------------|------|")
+
+            for item in bom.sheet_goods:
+                size_str = f'{item.sheet_size[0]:.0f}" x {item.sheet_size[1]:.0f}"'
+                area_str = f"{item.square_feet:.1f} sq ft"
+                if self.include_costs and item.unit_cost is not None:
+                    lines.append(
+                        f'| {item.material} | {item.thickness}" | {item.quantity} | '
+                        f"{size_str} | {area_str} | ${item.unit_cost:.2f} | ${item.total_cost:.2f} |"
+                    )
+                else:
+                    lines.append(
+                        f'| {item.material} | {item.thickness}" | {item.quantity} | '
+                        f"{size_str} | {area_str} |"
+                    )
+        else:
+            lines.append("*No sheet goods required.*")
+        lines.append("")
+
+        # Hardware Section
+        lines.append("## Hardware")
+        lines.append("")
+
+        if bom.hardware:
+            # Group by category
+            by_category: dict[str, list[HardwareBomItem]] = {}
+            for hw_item in bom.hardware:
+                cat = hw_item.category or "other"
+                if cat not in by_category:
+                    by_category[cat] = []
+                by_category[cat].append(hw_item)
+
+            for category, items in sorted(by_category.items()):
+                category_title = category.replace("_", " ").title()
+                lines.append(f"### {category_title}")
+                lines.append("")
+
+                if self.include_costs:
+                    lines.append("| Item | Size | Qty | Unit Cost | Total |")
+                    lines.append("|------|------|-----|-----------|-------|")
+                else:
+                    lines.append("| Item | Size | Qty |")
+                    lines.append("|------|------|-----|")
+
+                for hw in items:
+                    size_str = hw.size if hw.size else "-"
+                    if self.include_costs and hw.unit_cost is not None:
+                        lines.append(
+                            f"| {hw.name} | {size_str} | {hw.quantity} | "
+                            f"${hw.unit_cost:.2f} | ${hw.total_cost:.2f} |"
+                        )
+                    else:
+                        lines.append(f"| {hw.name} | {size_str} | {hw.quantity} |")
+                lines.append("")
+        else:
+            lines.append("*No hardware required.*")
+            lines.append("")
+
+        # Edge Banding Section
+        lines.append("## Edge Banding")
+        lines.append("")
+
+        if bom.edge_banding:
+            if self.include_costs:
+                lines.append(
+                    "| Material | Thickness | Color | Linear Ft | Unit Cost | Total |"
+                )
+                lines.append(
+                    "|----------|-----------|-------|-----------|-----------|-------|"
+                )
+            else:
+                lines.append("| Material | Thickness | Color | Linear Ft |")
+                lines.append("|----------|-----------|-------|-----------|")
+
+            for edge_item in bom.edge_banding:
+                if self.include_costs and edge_item.unit_cost is not None:
+                    lines.append(
+                        f"| {edge_item.material} | {edge_item.thickness} | {edge_item.color} | "
+                        f"{edge_item.linear_feet:.1f} | ${edge_item.unit_cost:.2f}/ft | "
+                        f"${edge_item.total_cost:.2f} |"
+                    )
+                else:
+                    lines.append(
+                        f"| {edge_item.material} | {edge_item.thickness} | {edge_item.color} | "
+                        f"{edge_item.linear_feet:.1f} |"
+                    )
+        else:
+            lines.append("*No edge banding required.*")
+        lines.append("")
+
+        # Cost Summary (if costs included)
+        if self.include_costs and bom.total_cost is not None:
+            lines.append("---")
+            lines.append("")
+            lines.append("## Cost Summary")
+            lines.append("")
+            lines.append("| Category | Cost |")
+            lines.append("|----------|------|")
+
+            if bom.sheet_goods_cost is not None:
+                lines.append(f"| Sheet Goods | ${bom.sheet_goods_cost:.2f} |")
+            if bom.hardware_cost is not None:
+                lines.append(f"| Hardware | ${bom.hardware_cost:.2f} |")
+            if bom.edge_banding_cost is not None:
+                lines.append(f"| Edge Banding | ${bom.edge_banding_cost:.2f} |")
+            lines.append(f"| **Total** | **${bom.total_cost:.2f}** |")
+            lines.append("")
+
+        return "\n".join(lines)
 
     def _calculate_sheet_goods(
         self,

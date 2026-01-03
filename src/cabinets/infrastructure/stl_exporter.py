@@ -152,7 +152,16 @@ class StlMeshBuilder:
 
         Returns:
             A numpy-stl Mesh object representing the ajar door.
+
+        Raises:
+            ValueError: If hinge_side is not "left" or "right".
         """
+        # Validate hinge_side
+        if hinge_side not in ("left", "right"):
+            raise ValueError(
+                f"hinge_side must be 'left' or 'right', got '{hinge_side}'"
+            )
+
         # Get base vertices in domain coordinates (Z-up)
         # Door box: origin is at bottom-left-front of door
         x0, y0, z0 = box.origin.x, box.origin.y, box.origin.z
@@ -433,20 +442,23 @@ class StlMeshBuilder:
         n_verts = len(front_vertices)
 
         # Create fan triangles for front face
+        # Winding is reversed (v2, v1) because Y/Z swap in transform inverts handedness
         for i in range(n_verts):
             v1 = front_vertices[i]
             v2 = front_vertices[(i + 1) % n_verts]
-            front_triangles.append((fan_center, v1, v2))
+            front_triangles.append((fan_center, v2, v1))
 
-        # Create fan triangles for back face (reverse winding)
+        # Create fan triangles for back face
+        # After Y/Z swap, this needs (v1, v2) order for outward normals
         back_fan_center = (x0 + width / 2, y0 + depth, z0 + height)
         back_triangles = []
         for i in range(n_verts):
             v1 = back_vertices[i]
             v2 = back_vertices[(i + 1) % n_verts]
-            back_triangles.append((back_fan_center, v2, v1))  # Reversed winding
+            back_triangles.append((back_fan_center, v1, v2))
 
         # Create edge faces connecting front and back
+        # Winding reversed for Y/Z swap transform
         edge_triangles = []
         for i in range(n_verts):
             # Front edge vertices
@@ -456,8 +468,8 @@ class StlMeshBuilder:
             b1 = back_vertices[i]
             b2 = back_vertices[(i + 1) % n_verts]
             # Two triangles per edge segment (quad split into triangles)
-            edge_triangles.append((f1, b1, f2))
-            edge_triangles.append((f2, b1, b2))
+            edge_triangles.append((f1, f2, b1))
+            edge_triangles.append((f2, b2, b1))
 
         # Combine all triangles
         all_triangles = front_triangles + back_triangles + edge_triangles
@@ -564,25 +576,28 @@ class StlMeshBuilder:
         n_verts = len(front_vertices)
 
         # Front face fan triangles
+        # Winding is reversed (v2, v1) because Y/Z swap in transform inverts handedness
         for i in range(n_verts):
             v1 = front_vertices[i]
             v2 = front_vertices[(i + 1) % n_verts]
-            front_triangles.append((fan_center, v1, v2))
+            front_triangles.append((fan_center, v2, v1))
 
-        # Back face fan triangles (reverse winding)
+        # Back face fan triangles
+        # After Y/Z swap, this needs (v1, v2) order for outward normals
         for i in range(n_verts):
             v1 = back_vertices[i]
             v2 = back_vertices[(i + 1) % n_verts]
-            back_triangles.append((back_fan_center, v2, v1))
+            back_triangles.append((back_fan_center, v1, v2))
 
         # Edge faces connecting front and back
+        # Winding reversed for Y/Z swap transform
         for i in range(n_verts):
             f1 = front_vertices[i]
             f2 = front_vertices[(i + 1) % n_verts]
             b1 = back_vertices[i]
             b2 = back_vertices[(i + 1) % n_verts]
-            edge_triangles.append((f1, b1, f2))
-            edge_triangles.append((f2, b1, b2))
+            edge_triangles.append((f1, f2, b1))
+            edge_triangles.append((f2, b2, b1))
 
         # Combine all triangles
         all_triangles = front_triangles + back_triangles + edge_triangles
@@ -648,8 +663,25 @@ class StlMeshBuilder:
 
         Returns:
             mesh.Mesh with L-shaped geometry (combined from two boxes).
+
+        Raises:
+            ValueError: If step_height is not positive or exceeds box height.
+            ValueError: If step_depth_change exceeds box depth.
         """
         from cabinets.domain import BoundingBox3D, Position3D
+
+        # Validate step parameters
+        if step_height <= 0:
+            raise ValueError(f"step_height must be positive, got {step_height}")
+        if step_height >= box.size_z:
+            raise ValueError(
+                f"step_height ({step_height}) must be less than box height ({box.size_z})"
+            )
+        if step_depth_change > box.size_y:
+            raise ValueError(
+                f"step_depth_change ({step_depth_change}) cannot exceed "
+                f"box depth ({box.size_y})"
+            )
 
         # Create bottom box (full depth, from floor to step_height)
         bottom_box = BoundingBox3D(
@@ -1044,6 +1076,14 @@ class StlExporter:
         """
         meshes: list[mesh.Mesh] = []
 
+        # Determine cabinet depth and back thickness from base cabinet
+        cabinet_depth = 24.0  # Default
+        back_thickness = 0.25  # Default
+        if result.base_cabinet:
+            cabinet_depth = result.base_cabinet.depth
+            if result.base_cabinet.back_material:
+                back_thickness = result.base_cabinet.back_material.thickness
+
         # Export base cabinet at floor level
         if result.base_cabinet:
             base_mesh = self.export(result.base_cabinet, door_ajar_angle)
@@ -1053,17 +1093,15 @@ class StlExporter:
         if result.countertop_panels:
             countertop_meshes = self._export_panels_as_meshes(
                 list(result.countertop_panels),
-                cabinet_depth=result.base_cabinet.depth
-                if result.base_cabinet
-                else 24.0,
+                cabinet_depth=cabinet_depth,
+                back_thickness=back_thickness,
             )
             meshes.extend(countertop_meshes)
 
         # Export upper cabinet at mounting height
         if result.upper_cabinet:
-            # Get mounting height (default to 54" if not specified)
-            # The upper cabinet needs to be positioned above the base cabinet
-            mounting_height = 54.0  # Standard upper cabinet mounting height
+            # Calculate mounting height from gap zones or base cabinet
+            mounting_height = self._calculate_mounting_height(result)
             upper_mesh = self._export_cabinet_with_offset(
                 result.upper_cabinet,
                 z_offset=mounting_height,
@@ -1075,9 +1113,8 @@ class StlExporter:
         if result.full_height_side_panels:
             side_meshes = self._export_panels_as_meshes(
                 list(result.full_height_side_panels),
-                cabinet_depth=result.base_cabinet.depth
-                if result.base_cabinet
-                else 24.0,
+                cabinet_depth=cabinet_depth,
+                back_thickness=back_thickness,
             )
             meshes.extend(side_meshes)
 
@@ -1085,9 +1122,8 @@ class StlExporter:
         if result.wall_nailer_panels:
             nailer_meshes = self._export_panels_as_meshes(
                 list(result.wall_nailer_panels),
-                cabinet_depth=result.base_cabinet.depth
-                if result.base_cabinet
-                else 24.0,
+                cabinet_depth=cabinet_depth,
+                back_thickness=back_thickness,
             )
             meshes.extend(nailer_meshes)
 
@@ -1101,18 +1137,19 @@ class StlExporter:
         self,
         panels: list[Panel],
         cabinet_depth: float = 24.0,
+        back_thickness: float = 0.25,
     ) -> list[mesh.Mesh]:
         """Export a list of panels to meshes.
 
         Args:
             panels: List of panels to export.
             cabinet_depth: Cabinet depth for positioning calculations.
+            back_thickness: Back panel thickness for Y positioning (default 0.25").
 
         Returns:
             List of mesh objects for the panels.
         """
         meshes: list[mesh.Mesh] = []
-        back_thickness = 0.25  # Standard back panel thickness
 
         for panel in panels:
             thickness = panel.material.thickness
@@ -1199,6 +1236,47 @@ class StlExporter:
 
         return meshes
 
+    def _calculate_mounting_height(self, result: ZoneStackLayoutResult) -> float:
+        """Calculate the mounting height for the upper cabinet.
+
+        The mounting height is determined by:
+        1. Gap zones (if present): Use the highest gap zone's top edge
+        2. Base cabinet + countertop (if gap zones absent): Use base height + countertop
+        3. Default: 54" (standard upper cabinet mounting height)
+
+        Args:
+            result: Zone stack layout result containing cabinets and gap zones.
+
+        Returns:
+            Height in inches from floor where upper cabinet should be mounted.
+        """
+        # Method 1: Calculate from gap zones
+        if result.gap_zones:
+            # Find the gap zone that precedes the upper cabinet
+            # This is typically the highest gap zone (backsplash, mirror, etc.)
+            max_gap_top = 0.0
+            for gap in result.gap_zones:
+                gap_top = gap.bottom_height + gap.height
+                if gap_top > max_gap_top:
+                    max_gap_top = gap_top
+            if max_gap_top > 0:
+                return max_gap_top
+
+        # Method 2: Calculate from base cabinet and countertop
+        if result.base_cabinet:
+            base_height = result.base_cabinet.height
+            # Add countertop thickness if present
+            countertop_thickness = 0.0
+            if result.countertop_panels:
+                # Get thickness from first countertop panel
+                countertop_thickness = result.countertop_panels[0].material.thickness
+            # Add a standard backsplash gap (18") if no gap zones specified
+            # This represents a typical kitchen configuration
+            return base_height + countertop_thickness + 18.0
+
+        # Method 3: Default fallback
+        return 54.0  # Standard upper cabinet mounting height
+
     def _export_cabinet_with_offset(
         self,
         cabinet: Cabinet,
@@ -1218,14 +1296,18 @@ class StlExporter:
         # Export the cabinet normally
         cabinet_mesh = self.export(cabinet, door_ajar_angle)
 
-        # Apply the z offset to all vertices
-        # In our coordinate system: Y-up after transform
-        # Domain Z becomes viewer Y after transform
-        # So we need to offset Y in the mesh (which represents height)
+        # Apply the z offset (domain height) to all vertices.
+        #
+        # Coordinate transform from domain to mesh (for Y-up STL viewers):
+        #   Domain: (x, y, z) = (width, depth, height)  [Z-up]
+        #   Mesh:   (x, y, z) = (width, height, depth)  [Y-up]
+        #
+        # The transform is: domain (x, y, z) -> mesh (x, z, y)
+        # So domain z (height) becomes mesh y (index [1]).
+        #
+        # Adding z_offset to mesh y raises the cabinet vertically.
         for i in range(len(cabinet_mesh.vectors)):
             for j in range(3):
-                # The coordinate transform is (x, z, y) -> (x, y, z)
-                # So domain Z (height) becomes mesh Y
                 cabinet_mesh.vectors[i][j][1] += z_offset
 
         return cabinet_mesh

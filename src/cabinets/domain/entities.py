@@ -140,6 +140,9 @@ class Cabinet:
                        Dict with keys: height (float), setback (float), nailer_width (float).
         light_rail: Light rail zone configuration (optional).
                     Dict with keys: height (float), setback (float).
+        face_frame: Face frame configuration (optional).
+                    Dict with keys: stile_width (float), rail_width (float),
+                    joinery (str), material_thickness (float).
     """
 
     width: float
@@ -153,6 +156,7 @@ class Cabinet:
     base_zone: dict[str, Any] | None = None
     crown_molding: dict[str, Any] | None = None
     light_rail: dict[str, Any] | None = None
+    face_frame: dict[str, Any] | None = None
 
     def __post_init__(self) -> None:
         if self.back_material is None:

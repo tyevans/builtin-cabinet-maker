@@ -19,6 +19,7 @@ from cabinets.application.config.schemas.base import (
     ClearanceConfig,
     ObstacleTypeConfig,
 )
+from cabinets.application.config.schemas.cabinet_schema import BaseZoneConfigSchema
 
 
 class ObstacleConfig(BaseModel):
@@ -92,6 +93,7 @@ class WallSegmentConfig(BaseModel):
         angle: Angle from previous wall (-135 to 135 degrees)
         name: Optional wall identifier for referencing in section configs
         depth: Available depth for cabinets in inches
+        base_zone: Per-wall toe kick/base zone configuration (overrides cabinet default)
     """
 
     model_config = ConfigDict(extra="forbid")
@@ -103,6 +105,9 @@ class WallSegmentConfig(BaseModel):
     )
     name: str | None = Field(default=None, description="Optional wall identifier")
     depth: float = Field(default=12.0, gt=0, description="Available depth for cabinets")
+    base_zone: BaseZoneConfigSchema | None = Field(
+        default=None, description="Per-wall toe kick configuration"
+    )
 
     @field_validator("angle")
     @classmethod

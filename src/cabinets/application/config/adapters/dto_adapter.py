@@ -73,20 +73,21 @@ def config_to_dtos(
 def config_to_zone_configs(
     config: CabinetConfiguration,
 ) -> dict[str, dict | None]:
-    """Extract zone configurations (toe kick, crown molding, light rail) from config.
+    """Extract zone configurations (toe kick, crown molding, light rail, face frame) from config.
 
     This function extracts the decorative zone configurations from the cabinet
     configuration and returns them in a format suitable for passing to the
-    Cabinet entity.
+    Cabinet entity. Only configurations with enabled=True are extracted.
 
     Args:
         config: A validated CabinetConfiguration instance
 
     Returns:
         A dictionary with zone configuration dicts:
-        - base_zone: Toe kick/base zone config (or None)
-        - crown_molding: Crown molding zone config (or None)
-        - light_rail: Light rail zone config (or None)
+        - base_zone: Toe kick/base zone config (or None if disabled)
+        - crown_molding: Crown molding zone config (or None if disabled)
+        - light_rail: Light rail zone config (or None if disabled)
+        - face_frame: Face frame config (or None if disabled)
 
     Example:
         >>> config = load_config(Path("my-cabinet.json"))
@@ -99,29 +100,39 @@ def config_to_zone_configs(
         "base_zone": None,
         "crown_molding": None,
         "light_rail": None,
+        "face_frame": None,
     }
 
-    # Extract base zone (toe kick) config
-    if cabinet.base_zone is not None:
+    # Extract base zone (toe kick) config - only if enabled
+    if cabinet.base_zone is not None and cabinet.base_zone.enabled:
         result["base_zone"] = {
             "height": cabinet.base_zone.height,
             "setback": cabinet.base_zone.setback,
             "zone_type": cabinet.base_zone.zone_type,
         }
 
-    # Extract crown molding config
-    if cabinet.crown_molding is not None:
+    # Extract crown molding config - only if enabled
+    if cabinet.crown_molding is not None and cabinet.crown_molding.enabled:
         result["crown_molding"] = {
             "height": cabinet.crown_molding.height,
             "setback": cabinet.crown_molding.setback,
             "nailer_width": cabinet.crown_molding.nailer_width,
         }
 
-    # Extract light rail config
-    if cabinet.light_rail is not None:
+    # Extract light rail config - only if enabled
+    if cabinet.light_rail is not None and cabinet.light_rail.enabled:
         result["light_rail"] = {
             "height": cabinet.light_rail.height,
             "setback": cabinet.light_rail.setback,
+        }
+
+    # Extract face frame config - only if enabled
+    if cabinet.face_frame is not None and cabinet.face_frame.enabled:
+        result["face_frame"] = {
+            "stile_width": cabinet.face_frame.stile_width,
+            "rail_width": cabinet.face_frame.rail_width,
+            "joinery": cabinet.face_frame.joinery.value,
+            "material_thickness": cabinet.face_frame.material_thickness,
         }
 
     return result

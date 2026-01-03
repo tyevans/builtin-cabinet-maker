@@ -30,6 +30,9 @@ class ComponentContext:
         adjacent_right: Type identifier of component to the right, if any.
         adjacent_above: Type identifier of component above, if any.
         adjacent_below: Type identifier of component below, if any.
+        skip_top_divider: When True, the cabinet handles row-level horizontal
+            dividers, so components (like drawers) should not generate their
+            own top dividers. Used in row-based layouts.
     """
 
     width: float
@@ -45,3 +48,6 @@ class ComponentContext:
     adjacent_right: str | None = None
     adjacent_above: str | None = None
     adjacent_below: str | None = None
+    # When True, the cabinet handles row-level horizontal dividers,
+    # so components should not generate their own top dividers
+    skip_top_divider: bool = False

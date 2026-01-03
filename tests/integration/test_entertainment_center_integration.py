@@ -896,8 +896,8 @@ class TestSTLExportIntegration:
         # Map to 3D
         result = mapper.map_panel(cable_chase)
 
-        # Verify cable chase is at rear of cabinet
-        expected_y = cabinet.depth - MaterialSpec.standard_1_4().thickness
+        # Verify cable chase is at rear of cabinet (just in front of back panel)
+        expected_y = mapper.back_thickness
         assert result.origin.y == pytest.approx(expected_y)
 
         # Verify dimensions

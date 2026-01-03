@@ -80,8 +80,21 @@ class BinPackingConfig:
     kerf: float = 0.125
     min_offcut_size: float = 6.0
     allow_panel_splitting: bool = True
-    splittable_types: tuple[str, ...] = ("back",)
+    # All panel types that can be split when oversized - structural panels that span
+    # the full cabinet width can be safely split at section boundaries or midpoints
+    splittable_types: tuple[str, ...] = (
+        "back",
+        "top",
+        "bottom",
+        "toe_kick",
+        "nailer",
+        "light_rail",
+        "horizontal_divider",
+    )
     split_overlap: float = 1.0
+    # Optional split points (x-coordinates for horizontal splits, y for vertical)
+    # When provided, panels will be split at these boundaries if possible
+    split_points: tuple[float, ...] = ()
 
     def __post_init__(self) -> None:
         if not 0 <= self.kerf <= 0.5:
@@ -548,11 +561,100 @@ class GuillotineBinPacker:
 
         return not (fits_normal or fits_rotated)
 
+    def _find_optimal_split_sizes(
+        self,
+        total_dim: float,
+        max_dim: float,
+        overlap: float,
+        kerf: float,
+        split_points: tuple[float, ...] = (),
+    ) -> list[float]:
+        """Find optimal sizes for splitting a dimension.
+
+        Strategy:
+        1. If split_points are provided and valid, use the nearest one
+        2. If only 2 pieces needed, prefer center split for better sheet utilization
+        3. Otherwise, use greedy approach with max dimension
+
+        Args:
+            total_dim: Total dimension to split.
+            max_dim: Maximum dimension that fits on sheet.
+            overlap: Overlap at joints.
+            kerf: Saw kerf width.
+            split_points: Optional natural split points (e.g., divider positions).
+
+        Returns:
+            List of piece sizes that cover total_dim.
+        """
+        # Calculate minimum pieces needed
+        effective_max = max_dim - overlap if overlap < max_dim else max_dim
+        min_pieces = 1
+        remaining = total_dim
+        while remaining > max_dim:
+            min_pieces += 1
+            remaining -= effective_max - kerf
+
+        # Try split points if available
+        if split_points:
+            valid_points = [p for p in split_points if 0 < p < total_dim]
+            if valid_points:
+                # Find split point that creates valid pieces
+                for point in sorted(valid_points, key=lambda p: abs(p - total_dim / 2)):
+                    left_size = point + overlap
+                    right_size = total_dim - point + overlap
+                    # Check if both pieces fit on sheets
+                    if left_size <= max_dim and right_size <= max_dim:
+                        logger.debug(
+                            "Using split point %.2f for %.2f dimension",
+                            point,
+                            total_dim,
+                        )
+                        return [left_size, right_size]
+
+        # For 2-piece splits, prefer center split for better sheet utilization
+        # This avoids using nearly a full sheet + a tiny sliver
+        if min_pieces == 2:
+            # Calculate center split with overlap
+            half = total_dim / 2
+            left_size = half + overlap / 2
+            right_size = half + overlap / 2
+
+            # Verify both pieces fit
+            if left_size <= max_dim and right_size <= max_dim:
+                logger.debug(
+                    "Using center split for %.2f dimension: 2 pieces of %.2f",
+                    total_dim,
+                    left_size,
+                )
+                return [left_size, right_size]
+
+        # Fallback: greedy approach using max dimension
+        piece_sizes: list[float] = []
+        total_coverage = 0.0
+
+        for i in range(min_pieces):
+            if i == 0:
+                size = min(max_dim, total_dim - total_coverage)
+            else:
+                remaining_to_cover = total_dim - total_coverage + overlap
+                size = min(max_dim, remaining_to_cover)
+
+            piece_sizes.append(size)
+            if i < min_pieces - 1:
+                total_coverage += size - overlap
+            else:
+                total_coverage += size
+
+        return piece_sizes
+
     def _split_oversized_piece(self, piece: CutPiece) -> list[CutPiece]:
         """Split an oversized piece into multiple smaller pieces.
 
         Splits along the dimension that exceeds the sheet size, accounting
-        for kerf and overlap at joints.
+        for kerf and overlap at joints. Uses smart splitting strategies:
+        - Uses natural split points (divider positions) when available
+        - Prefers center splits for 2-piece splits to minimize waste
+        - Falls back to greedy max-dimension approach
 
         Args:
             piece: The oversized cut piece to split.
@@ -564,19 +666,17 @@ class GuillotineBinPacker:
         usable_h = self.config.sheet_size.usable_height
         kerf = self.config.kerf
         overlap = self.config.split_overlap
+        split_points = self.config.split_points
 
         # Determine which dimension(s) need splitting
         width_exceeds = piece.width > usable_w and piece.height > usable_h
-        # If both dimensions exceed, we need to handle that case
         if width_exceeds:
-            # Both dimensions exceed - this is complex, split width first
             logger.warning(
                 "Piece '%s' exceeds both sheet dimensions, splitting width first",
                 piece.label,
             )
 
         # Determine primary split direction
-        # Prefer splitting the dimension that exceeds the sheet
         if piece.width > usable_w:
             split_width = True
             split_dim = piece.width
@@ -586,57 +686,33 @@ class GuillotineBinPacker:
             split_dim = piece.height
             max_dim = usable_h
         else:
-            # Neither dimension exceeds - shouldn't happen if called correctly
             return [piece]
 
-        # Calculate number of splits needed
-        # Each piece after the first needs kerf + overlap added
-        # Effective max per piece = max_dim - overlap (except first piece)
-        effective_max = max_dim - overlap
-        if effective_max <= 0:
-            # Overlap too large for sheet - fall back to max dim
-            effective_max = max_dim
-            overlap = 0
+        # Get split points from piece metadata if available
+        # Metadata can contain 'split_points' for natural boundaries
+        piece_split_points = split_points
+        if piece.cut_metadata and "split_points" in piece.cut_metadata:
+            piece_split_points = tuple(piece.cut_metadata["split_points"])
 
-        # Number of pieces needed
-        # First piece is max_dim, subsequent pieces cover (split_dim - max_dim)
-        remaining = split_dim - max_dim
-        num_splits = 1
-        while remaining > 0:
-            num_splits += 1
-            remaining -= effective_max - kerf
-
-        # Calculate piece sizes with overlap
-        # Each piece overlaps with the next by 'overlap' amount
-        piece_sizes: list[float] = []
-        total_coverage = 0.0
-
-        for i in range(num_splits):
-            if i == 0:
-                # First piece: up to max_dim
-                size = min(max_dim, split_dim - total_coverage)
-            else:
-                # Subsequent pieces: need to cover remaining with overlap
-                remaining_to_cover = split_dim - total_coverage + overlap
-                size = min(max_dim, remaining_to_cover)
-
-            piece_sizes.append(size)
-            # Each piece covers size - overlap (except last which covers size)
-            if i < num_splits - 1:
-                total_coverage += size - overlap
-            else:
-                total_coverage += size
+        # Find optimal sizes
+        piece_sizes = self._find_optimal_split_sizes(
+            total_dim=split_dim,
+            max_dim=max_dim,
+            overlap=overlap,
+            kerf=kerf,
+            split_points=piece_split_points,
+        )
 
         # Create split pieces
         split_pieces: list[CutPiece] = []
+        num_splits = len(piece_sizes)
+
         for i, size in enumerate(piece_sizes):
-            # Create label indicating split
             if num_splits == 1:
                 label = piece.label
             else:
                 label = f"{piece.label} ({i + 1} of {num_splits})"
 
-            # Create new piece with split dimension
             if split_width:
                 new_piece = CutPiece(
                     width=size,
@@ -662,7 +738,6 @@ class GuillotineBinPacker:
             if self._piece_needs_splitting(new_piece) and self._is_splittable(
                 new_piece
             ):
-                # Recursively split
                 split_pieces.extend(self._split_oversized_piece(new_piece))
             else:
                 split_pieces.append(new_piece)

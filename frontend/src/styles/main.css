@@ -1,0 +1,59 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Shoelace theme customization */
+:root {
+  /* Primary color - a nice blue for the cabinet designer */
+  --sl-color-primary-50: #eff6ff;
+  --sl-color-primary-100: #dbeafe;
+  --sl-color-primary-200: #bfdbfe;
+  --sl-color-primary-300: #93c5fd;
+  --sl-color-primary-400: #60a5fa;
+  --sl-color-primary-500: #3b82f6;
+  --sl-color-primary-600: #2563eb;
+  --sl-color-primary-700: #1d4ed8;
+  --sl-color-primary-800: #1e40af;
+  --sl-color-primary-900: #1e3a8a;
+  --sl-color-primary-950: #172554;
+
+  /* Focus ring */
+  --sl-focus-ring-color: var(--sl-color-primary-500);
+  --sl-focus-ring-style: solid;
+  --sl-focus-ring-width: 2px;
+  --sl-focus-ring-offset: 2px;
+
+  /* Border radius */
+  --sl-border-radius-medium: 0.375rem;
+  --sl-border-radius-large: 0.5rem;
+
+  /* Shadows */
+  --sl-shadow-x-small: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --sl-shadow-small: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+  --sl-shadow-medium: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --sl-shadow-large: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+}
+
+/* Reset and base styles */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  font-family: var(--sl-font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Utility classes for Shoelace component parts */
+@layer utilities {
+  .sl-card-padding::part(body) {
+    padding: var(--sl-spacing-medium);
+  }
+}

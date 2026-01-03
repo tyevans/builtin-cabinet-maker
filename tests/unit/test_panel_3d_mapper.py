@@ -958,8 +958,9 @@ class TestMapPanelCableChase:
 
         result = mapper.map_panel(panel)
 
-        # Y position should be at cabinet_depth - thickness (rear of cabinet)
-        expected_y = mapper.cabinet.depth - standard_material.thickness
+        # Y position should be at back_thickness (just in front of back panel)
+        # y=0 is rear (against wall), y=cabinet.depth is front
+        expected_y = mapper.back_thickness
         assert result.origin.y == pytest.approx(expected_y)
 
     def test_cable_chase_uses_panel_position_for_x(
@@ -1067,8 +1068,8 @@ class TestMapPanelCableChase:
         assert left_result.origin.x == pytest.approx(0)
         assert center_result.origin.x == pytest.approx(10.0)
         assert right_result.origin.x == pytest.approx(20.0)
-        # All should be at rear
-        expected_y = mapper.cabinet.depth - standard_material.thickness
+        # All should be at rear (just in front of back panel)
+        expected_y = mapper.back_thickness
         assert left_result.origin.y == pytest.approx(expected_y)
         assert center_result.origin.y == pytest.approx(expected_y)
         assert right_result.origin.y == pytest.approx(expected_y)
@@ -1096,8 +1097,8 @@ class TestMapPanelCableChase:
 
         result = mapper.map_panel(panel)
 
-        # Y position should be at 24.0 - 0.75 = 23.25 for deeper cabinet
-        expected_y = 24.0 - standard_material.thickness
+        # Y position should be at back_thickness (rear of cabinet, regardless of depth)
+        expected_y = mapper.back_thickness
         assert result.origin.y == pytest.approx(expected_y)
 
     def test_cable_chase_with_thin_material(self, mapper: Panel3DMapper) -> None:
@@ -1113,10 +1114,10 @@ class TestMapPanelCableChase:
 
         result = mapper.map_panel(panel)
 
-        # Y origin should adjust for thinner material
-        expected_y = mapper.cabinet.depth - thin_material.thickness
+        # Y origin is at back_thickness (rear of cabinet), not affected by chase material
+        expected_y = mapper.back_thickness
         assert result.origin.y == pytest.approx(expected_y)
-        # Size Y should be the thin material thickness
+        # Size Y should be the thin material thickness (chase depth)
         assert result.size_y == pytest.approx(thin_material.thickness)
 
 

@@ -35,6 +35,7 @@ class FaceFrameConfigSchema(BaseModel):
     that create an opening for doors or drawers.
 
     Attributes:
+        enabled: Whether face frame is enabled (for frontend toggle support).
         stile_width: Width of vertical stiles in inches.
         rail_width: Width of horizontal rails in inches.
         joinery: Type of joint for stile/rail connections.
@@ -43,6 +44,7 @@ class FaceFrameConfigSchema(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
 
+    enabled: bool = Field(default=True, description="Whether face frame is enabled")
     stile_width: float = Field(default=1.5, gt=0, le=6.0)
     rail_width: float = Field(default=1.5, gt=0, le=6.0)
     joinery: JoineryTypeConfig = JoineryTypeConfig.POCKET_SCREW
@@ -55,6 +57,7 @@ class CrownMoldingConfigSchema(BaseModel):
     Defines the zone at cabinet top for crown molding installation.
 
     Attributes:
+        enabled: Whether crown molding is enabled (for frontend toggle support).
         height: Zone height for molding in inches.
         setback: Top panel setback distance in inches.
         nailer_width: Width of nailer strip in inches.
@@ -62,6 +65,7 @@ class CrownMoldingConfigSchema(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
 
+    enabled: bool = Field(default=True, description="Whether crown molding is enabled")
     height: float = Field(default=3.0, gt=0, le=12.0)
     setback: float = Field(default=0.75, gt=0, le=3.0)
     nailer_width: float = Field(default=2.0, gt=0, le=6.0)
@@ -73,6 +77,7 @@ class BaseZoneConfigSchema(BaseModel):
     Defines the zone at cabinet bottom for toe kick or base molding.
 
     Attributes:
+        enabled: Whether base zone is enabled (for frontend toggle support).
         height: Zone height in inches.
         setback: Toe kick depth/recess in inches.
         zone_type: Type of base treatment.
@@ -80,6 +85,7 @@ class BaseZoneConfigSchema(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
 
+    enabled: bool = Field(default=True, description="Whether base zone is enabled")
     height: float = Field(default=3.5, ge=3.0, le=6.0)
     setback: float = Field(default=3.0, ge=0, le=6.0)
     zone_type: Literal["toe_kick", "base_molding"] = "toe_kick"
@@ -91,6 +97,7 @@ class LightRailConfigSchema(BaseModel):
     Defines the zone under wall cabinets for lighting installation.
 
     Attributes:
+        enabled: Whether light rail is enabled (for frontend toggle support).
         height: Zone height in inches.
         setback: Light rail setback in inches.
         generate_strip: Whether to generate a light rail strip piece.
@@ -98,6 +105,7 @@ class LightRailConfigSchema(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
 
+    enabled: bool = Field(default=True, description="Whether light rail is enabled")
     height: float = Field(default=1.5, gt=0, le=4.0)
     setback: float = Field(default=0.25, ge=0, le=2.0)
     generate_strip: bool = True

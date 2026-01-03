@@ -53,6 +53,50 @@ class PanelGenerationService:
         >>> panels = service.get_all_panels(cabinet)
     """
 
+    def _get_section_boundaries(self, cabinet: Cabinet) -> list[float]:
+        """Calculate x-coordinates where sections meet (divider positions).
+
+        These are natural split points for full-width panels like top, bottom,
+        and back panels. Splitting at these positions allows pieces to be
+        joined over structural support (the dividers).
+
+        Args:
+            cabinet: The cabinet to calculate boundaries for.
+
+        Returns:
+            List of x-coordinates where sections meet, sorted ascending.
+        """
+        boundaries: set[float] = set()
+
+        # Collect divider positions from sections
+        # Dividers are placed at section.position.x + section.width
+        for i in range(len(cabinet.sections) - 1):
+            section = cabinet.sections[i]
+            next_section = cabinet.sections[i + 1]
+            # Only count dividers between adjacent sections in the same row
+            if abs(section.position.y - next_section.position.y) < 0.001:
+                divider_x = section.position.x + section.width
+                # Only add if it's a meaningful split point (not at edges)
+                if divider_x > cabinet.material.thickness and divider_x < (
+                    cabinet.width - cabinet.material.thickness
+                ):
+                    boundaries.add(divider_x)
+
+        return sorted(boundaries)
+
+    def _make_split_metadata(self, split_points: list[float]) -> dict | None:
+        """Create cut_metadata dict with split points if any exist.
+
+        Args:
+            split_points: List of x-coordinates for potential split points.
+
+        Returns:
+            Dict with split_points key if points exist, None otherwise.
+        """
+        if split_points:
+            return {"split_points": split_points}
+        return None
+
     def get_all_panels(self, cabinet: Cabinet) -> list[Panel]:
         """Get all panels that make up the given cabinet.
 
@@ -77,7 +121,12 @@ class PanelGenerationService:
 
         panels: list[Panel] = []
 
+        # Calculate section boundaries for split points on full-width panels
+        split_points = self._get_section_boundaries(cabinet)
+        split_metadata = self._make_split_metadata(split_points)
+
         # Top panel - spans full width, depth is interior depth
+        # Include split points so oversized panels can be split at divider positions
         panels.append(
             Panel(
                 panel_type=PanelType.TOP,
@@ -85,6 +134,7 @@ class PanelGenerationService:
                 height=cabinet.interior_depth,
                 material=cabinet.material,
                 position=Position(0, cabinet.height - cabinet.material.thickness),
+                cut_metadata=split_metadata,
             )
         )
 
@@ -101,6 +151,7 @@ class PanelGenerationService:
                 height=bottom_depth,
                 material=cabinet.material,
                 position=Position(0, 0),
+                cut_metadata=split_metadata,
             )
         )
 
@@ -128,6 +179,7 @@ class PanelGenerationService:
         )
 
         # Back panel - full width and height, thinner material
+        # Include split points for oversized cabinets
         assert cabinet.back_material is not None
         panels.append(
             Panel(
@@ -136,6 +188,7 @@ class PanelGenerationService:
                 height=cabinet.height,
                 material=cabinet.back_material,
                 position=Position(0, 0),
+                cut_metadata=split_metadata,
             )
         )
 
@@ -187,20 +240,20 @@ class PanelGenerationService:
                 panels.append(panel)
 
         # Zone panels (toe kick, crown nailer, light rail)
-        panels.extend(self.get_zone_panels(cabinet))
+        panels.extend(self._get_zone_panels_with_splits(cabinet, split_metadata))
 
         return panels
 
-    def get_zone_panels(self, cabinet: Cabinet) -> list[Panel]:
-        """Generate panels for decorative zones (toe kick, crown, light rail).
+    def _get_zone_panels_with_splits(
+        self, cabinet: Cabinet, split_metadata: dict | None
+    ) -> list[Panel]:
+        """Generate zone panels with split point metadata.
 
-        Zone panels are special panels that serve specific purposes:
-        - Toe kick: Recessed panel at the bottom front for foot clearance
-        - Crown nailer: Strip at top back for mounting crown molding
-        - Light rail: Strip at bottom front for concealing under-cabinet lights
+        Internal method that passes split metadata to zone panels.
 
         Args:
             cabinet: The cabinet to generate zone panels for.
+            split_metadata: Cut metadata with split points, or None.
 
         Returns:
             List of Panel objects for the configured zones.
@@ -214,7 +267,6 @@ class PanelGenerationService:
         if cabinet.base_zone and cabinet.base_zone.get("zone_type") == "toe_kick":
             toe_kick_height = cabinet.base_zone.get("height", 3.5)
             toe_kick_setback = cabinet.base_zone.get("setback", 3.0)
-            # Toe kick is positioned at the front, recessed by setback
             zone_panels.append(
                 Panel(
                     panel_type=PanelType.TOE_KICK,
@@ -227,6 +279,7 @@ class PanelGenerationService:
                         "setback": toe_kick_setback,
                         "location": "bottom_front_recessed",
                     },
+                    cut_metadata=split_metadata,
                 )
             )
 
@@ -238,7 +291,7 @@ class PanelGenerationService:
                 Panel(
                     panel_type=PanelType.NAILER,
                     width=cabinet.width,
-                    height=nailer_width,  # Nailer depth
+                    height=nailer_width,
                     material=cabinet.material,
                     position=Position(0, cabinet.height - nailer_width),
                     metadata={
@@ -247,6 +300,7 @@ class PanelGenerationService:
                         "setback": cabinet.crown_molding.get("setback", 0.75),
                         "location": "top_back",
                     },
+                    cut_metadata=split_metadata,
                 )
             )
 
@@ -265,10 +319,132 @@ class PanelGenerationService:
                         "setback": cabinet.light_rail.get("setback", 0.25),
                         "location": "bottom_front",
                     },
+                    cut_metadata=split_metadata,
                 )
             )
 
+        # Face frame - stiles and rails at cabinet front
+        if cabinet.face_frame:
+            zone_panels.extend(self._get_face_frame_panels(cabinet, split_metadata))
+
         return zone_panels
+
+    def _get_face_frame_panels(
+        self, cabinet: Cabinet, split_metadata: dict | None
+    ) -> list[Panel]:
+        """Generate face frame panels (stiles and rails).
+
+        Face frames consist of vertical stiles and horizontal rails that create
+        a frame around the cabinet opening. They are placed at the cabinet front.
+
+        Args:
+            cabinet: The cabinet to generate face frame panels for.
+            split_metadata: Cut metadata with split points, or None.
+
+        Returns:
+            List of Panel objects for the face frame.
+        """
+        from ..entities import Panel
+
+        panels: list[Panel] = []
+        ff = cabinet.face_frame
+        if ff is None:
+            return panels
+
+        stile_width = ff.get("stile_width", 1.5)
+        rail_width = ff.get("rail_width", 1.5)
+        material_thickness = ff.get("material_thickness", 0.75)
+        joinery = ff.get("joinery", "pocket_screw")
+
+        # Create material spec for face frame
+        from ..value_objects import MaterialSpec
+
+        frame_material = MaterialSpec(thickness=material_thickness)
+
+        # Calculate rail length (between stiles)
+        rail_length = cabinet.width - (2 * stile_width)
+
+        # Left stile - full cabinet height
+        panels.append(
+            Panel(
+                panel_type=PanelType.FACE_FRAME_STILE,
+                width=stile_width,
+                height=cabinet.height,
+                material=frame_material,
+                position=Position(0, 0),
+                metadata={
+                    "location": "left",
+                    "joinery_type": joinery,
+                },
+            )
+        )
+
+        # Right stile - full cabinet height
+        panels.append(
+            Panel(
+                panel_type=PanelType.FACE_FRAME_STILE,
+                width=stile_width,
+                height=cabinet.height,
+                material=frame_material,
+                position=Position(cabinet.width - stile_width, 0),
+                metadata={
+                    "location": "right",
+                    "joinery_type": joinery,
+                },
+            )
+        )
+
+        # Top rail - between stiles
+        panels.append(
+            Panel(
+                panel_type=PanelType.FACE_FRAME_RAIL,
+                width=rail_length,
+                height=rail_width,
+                material=frame_material,
+                position=Position(stile_width, cabinet.height - rail_width),
+                metadata={
+                    "location": "top",
+                    "joinery_type": joinery,
+                },
+            )
+        )
+
+        # Bottom rail - between stiles
+        panels.append(
+            Panel(
+                panel_type=PanelType.FACE_FRAME_RAIL,
+                width=rail_length,
+                height=rail_width,
+                material=frame_material,
+                position=Position(stile_width, 0),
+                metadata={
+                    "location": "bottom",
+                    "joinery_type": joinery,
+                },
+            )
+        )
+
+        return panels
+
+    def get_zone_panels(self, cabinet: Cabinet) -> list[Panel]:
+        """Generate panels for decorative zones (toe kick, crown, light rail, face frame).
+
+        Zone panels are special panels that serve specific purposes:
+        - Toe kick: Recessed panel at the bottom front for foot clearance
+        - Crown nailer: Strip at top back for mounting crown molding
+        - Light rail: Strip at bottom front for concealing under-cabinet lights
+        - Face frame: Stiles and rails at the cabinet front opening
+
+        Args:
+            cabinet: The cabinet to generate zone panels for.
+
+        Returns:
+            List of Panel objects for the configured zones.
+        """
+        # Calculate split points for this cabinet
+        split_points = self._get_section_boundaries(cabinet)
+        split_metadata = self._make_split_metadata(split_points)
+        return self._get_zone_panels_with_splits(cabinet, split_metadata)
 
     def get_cut_list(self, cabinet: Cabinet) -> list[CutPiece]:
         """Generate a consolidated cut list for a cabinet.
