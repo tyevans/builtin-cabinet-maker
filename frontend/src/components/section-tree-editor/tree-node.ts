@@ -117,12 +117,7 @@ export class TreeNode extends LitElement {
     .drag-handle {
       cursor: grab;
       color: var(--sl-color-neutral-400);
-      opacity: 0;
       transition: opacity 0.1s ease;
-    }
-
-    .tree-node:hover .drag-handle {
-      opacity: 1;
     }
 
     .drag-handle:active {
@@ -133,12 +128,26 @@ export class TreeNode extends LitElement {
       display: flex;
       align-items: center;
       gap: 0.125rem;
-      opacity: 0;
       transition: opacity 0.1s ease;
     }
 
-    .tree-node:hover .inline-actions {
-      opacity: 1;
+    /* Desktop: dim actions until hover */
+    @media (hover: hover) and (pointer: fine) {
+      .drag-handle {
+        opacity: 0.5;
+      }
+
+      .tree-node:hover .drag-handle {
+        opacity: 1;
+      }
+
+      .inline-actions {
+        opacity: 0.5;
+      }
+
+      .tree-node:hover .inline-actions {
+        opacity: 1;
+      }
     }
 
     .inline-actions sl-icon-button::part(base) {

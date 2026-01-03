@@ -10,6 +10,7 @@ import '@shoelace-style/shoelace/dist/components/tab-panel/tab-panel.js';
 import '@shoelace-style/shoelace/dist/components/button/button.js';
 import '@shoelace-style/shoelace/dist/components/spinner/spinner.js';
 import '@shoelace-style/shoelace/dist/components/alert/alert.js';
+import '@shoelace-style/shoelace/dist/components/dialog/dialog.js';
 
 @customElement('cut-list-panel')
 export class CutListPanel extends LitElement {
@@ -150,11 +151,42 @@ export class CutListPanel extends LitElement {
       margin-top: 2rem;
     }
 
+    /* Mobile: sticky button bar at bottom */
+    .cut-layouts-header-mobile {
+      display: block;
+      position: sticky;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: var(--sl-color-neutral-0);
+      border-top: 1px solid var(--sl-color-neutral-200);
+      padding: 0.75rem;
+      margin: 1rem -0.5rem -0.5rem -0.5rem;
+      box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.1);
+      z-index: 10;
+    }
+
+    .cut-layouts-header-mobile sl-button {
+      width: 100%;
+    }
+
+    @media (min-width: 768px) {
+      .cut-layouts-header-mobile {
+        display: none;
+      }
+    }
+
     .section-header {
-      display: flex;
+      display: none;
       align-items: center;
       justify-content: space-between;
       margin-bottom: 1rem;
+    }
+
+    @media (min-width: 768px) {
+      .section-header {
+        display: flex;
+      }
     }
 
     .section-title {
@@ -277,6 +309,105 @@ export class CutListPanel extends LitElement {
     sl-tab-panel::part(base) {
       padding: 1rem 0;
     }
+
+    /* Mobile gallery view */
+    .sheets-gallery {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 0.75rem;
+      margin-top: 1rem;
+    }
+
+    @media (min-width: 768px) {
+      .sheets-gallery {
+        display: none;
+      }
+    }
+
+    .gallery-item {
+      background: var(--sl-color-neutral-0);
+      border: 1px solid var(--sl-color-neutral-200);
+      border-radius: var(--sl-border-radius-medium);
+      padding: 0.5rem;
+      cursor: pointer;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    .gallery-item:hover,
+    .gallery-item:focus {
+      border-color: var(--sl-color-primary-500);
+      box-shadow: 0 0 0 1px var(--sl-color-primary-500);
+      outline: none;
+    }
+
+    .gallery-item:active {
+      background: var(--sl-color-primary-50);
+    }
+
+    .gallery-thumbnail {
+      aspect-ratio: 4 / 3;
+      overflow: hidden;
+      border-radius: var(--sl-border-radius-small);
+      background: var(--sl-color-neutral-50);
+      margin-bottom: 0.5rem;
+    }
+
+    .gallery-thumbnail svg {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+    }
+
+    .gallery-info {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.75rem;
+    }
+
+    .gallery-label {
+      font-weight: 600;
+      color: var(--sl-color-neutral-800);
+    }
+
+    /* Desktop tabs - hidden on mobile */
+    .desktop-tabs {
+      display: none;
+    }
+
+    @media (min-width: 768px) {
+      .desktop-tabs {
+        display: block;
+      }
+    }
+
+    /* Dialog styles */
+    .dialog-sheet-info {
+      display: flex;
+      gap: 1.5rem;
+      padding: 0.5rem 0 1rem;
+      font-size: 0.875rem;
+      color: var(--sl-color-neutral-600);
+      border-bottom: 1px solid var(--sl-color-neutral-200);
+      margin-bottom: 1rem;
+    }
+
+    .dialog-svg-container {
+      overflow: auto;
+      max-height: 60vh;
+      background: var(--sl-color-neutral-50);
+      border-radius: var(--sl-border-radius-medium);
+      padding: 0.5rem;
+    }
+
+    .dialog-svg-container svg {
+      width: 100%;
+      height: auto;
+    }
+
+    sl-dialog::part(panel) {
+      width: min(95vw, 600px);
+    }
   `;
 
   @property({ type: Array })
@@ -296,6 +427,9 @@ export class CutListPanel extends LitElement {
 
   @state()
   private showLayouts = false;
+
+  @state()
+  private selectedSheetIndex: number | null = null;
 
   private formatDimension(value: number): string {
     return value.toFixed(2);
@@ -422,12 +556,79 @@ export class CutListPanel extends LitElement {
         </div>
       </div>
 
-      <div class="sheet-tabs">
+      <!-- Mobile: Gallery view -->
+      ${this.renderGallery(sheets)}
+
+      <!-- Desktop: Tabs or single sheet view -->
+      <div class="desktop-tabs">
         ${sheets.length === 1
           ? this.renderSingleSheet(sheets[0])
           : this.renderMultipleSheets(sheets)
         }
       </div>
+
+      <!-- Dialog for full-size view -->
+      ${this.renderSheetDialog(sheets)}
+    `;
+  }
+
+  private renderGallery(sheets: SheetLayout[]) {
+    return html`
+      <div class="sheets-gallery">
+        ${sheets.map((sheet, i) => html`
+          <button
+            class="gallery-item"
+            @click=${() => this.openSheetDialog(i)}
+            aria-label="View sheet ${i + 1}"
+          >
+            <div class="gallery-thumbnail">
+              ${unsafeHTML(sheet.svg)}
+            </div>
+            <div class="gallery-info">
+              <span class="gallery-label">Sheet ${i + 1}</span>
+              <span class="waste-badge ${this.getWasteBadgeClass(sheet.waste_percentage)}">
+                ${sheet.waste_percentage.toFixed(0)}%
+              </span>
+            </div>
+          </button>
+        `)}
+      </div>
+    `;
+  }
+
+  private openSheetDialog(index: number): void {
+    this.selectedSheetIndex = index;
+  }
+
+  private closeSheetDialog(): void {
+    this.selectedSheetIndex = null;
+  }
+
+  private renderSheetDialog(sheets: SheetLayout[]) {
+    if (this.selectedSheetIndex === null) return null;
+
+    const sheet = sheets[this.selectedSheetIndex];
+    if (!sheet) return null;
+
+    return html`
+      <sl-dialog
+        label="Sheet ${this.selectedSheetIndex + 1} of ${sheets.length}"
+        ?open=${this.selectedSheetIndex !== null}
+        @sl-hide=${this.closeSheetDialog}
+      >
+        <div class="dialog-sheet-info">
+          <span><strong>Pieces:</strong> ${sheet.piece_count}</span>
+          <span>
+            <strong>Waste:</strong>
+            <span class="waste-badge ${this.getWasteBadgeClass(sheet.waste_percentage)}">
+              ${sheet.waste_percentage.toFixed(1)}%
+            </span>
+          </span>
+        </div>
+        <div class="dialog-svg-container">
+          ${unsafeHTML(sheet.svg)}
+        </div>
+      </sl-dialog>
     `;
   }
 
@@ -540,6 +741,18 @@ export class CutListPanel extends LitElement {
       </div>
 
       ${this.renderCutLayoutsSection()}
+
+      <!-- Mobile sticky button -->
+      ${this.config ? html`
+        <div class="cut-layouts-header-mobile">
+          <sl-button
+            variant=${this.showLayouts ? 'default' : 'primary'}
+            @click=${this.toggleLayouts}
+          >
+            ${this.showLayouts ? 'Hide Cut Layouts' : 'Show Cut Layouts'}
+          </sl-button>
+        </div>
+      ` : null}
     `;
   }
 }
