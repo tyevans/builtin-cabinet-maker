@@ -54,6 +54,28 @@ export class AppShell extends LitElement {
 
     .mobile-menu-btn {
       display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 44px;
+      height: 44px;
+      font-size: 1.5rem;
+      background: transparent;
+      border: none;
+      border-radius: var(--sl-border-radius-medium);
+      color: var(--sl-color-neutral-700);
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .mobile-menu-btn:hover,
+    .mobile-menu-btn:focus {
+      background: var(--sl-color-neutral-100);
+      color: var(--sl-color-primary-600);
+      outline: none;
+    }
+
+    .mobile-menu-btn:active {
+      background: var(--sl-color-neutral-200);
     }
 
     @media (min-width: 768px) {
@@ -246,12 +268,11 @@ export class AppShell extends LitElement {
     return html`
       <header class="header">
         <div class="header-left">
-          <sl-icon-button
+          <button
             class="mobile-menu-btn"
-            name="list"
-            label="Open configuration"
+            aria-label="Open configuration"
             @click=${this.openDrawer}
-          ></sl-icon-button>
+          >&#9776;</button>
           <div class="logo">
             <span class="logo-icon">&#128452;</span>
             Cabinet Designer
