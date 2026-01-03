@@ -118,10 +118,21 @@ export class TreeNode extends LitElement {
       cursor: grab;
       color: var(--sl-color-neutral-400);
       transition: opacity 0.1s ease;
+      padding: 0.25rem;
+      margin: -0.25rem;
+      touch-action: none;
     }
 
     .drag-handle:active {
       cursor: grabbing;
+    }
+
+    /* Larger touch target on mobile */
+    @media (pointer: coarse) {
+      .drag-handle {
+        padding: 0.5rem;
+        margin: -0.5rem;
+      }
     }
 
     .inline-actions {
@@ -188,6 +199,10 @@ export class TreeNode extends LitElement {
 
   @property({ type: Boolean, attribute: 'show-expand' })
   showExpand = false;
+
+  // Touch drag state
+  private touchDragData: TreeNodeData | null = null;
+  private currentDropTarget: TreeNode | null = null;
 
   private getTypeIcon(type: SectionType | 'composite'): string {
     switch (type) {
@@ -321,6 +336,77 @@ export class TreeNode extends LitElement {
     }
   }
 
+  // Touch event handlers for mobile drag-and-drop
+  private handleTouchStart(e: TouchEvent): void {
+    // Only start drag if touching the drag handle
+    const target = e.target as HTMLElement;
+    if (!target.closest('.drag-handle')) return;
+
+    e.preventDefault();
+    this.touchDragData = this.data;
+    this.classList.add('dragging');
+
+    this.dispatchEvent(new CustomEvent('node-drag-start', {
+      detail: this.data,
+      bubbles: true,
+      composed: true,
+    }));
+  }
+
+  private handleTouchMove(e: TouchEvent): void {
+    if (!this.touchDragData) return;
+
+    e.preventDefault();
+    const touch = e.touches[0];
+
+    // Find the element under the touch point
+    // We need to temporarily hide this element to find what's below
+    const originalDisplay = this.style.pointerEvents;
+    this.style.pointerEvents = 'none';
+    const elementBelow = document.elementFromPoint(touch.clientX, touch.clientY);
+    this.style.pointerEvents = originalDisplay;
+
+    // Find the tree-node that's being hovered
+    const treeNode = elementBelow?.closest('tree-node') as TreeNode | null;
+
+    // Update visual feedback
+    if (this.currentDropTarget && this.currentDropTarget !== treeNode) {
+      this.currentDropTarget.classList.remove('drag-over');
+    }
+
+    if (treeNode && treeNode !== this) {
+      treeNode.classList.add('drag-over');
+      this.currentDropTarget = treeNode;
+    } else {
+      this.currentDropTarget = null;
+    }
+  }
+
+  private handleTouchEnd(e: TouchEvent): void {
+    if (!this.touchDragData) return;
+
+    e.preventDefault();
+    this.classList.remove('dragging');
+
+    // Perform the drop if we have a valid target
+    if (this.currentDropTarget) {
+      this.currentDropTarget.classList.remove('drag-over');
+      this.dispatchEvent(new CustomEvent('node-drop', {
+        detail: { from: this.touchDragData, to: this.currentDropTarget.data },
+        bubbles: true,
+        composed: true,
+      }));
+    }
+
+    this.dispatchEvent(new CustomEvent('node-drag-end', {
+      bubbles: true,
+      composed: true,
+    }));
+
+    this.touchDragData = null;
+    this.currentDropTarget = null;
+  }
+
   render() {
     const { type } = this.data;
     const label = type === 'section' ? this.getSectionLabel() : this.getRowLabel();
@@ -337,6 +423,9 @@ export class TreeNode extends LitElement {
         @dragover=${this.handleDragOver}
         @dragleave=${this.handleDragLeave}
         @drop=${this.handleDrop}
+        @touchstart=${this.handleTouchStart}
+        @touchmove=${this.handleTouchMove}
+        @touchend=${this.handleTouchEnd}
       >
         ${Array(this.indent).fill(null).map(() => html`<span class="indent"></span>`)}
 
