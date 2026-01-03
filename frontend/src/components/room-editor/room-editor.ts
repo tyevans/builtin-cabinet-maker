@@ -4,6 +4,7 @@ import {
   cabinetStore,
   type CabinetState,
   setRoom,
+  enableRoomGeometry,
   addWallSegment,
   updateWallSegment,
   removeWallSegment,
@@ -69,6 +70,16 @@ export class RoomEditor extends LitElement {
       display: grid;
       grid-template-columns: 1fr 1fr 1fr;
       gap: 0.5rem;
+    }
+
+    @media (max-width: 480px) {
+      .wall-fields {
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .wall-fields > :nth-child(3) {
+        grid-column: span 2;
+      }
     }
 
     sl-input::part(form-control-label) {
@@ -153,18 +164,17 @@ export class RoomEditor extends LitElement {
   private handleRoomToggle(event: Event): void {
     const target = event.target as HTMLInputElement;
     if (target.checked) {
-      setRoom({
-        name: 'Room',
-        walls: [{ length: 120, height: 96 }],
-        is_closed: false,
-      });
+      // Use enableRoomGeometry to assign existing sections to wall 0
+      // and set the first wall's angle to 0 (required by domain validation)
+      enableRoomGeometry();
     } else {
       setRoom(null);
     }
   }
 
   private handleAddWall(): void {
-    addWallSegment({ length: 48, height: 96 });
+    // New walls default to angle: 90 (right turn)
+    addWallSegment({ length: 48, height: 96, angle: 90 });
   }
 
   private handleRemoveWall(index: number): void {

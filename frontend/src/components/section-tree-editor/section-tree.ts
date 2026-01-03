@@ -9,6 +9,9 @@ import {
 import {
   cabinetStore,
   addSection,
+  addSectionRow,
+  removeSection,
+  removeSectionRow,
   reorderSections,
   reorderSectionRows,
 } from '@/state/cabinet-state';
@@ -80,11 +83,9 @@ export class SectionTree extends LitElement {
     this.unsubscribe = cabinetStore.subscribe(state => {
       this.walls = state.config.room?.walls || [];
     });
-    // Initially expand all composite sections
-    this.sections.forEach((section, index) => {
-      if (isCompositeSection(section)) {
-        this.expandedSections.add(index);
-      }
+    // Initially expand all sections to show their content
+    this.sections.forEach((_, index) => {
+      this.expandedSections.add(index);
     });
   }
 
@@ -93,22 +94,60 @@ export class SectionTree extends LitElement {
     this.unsubscribe?.();
   }
 
+  updated(changedProperties: Map<string, unknown>): void {
+    super.updated(changedProperties);
+    // Auto-expand any new sections that were added
+    if (changedProperties.has('sections')) {
+      this.sections.forEach((_, index) => {
+        if (!this.expandedSections.has(index)) {
+          const newExpanded = new Set(this.expandedSections);
+          newExpanded.add(index);
+          this.expandedSections = newExpanded;
+        }
+      });
+    }
+  }
+
   private isSelected(sectionIndex: number, rowIndex?: number): boolean {
     if (!this.selectedSection) return false;
     if (this.selectedSection.sectionIndex !== sectionIndex) return false;
+
+    const section = this.sections[sectionIndex];
+    const isSimpleSection = section && !isCompositeSection(section);
+
     if (rowIndex === undefined) {
+      // Selecting the section header
       return this.selectedSection.rowIndex === undefined;
     }
+
+    // For simple sections, the synthetic row is selected when the section is selected
+    if (isSimpleSection && rowIndex === 0) {
+      return this.selectedSection.rowIndex === undefined;
+    }
+
     return this.selectedSection.rowIndex === rowIndex;
   }
 
   private handleNodeSelect(e: CustomEvent<TreeNodeData>): void {
-    const { sectionIndex, rowIndex } = e.detail;
-    this.dispatchEvent(new CustomEvent('selection-change', {
-      detail: { sectionIndex, rowIndex },
-      bubbles: true,
-      composed: true,
-    }));
+    const { sectionIndex, rowIndex, type } = e.detail;
+    const section = this.sections[sectionIndex];
+    const isSimpleSection = section && !isCompositeSection(section);
+
+    // For simple sections, clicking on the synthetic row should edit the section itself
+    // since the row is just a visual representation of the section's content
+    if (type === 'row' && isSimpleSection) {
+      this.dispatchEvent(new CustomEvent('selection-change', {
+        detail: { sectionIndex }, // No rowIndex - edits the section
+        bubbles: true,
+        composed: true,
+      }));
+    } else {
+      this.dispatchEvent(new CustomEvent('selection-change', {
+        detail: { sectionIndex, rowIndex },
+        bubbles: true,
+        composed: true,
+      }));
+    }
   }
 
   private handleNodeToggle(e: CustomEvent<TreeNodeData>): void {
@@ -142,6 +181,57 @@ export class SectionTree extends LitElement {
     // Cross-section row moves not supported for simplicity
   }
 
+  private handleAddRow(e: CustomEvent<TreeNodeData>): void {
+    const { sectionIndex } = e.detail;
+    addSectionRow(sectionIndex);
+    // Auto-expand the section when adding a row
+    const newExpanded = new Set(this.expandedSections);
+    newExpanded.add(sectionIndex);
+    this.expandedSections = newExpanded;
+  }
+
+  private handleDeleteNode(e: CustomEvent<TreeNodeData>): void {
+    const { type, sectionIndex, rowIndex } = e.detail;
+    const section = this.sections[sectionIndex];
+    const isSimpleSection = section && !isCompositeSection(section);
+
+    if (type === 'row' && rowIndex !== undefined) {
+      // For simple sections, deleting the synthetic row deletes the section
+      if (isSimpleSection) {
+        if (this.sections.length > 1) {
+          removeSection(sectionIndex);
+          this.dispatchEvent(new CustomEvent('selection-change', {
+            detail: null,
+            bubbles: true,
+            composed: true,
+          }));
+        }
+      } else {
+        // For composite sections, removeSectionRow handles:
+        // - 2+ rows remaining: just removes the row
+        // - 1 row remaining: converts to simple section
+        // - 0 rows remaining: deletes section and clears selection
+        removeSectionRow(sectionIndex, rowIndex);
+        // Clear selection - it will be invalid if section was deleted or converted
+        this.dispatchEvent(new CustomEvent('selection-change', {
+          detail: null,
+          bubbles: true,
+          composed: true,
+        }));
+      }
+    } else if (type === 'section') {
+      // Only allow delete if more than one section
+      if (this.sections.length > 1) {
+        removeSection(sectionIndex);
+        this.dispatchEvent(new CustomEvent('selection-change', {
+          detail: null,
+          bubbles: true,
+          composed: true,
+        }));
+      }
+    }
+  }
+
   private handleAddSection(wall?: number): void {
     addSection(wall);
   }
@@ -159,20 +249,32 @@ export class SectionTree extends LitElement {
   private renderSection(section: SectionSpec, index: number) {
     const isComposite = isCompositeSection(section);
     const isExpanded = this.expandedSections.has(index);
-    const rows = section.rows || [];
+
+    // For simple sections, create a synthetic row from the section's content
+    // This makes all sections display uniformly as expandable with child rows
+    const rows = isComposite
+      ? (section.rows || [])
+      : [{
+          height: 'fill' as const,
+          section_type: section.section_type || 'open',
+          shelves: section.shelves,
+          component_config: section.component_config,
+        }];
 
     return html`
       <tree-node
         .data=${{ type: 'section', sectionIndex: index, section }}
         .selected=${this.isSelected(index)}
         .expanded=${isExpanded}
-        .showExpand=${isComposite}
+        .showExpand=${true}
         @node-select=${this.handleNodeSelect}
         @node-toggle=${this.handleNodeToggle}
         @node-drop=${this.handleNodeDrop}
+        @add-row=${this.handleAddRow}
+        @delete-node=${this.handleDeleteNode}
       ></tree-node>
 
-      ${isComposite && isExpanded ? html`
+      ${isExpanded ? html`
         ${[...rows].reverse().map((row, reversedIdx) => {
           const rowIndex = rows.length - 1 - reversedIdx;
           return html`
@@ -182,6 +284,7 @@ export class SectionTree extends LitElement {
               .indent=${1}
               @node-select=${this.handleNodeSelect}
               @node-drop=${this.handleNodeDrop}
+              @delete-node=${this.handleDeleteNode}
             ></tree-node>
           `;
         })}

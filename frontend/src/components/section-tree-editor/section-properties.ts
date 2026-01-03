@@ -22,9 +22,6 @@ import {
   removeSection,
   updateSectionRow,
   removeSectionRow,
-  addSectionRow,
-  convertToComposite,
-  convertToSimple,
 } from '@/state/cabinet-state';
 
 import '@shoelace-style/shoelace/dist/components/input/input.js';
@@ -32,7 +29,6 @@ import '@shoelace-style/shoelace/dist/components/select/select.js';
 import '@shoelace-style/shoelace/dist/components/option/option.js';
 import '@shoelace-style/shoelace/dist/components/button/button.js';
 import '@shoelace-style/shoelace/dist/components/icon/icon.js';
-import '@shoelace-style/shoelace/dist/components/divider/divider.js';
 
 import '../section-editor/component-config/door-config.js';
 import '../section-editor/component-config/drawer-config.js';
@@ -100,6 +96,16 @@ export class SectionProperties extends LitElement {
       grid-column: span 2;
     }
 
+    @media (max-width: 480px) {
+      .form-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .form-group.full-width {
+        grid-column: span 1;
+      }
+    }
+
     sl-input::part(form-control-label),
     sl-select::part(form-control-label) {
       font-size: 0.75rem;
@@ -120,22 +126,6 @@ export class SectionProperties extends LitElement {
       font-weight: 500;
       color: var(--sl-color-neutral-600);
       margin-bottom: 0.5rem;
-    }
-
-    .actions {
-      margin-top: 1rem;
-      display: flex;
-      flex-direction: column;
-      gap: 0.5rem;
-    }
-
-    .action-row {
-      display: flex;
-      gap: 0.5rem;
-    }
-
-    sl-divider {
-      --spacing: 1rem;
     }
 
     .danger-zone {
@@ -342,21 +332,6 @@ export class SectionProperties extends LitElement {
     }
   }
 
-  private handleAddRow(): void {
-    if (!this.selectedSection) return;
-    addSectionRow(this.selectedSection.sectionIndex);
-  }
-
-  private handleConvertToComposite(): void {
-    if (!this.selectedSection) return;
-    convertToComposite(this.selectedSection.sectionIndex);
-  }
-
-  private handleConvertToSimple(): void {
-    if (!this.selectedSection) return;
-    convertToSimple(this.selectedSection.sectionIndex);
-  }
-
   private handleDeleteSection(): void {
     if (!this.selectedSection) return;
     removeSection(this.selectedSection.sectionIndex);
@@ -485,7 +460,6 @@ export class SectionProperties extends LitElement {
     const sectionTypes = Object.entries(SECTION_TYPE_LABELS) as [SectionType, string][];
     const sectionType = section.section_type || 'open';
     const showShelves = !isComposite && (sectionType === 'open' || sectionType === 'doored');
-    const canConvertToSimple = isComposite && section.rows?.length === 1;
 
     return html`
       <div class="properties-header">
@@ -560,37 +534,6 @@ export class SectionProperties extends LitElement {
       ` : null}
 
       ${!isComposite ? this.renderComponentConfig(sectionType, section.component_config) : null}
-
-      <div class="actions">
-        ${isComposite ? html`
-          <sl-button
-            size="small"
-            @click=${this.handleAddRow}
-          >
-            <sl-icon slot="prefix" name="plus-lg"></sl-icon>
-            Add Row
-          </sl-button>
-          ${canConvertToSimple ? html`
-            <sl-button
-              size="small"
-              variant="default"
-              @click=${this.handleConvertToSimple}
-            >
-              <sl-icon slot="prefix" name="arrow-down-up"></sl-icon>
-              Convert to Simple Section
-            </sl-button>
-          ` : null}
-        ` : html`
-          <sl-button
-            size="small"
-            variant="default"
-            @click=${this.handleConvertToComposite}
-          >
-            <sl-icon slot="prefix" name="layers"></sl-icon>
-            Convert to Composite (add rows)
-          </sl-button>
-        `}
-      </div>
 
       <div class="danger-zone">
         <div class="danger-zone-title">Danger Zone</div>

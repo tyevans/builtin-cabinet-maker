@@ -334,6 +334,95 @@ async def export_assembly(
     )
 
 
+@router.post("/assembly-from-config")
+async def export_assembly_from_config(
+    request: GenerateFromConfigRequest,
+    command: GenerateCommandDep,
+) -> Response:
+    """Export assembly instructions from full configuration.
+
+    This endpoint accepts the full cabinet configuration and returns assembly
+    instructions that match exactly what the backend generates, including proper
+    section widths and all configuration details.
+
+    Args:
+        request: Request containing full cabinet configuration.
+        command: Injected GenerateLayoutCommand.
+
+    Returns:
+        Markdown content as text response.
+    """
+    from cabinets.application.config import (
+        config_to_all_section_specs,
+        config_to_dtos,
+        config_to_room,
+        config_to_section_specs,
+        config_to_zone_configs,
+        load_config_from_dict,
+    )
+
+    try:
+        config = load_config_from_dict(request.config)
+
+        # Check for room configuration
+        if config.room is not None:
+            room = config_to_room(config)
+            if room is None:
+                raise HTTPException(
+                    status_code=422,
+                    detail={
+                        "error": "Invalid room configuration",
+                        "error_type": "config_error",
+                    },
+                )
+            room_section_specs = config_to_all_section_specs(config)
+            _, params_input = config_to_dtos(config)
+            room_output = command.execute_room_layout(
+                room, room_section_specs, params_input
+            )
+
+            if not room_output.is_valid:
+                raise CabinetGenerationError(room_output.errors)
+
+            exporter_class = ExporterRegistry.get("assembly")
+            exporter = exporter_class()
+            markdown_content = exporter.export_string(room_output)
+
+            return Response(
+                content=markdown_content,
+                media_type="text/markdown",
+            )
+
+        # Single-cabinet mode
+        wall_input, params_input = config_to_dtos(config)
+        section_specs = config_to_section_specs(config)
+        zone_configs = config_to_zone_configs(config)
+        cabinet_output = command.execute(
+            wall_input,
+            params_input,
+            section_specs=section_specs,
+            zone_configs=zone_configs,
+        )
+
+        if not cabinet_output.is_valid:
+            raise CabinetGenerationError(cabinet_output.errors)
+
+        exporter_class = ExporterRegistry.get("assembly")
+        exporter = exporter_class()
+        markdown_content = exporter.export_string(cabinet_output)
+
+        return Response(
+            content=markdown_content,
+            media_type="text/markdown",
+        )
+
+    except ValueError as e:
+        raise HTTPException(
+            status_code=422,
+            detail={"error": str(e), "error_type": "config_error"},
+        ) from e
+
+
 @router.post("/bom")
 async def export_bom(
     request: ExportRequest,
@@ -357,6 +446,93 @@ async def export_bom(
         content=bom_content,
         media_type="text/markdown",
     )
+
+
+@router.post("/bom-from-config")
+async def export_bom_from_config(
+    request: GenerateFromConfigRequest,
+    command: GenerateCommandDep,
+) -> Response:
+    """Export bill of materials from full configuration.
+
+    This endpoint accepts the full cabinet configuration and returns BOM
+    that matches exactly what the backend generates, including proper
+    section widths and all configuration details.
+
+    Args:
+        request: Request containing full cabinet configuration.
+        command: Injected GenerateLayoutCommand.
+
+    Returns:
+        BOM content as markdown response.
+    """
+    from cabinets.application.config import (
+        config_to_all_section_specs,
+        config_to_dtos,
+        config_to_room,
+        config_to_section_specs,
+        config_to_zone_configs,
+        load_config_from_dict,
+    )
+
+    try:
+        config = load_config_from_dict(request.config)
+
+        # Check for room configuration
+        if config.room is not None:
+            room = config_to_room(config)
+            if room is None:
+                raise HTTPException(
+                    status_code=422,
+                    detail={
+                        "error": "Invalid room configuration",
+                        "error_type": "config_error",
+                    },
+                )
+            room_section_specs = config_to_all_section_specs(config)
+            _, params_input = config_to_dtos(config)
+            room_output = command.execute_room_layout(
+                room, room_section_specs, params_input
+            )
+
+            if not room_output.is_valid:
+                raise CabinetGenerationError(room_output.errors)
+
+            exporter = BomGenerator(output_format="markdown")
+            bom_content = exporter.export_string(room_output)
+
+            return Response(
+                content=bom_content,
+                media_type="text/markdown",
+            )
+
+        # Single-cabinet mode
+        wall_input, params_input = config_to_dtos(config)
+        section_specs = config_to_section_specs(config)
+        zone_configs = config_to_zone_configs(config)
+        cabinet_output = command.execute(
+            wall_input,
+            params_input,
+            section_specs=section_specs,
+            zone_configs=zone_configs,
+        )
+
+        if not cabinet_output.is_valid:
+            raise CabinetGenerationError(cabinet_output.errors)
+
+        exporter = BomGenerator(output_format="markdown")
+        bom_content = exporter.export_string(cabinet_output)
+
+        return Response(
+            content=bom_content,
+            media_type="text/markdown",
+        )
+
+    except ValueError as e:
+        raise HTTPException(
+            status_code=422,
+            detail={"error": str(e), "error_type": "config_error"},
+        ) from e
 
 
 class SheetLayoutSchema(BaseModel):
@@ -444,6 +620,127 @@ async def export_cut_layouts(
         sheets=sheets,
         combined_svg=combined_svg,
     )
+
+
+def _render_cut_layouts(cut_list: list) -> CutLayoutsResponseSchema:
+    """Helper to render cut layouts from a cut list."""
+    bin_packing_config = BinPackingConfig(enabled=True)
+    bin_packing_service = BinPackingService(bin_packing_config)
+
+    try:
+        packing_result = bin_packing_service.optimize_cut_list(cut_list)
+    except ValueError as e:
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "error": f"Bin packing failed: {e}",
+                "error_type": "bin_packing_error",
+            },
+        )
+
+    renderer = CutDiagramRenderer(
+        scale=8.0,
+        show_dimensions=True,
+        show_labels=True,
+        show_grain=False,
+        use_panel_colors=True,
+    )
+
+    individual_svgs = renderer.render_all_svg(packing_result)
+    combined_svg = renderer.render_combined_svg(packing_result)
+
+    sheets = []
+    for i, layout in enumerate(packing_result.layouts):
+        sheets.append(
+            SheetLayoutSchema(
+                sheet_index=i,
+                piece_count=layout.piece_count,
+                waste_percentage=layout.waste_percentage,
+                svg=individual_svgs[i],
+            )
+        )
+
+    return CutLayoutsResponseSchema(
+        total_sheets=packing_result.total_sheets,
+        total_waste_percentage=packing_result.total_waste_percentage,
+        sheets=sheets,
+        combined_svg=combined_svg,
+    )
+
+
+@router.post("/cut-layouts-from-config", response_model=CutLayoutsResponseSchema)
+async def export_cut_layouts_from_config(
+    request: GenerateFromConfigRequest,
+    command: GenerateCommandDep,
+) -> CutLayoutsResponseSchema:
+    """Export cut layout SVGs from full configuration.
+
+    This endpoint accepts the full cabinet configuration and returns cut layouts
+    that match exactly what the backend generates, including proper section widths
+    and all configuration details.
+
+    Args:
+        request: Request containing full cabinet configuration.
+        command: Injected GenerateLayoutCommand.
+
+    Returns:
+        Cut layout response with individual sheet SVGs and combined view.
+    """
+    from cabinets.application.config import (
+        config_to_all_section_specs,
+        config_to_dtos,
+        config_to_room,
+        config_to_section_specs,
+        config_to_zone_configs,
+        load_config_from_dict,
+    )
+
+    try:
+        config = load_config_from_dict(request.config)
+
+        # Check for room configuration
+        if config.room is not None:
+            room = config_to_room(config)
+            if room is None:
+                raise HTTPException(
+                    status_code=422,
+                    detail={
+                        "error": "Invalid room configuration",
+                        "error_type": "config_error",
+                    },
+                )
+            room_section_specs = config_to_all_section_specs(config)
+            _, params_input = config_to_dtos(config)
+            room_output = command.execute_room_layout(
+                room, room_section_specs, params_input
+            )
+
+            if not room_output.is_valid:
+                raise CabinetGenerationError(room_output.errors)
+
+            return _render_cut_layouts(room_output.cut_list)
+
+        # Single-cabinet mode
+        wall_input, params_input = config_to_dtos(config)
+        section_specs = config_to_section_specs(config)
+        zone_configs = config_to_zone_configs(config)
+        cabinet_output = command.execute(
+            wall_input,
+            params_input,
+            section_specs=section_specs,
+            zone_configs=zone_configs,
+        )
+
+        if not cabinet_output.is_valid:
+            raise CabinetGenerationError(cabinet_output.errors)
+
+        return _render_cut_layouts(cabinet_output.cut_list)
+
+    except ValueError as e:
+        raise HTTPException(
+            status_code=422,
+            detail={"error": str(e), "error_type": "config_error"},
+        ) from e
 
 
 @router.post("/{format_name}")

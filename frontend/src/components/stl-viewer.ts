@@ -10,6 +10,7 @@ import '@shoelace-style/shoelace/dist/components/spinner/spinner.js';
 import '@shoelace-style/shoelace/dist/components/icon/icon.js';
 import '@shoelace-style/shoelace/dist/components/icon-button/icon-button.js';
 import '@shoelace-style/shoelace/dist/components/tooltip/tooltip.js';
+import '@shoelace-style/shoelace/dist/components/button/button.js';
 
 // Material for the cabinet
 const CABINET_MATERIAL = new THREE.MeshStandardMaterial({
@@ -115,6 +116,36 @@ export class StlViewer extends LitElement {
       font-size: 0.875rem;
     }
 
+    .error-state {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: rgba(255, 255, 255, 0.95);
+      z-index: 10;
+      padding: 1rem;
+      text-align: center;
+    }
+
+    .error-state.hidden {
+      display: none;
+    }
+
+    .error-state-icon {
+      font-size: 2.5rem;
+      color: var(--sl-color-danger-600);
+      margin-bottom: 0.75rem;
+    }
+
+    .error-state-text {
+      color: var(--sl-color-neutral-700);
+      font-size: 0.875rem;
+      margin-bottom: 1rem;
+      max-width: 80%;
+    }
+
     /* Hide controls hint on mobile - touch is intuitive */
     .controls-hint {
       display: none;
@@ -166,6 +197,9 @@ export class StlViewer extends LitElement {
 
   @state()
   private hasModel = false;
+
+  @state()
+  private loadError: string | null = null;
 
   @state()
   private cabinetState: CabinetState = cabinetStore.getState();
@@ -265,12 +299,15 @@ export class StlViewer extends LitElement {
 
   private async loadStlFromBackend(): Promise<void> {
     this.isLoading = true;
+    this.loadError = null;
 
     try {
       const stlData = await api.getStlFromConfig(this.cabinetState.config);
       this.updateCabinetFromStl(stlData);
     } catch (error) {
       console.warn('Failed to load STL from backend:', error);
+      this.loadError = error instanceof Error ? error.message : 'Failed to load 3D model';
+      this.hasModel = false;
     } finally {
       this.isLoading = false;
     }
@@ -361,7 +398,8 @@ export class StlViewer extends LitElement {
   }
 
   render() {
-    const showEmptyState = !this.hasModel && !this.isLoading;
+    const showEmptyState = !this.hasModel && !this.isLoading && !this.loadError;
+    const showErrorState = !this.isLoading && this.loadError;
 
     return html`
       <div class="canvas-container"></div>
@@ -382,6 +420,15 @@ export class StlViewer extends LitElement {
       <div class="empty-state ${showEmptyState ? '' : 'hidden'}">
         <sl-icon name="box" class="empty-state-icon"></sl-icon>
         <span class="empty-state-text">Configure cabinet to see 3D preview</span>
+      </div>
+
+      <div class="error-state ${showErrorState ? '' : 'hidden'}">
+        <sl-icon name="exclamation-triangle" class="error-state-icon"></sl-icon>
+        <span class="error-state-text">${this.loadError}</span>
+        <sl-button variant="primary" size="small" @click=${this.loadStlFromBackend}>
+          <sl-icon slot="prefix" name="arrow-clockwise"></sl-icon>
+          Retry
+        </sl-button>
       </div>
 
       <div class="controls-hint">

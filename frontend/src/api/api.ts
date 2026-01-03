@@ -191,14 +191,12 @@ export const api = {
    * Get assembly instructions as markdown text
    */
   async getAssemblyInstructions(config: CabinetConfig): Promise<string> {
-    const exportRequest = configToExportRequest(config);
-
-    const response = await fetch(`${API_BASE_URL}/export/assembly`, {
+    const response = await fetch(`${API_BASE_URL}/export/assembly-from-config`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(exportRequest),
+      body: JSON.stringify({ config }),
     });
 
     if (!response.ok) {
@@ -213,14 +211,12 @@ export const api = {
    * Get bill of materials as text
    */
   async getBillOfMaterials(config: CabinetConfig): Promise<string> {
-    const exportRequest = configToExportRequest(config);
-
-    const response = await fetch(`${API_BASE_URL}/export/bom`, {
+    const response = await fetch(`${API_BASE_URL}/export/bom-from-config`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(exportRequest),
+      body: JSON.stringify({ config }),
     });
 
     if (!response.ok) {
@@ -235,14 +231,12 @@ export const api = {
    * Get cut layout SVGs showing bin-packed pieces on 4x8 sheets
    */
   async getCutLayouts(config: CabinetConfig): Promise<CutLayoutsResponse> {
-    const exportRequest = configToExportRequest(config);
-
-    const response = await fetch(`${API_BASE_URL}/export/cut-layouts`, {
+    const response = await fetch(`${API_BASE_URL}/export/cut-layouts-from-config`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(exportRequest),
+      body: JSON.stringify({ config }),
     });
 
     if (!response.ok) {

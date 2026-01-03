@@ -17,7 +17,7 @@ from .registry import component_registry
 from .results import GenerationResult, HardwareItem, ValidationResult
 
 # Minimum cubby size in inches
-MIN_CUBBY_SIZE = 6.0
+MIN_CUBBY_SIZE = 1.0
 
 # Maximum rows/columns allowed
 MAX_GRID_SIZE = 10

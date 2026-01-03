@@ -9,6 +9,8 @@ import {
 } from '@/api/types';
 
 import '@shoelace-style/shoelace/dist/components/icon/icon.js';
+import '@shoelace-style/shoelace/dist/components/icon-button/icon-button.js';
+import '@shoelace-style/shoelace/dist/components/tooltip/tooltip.js';
 
 export type TreeNodeType = 'section' | 'row';
 
@@ -126,6 +128,41 @@ export class TreeNode extends LitElement {
     .drag-handle:active {
       cursor: grabbing;
     }
+
+    .inline-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.125rem;
+      opacity: 0;
+      transition: opacity 0.1s ease;
+    }
+
+    .tree-node:hover .inline-actions {
+      opacity: 1;
+    }
+
+    .inline-actions sl-icon-button::part(base) {
+      padding: 0.125rem;
+      font-size: 0.75rem;
+    }
+
+    .inline-actions sl-icon-button.add-row::part(base) {
+      color: var(--sl-color-success-600);
+    }
+
+    .inline-actions sl-icon-button.add-row::part(base):hover {
+      color: var(--sl-color-success-700);
+      background: var(--sl-color-success-100);
+    }
+
+    .inline-actions sl-icon-button.delete::part(base) {
+      color: var(--sl-color-neutral-400);
+    }
+
+    .inline-actions sl-icon-button.delete::part(base):hover {
+      color: var(--sl-color-danger-600);
+      background: var(--sl-color-danger-100);
+    }
   `;
 
   @property({ type: Object })
@@ -198,6 +235,24 @@ export class TreeNode extends LitElement {
   private handleExpandClick(e: MouseEvent): void {
     e.stopPropagation();
     this.dispatchEvent(new CustomEvent('node-toggle', {
+      detail: this.data,
+      bubbles: true,
+      composed: true,
+    }));
+  }
+
+  private handleAddRow(e: MouseEvent): void {
+    e.stopPropagation();
+    this.dispatchEvent(new CustomEvent('add-row', {
+      detail: this.data,
+      bubbles: true,
+      composed: true,
+    }));
+  }
+
+  private handleDelete(e: MouseEvent): void {
+    e.stopPropagation();
+    this.dispatchEvent(new CustomEvent('delete-node', {
       detail: this.data,
       bubbles: true,
       composed: true,
@@ -293,6 +348,25 @@ export class TreeNode extends LitElement {
         ${isRow && nodeType !== 'composite' ? html`
           <span class="node-badge ${nodeType}">${SECTION_TYPE_LABELS[nodeType as SectionType]}</span>
         ` : null}
+
+        <span class="inline-actions">
+          ${!isRow ? html`
+            <sl-tooltip content="Add row">
+              <sl-icon-button
+                class="add-row"
+                name="plus-circle"
+                @click=${this.handleAddRow}
+              ></sl-icon-button>
+            </sl-tooltip>
+          ` : null}
+          <sl-tooltip content="${isRow ? 'Delete row' : 'Delete section'}">
+            <sl-icon-button
+              class="delete"
+              name="x-circle"
+              @click=${this.handleDelete}
+            ></sl-icon-button>
+          </sl-tooltip>
+        </span>
 
         <sl-icon class="drag-handle" name="grip-vertical"></sl-icon>
       </div>

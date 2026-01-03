@@ -428,17 +428,18 @@ export interface ScallopSpec {
 // Component Configuration Types
 // ============================================================================
 
-export type DoorStyle = 'overlay' | 'inset' | 'partial';
+export type DoorStyle = 'door.hinged.overlay' | 'door.hinged.inset' | 'door.hinged.partial';
+export type DrawerStyle = 'drawer.standard' | 'drawer.file';
 export type SlideType = 'side_mount' | 'undermount' | 'center_mount';
 export type FrontStyle = 'overlay' | 'inset';
 export type HandlePosition = 'upper' | 'lower';
 export type HingeSide = 'left' | 'right';
-export type CubbyStyle = 'uniform' | 'variable';
+export type CubbyStyle = 'cubby.uniform' | 'cubby.variable';
 
 export const DOOR_STYLE_LABELS: Record<DoorStyle, string> = {
-  overlay: 'Overlay',
-  inset: 'Inset',
-  partial: 'Partial Overlay',
+  'door.hinged.overlay': 'Overlay',
+  'door.hinged.inset': 'Inset',
+  'door.hinged.partial': 'Partial Overlay',
 };
 
 export const SLIDE_TYPE_LABELS: Record<SlideType, string> = {
@@ -473,7 +474,7 @@ export interface DoorComponentConfig {
 }
 
 export interface DrawerComponentConfig {
-  component?: 'standard' | 'file';
+  component?: DrawerStyle;
   count: number;
   front_height?: number;
   slide_type?: SlideType;
@@ -494,7 +495,7 @@ export interface CubbyComponentConfig {
 export type ComponentConfig = DoorComponentConfig | DrawerComponentConfig | CubbyComponentConfig | Record<string, unknown>;
 
 export const DEFAULT_DOOR_CONFIG: DoorComponentConfig = {
-  component: 'overlay',
+  component: 'door.hinged.overlay',
   count: 1,
   hinge_side: 'left',
   reveal: 0.125,
@@ -504,7 +505,7 @@ export const DEFAULT_DOOR_CONFIG: DoorComponentConfig = {
 };
 
 export const DEFAULT_DRAWER_CONFIG: DrawerComponentConfig = {
-  component: 'standard',
+  component: 'drawer.standard',
   count: 3,
   slide_type: 'side_mount',
   soft_close: true,
@@ -512,7 +513,7 @@ export const DEFAULT_DRAWER_CONFIG: DrawerComponentConfig = {
 };
 
 export const DEFAULT_CUBBY_CONFIG: CubbyComponentConfig = {
-  component: 'uniform',
+  component: 'cubby.uniform',
   rows: 3,
   columns: 4,
   edge_band_front: true,

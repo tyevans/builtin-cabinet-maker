@@ -260,8 +260,12 @@ export class AppShell extends LitElement {
     this.drawerOpen = true;
   }
 
-  private closeDrawer(): void {
-    this.drawerOpen = false;
+  private handleDrawerHide(e: Event): void {
+    // Only close if the event is from the drawer itself, not from nested sl-details
+    const target = e.target as HTMLElement;
+    if (target.tagName === 'SL-DRAWER') {
+      this.drawerOpen = false;
+    }
   }
 
   render() {
@@ -293,7 +297,7 @@ export class AppShell extends LitElement {
       <sl-drawer
         label="Configuration"
         ?open=${this.drawerOpen}
-        @sl-hide=${this.closeDrawer}
+        @sl-hide=${this.handleDrawerHide}
       >
         <config-sidebar></config-sidebar>
       </sl-drawer>

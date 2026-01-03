@@ -616,9 +616,9 @@ class LayoutCalculator:
             )
 
             # Generate primary component based on row's section type
-            # Note: component_config may have a "component" field that's a style (e.g., "overlay")
-            # not a full component ID (e.g., "door.hinged.overlay"), so we always resolve from section_type
-            primary_component_id = self._resolve_component_id(row_spec.section_type)
+            primary_component_id = row_spec.component_config.get(
+                "component", self._resolve_component_id(row_spec.section_type)
+            )
 
             if (
                 shelf_count > 0

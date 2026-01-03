@@ -154,7 +154,11 @@ export function setGenerating(isGenerating: boolean): void {
 }
 
 export function setError(error: string): void {
-  cabinetStore.setState({ lastError: error, isGenerating: false });
+  // Clear layout on error so that when the error is fixed and a new layout generates,
+  // layoutChanged will be true and dependent components (like STL viewer) will reload.
+  // Also reset isDirty so that subsequent config changes trigger regeneration
+  // (the app-shell only regenerates when isDirty transitions from false to true)
+  cabinetStore.setState({ lastError: error, isGenerating: false, layout: null, isDirty: false });
 }
 
 export function loadConfig(config: CabinetConfig): void {
@@ -198,6 +202,38 @@ export function setRoom(room: RoomSpec | null): void {
     isDirty: true,
     lastError: null,
   }));
+}
+
+/**
+ * Enables room geometry and assigns all existing sections to the first wall (wall 0).
+ * The first wall has angle=0 (required by domain validation), subsequent walls default to 90.
+ */
+export function enableRoomGeometry(): void {
+  cabinetStore.setState(prev => {
+    // Assign all existing sections to wall 0
+    const currentSections = prev.config.cabinet.sections || [];
+    const updatedSections = currentSections.map(section => ({
+      ...section,
+      wall: 0,
+    }));
+
+    return {
+      config: {
+        ...prev.config,
+        room: {
+          name: 'Room',
+          walls: [{ length: 120, height: 96, angle: 0 }],
+          is_closed: false,
+        },
+        cabinet: {
+          ...prev.config.cabinet,
+          sections: updatedSections,
+        },
+      },
+      isDirty: true,
+      lastError: null,
+    };
+  });
 }
 
 export function addWallSegment(segment: WallSegmentSpec): void {
@@ -459,18 +495,41 @@ export function addSectionRow(sectionIndex: number): void {
     const section = currentSections[sectionIndex];
     if (!section) return prev;
 
-    const newRow: SectionRowSpec = {
-      height: 'fill',
-      section_type: 'open',
-      shelves: 3,
-    };
+    const isAlreadyComposite = Array.isArray(section.rows) && section.rows.length > 0;
+
+    let newRows: SectionRowSpec[];
+
+    if (isAlreadyComposite) {
+      // Already composite - just add a new row
+      const newRow: SectionRowSpec = {
+        height: 'fill',
+        section_type: 'open',
+        shelves: 3,
+      };
+      newRows = [...section.rows!, newRow];
+    } else {
+      // Simple section - convert existing content to first row and add a second row
+      const existingAsRow: SectionRowSpec = {
+        height: 'fill',
+        section_type: section.section_type || 'open',
+        shelves: section.shelves,
+        component_config: section.component_config as Record<string, unknown> | undefined,
+      };
+      const newRow: SectionRowSpec = {
+        height: 'fill',
+        section_type: 'open',
+        shelves: 3,
+      };
+      newRows = [existingAsRow, newRow];
+    }
 
     const updatedSection: SectionSpec = {
       ...section,
-      rows: [...(section.rows || []), newRow],
+      rows: newRows,
       // Clear top-level section_type/shelves when converting to composite
       section_type: undefined,
       shelves: undefined,
+      component_config: undefined,
     };
 
     const updatedSections = currentSections.map((s, i) =>
@@ -496,19 +555,49 @@ export function removeSectionRow(sectionIndex: number, rowIndex: number): void {
 
     const updatedRows = section.rows.filter((_, i) => i !== rowIndex);
 
-    let updatedSection: SectionSpec;
     if (updatedRows.length === 0) {
-      // Convert back to simple section
-      updatedSection = {
-        ...section,
-        rows: undefined,
-        section_type: 'open',
-        shelves: 3,
+      // No rows left - remove the section entirely
+      const updatedSections = currentSections.filter((_, i) => i !== sectionIndex);
+
+      return {
+        config: {
+          ...prev.config,
+          cabinet: { ...prev.config.cabinet, sections: updatedSections },
+        },
+        isDirty: true,
+        lastError: null,
+        // Clear selection since section was removed
+        selectedSection: null,
       };
-    } else {
-      updatedSection = { ...section, rows: updatedRows };
     }
 
+    if (updatedRows.length === 1) {
+      // One row left - convert back to simple section with that row's properties
+      const remainingRow = updatedRows[0];
+      const updatedSection: SectionSpec = {
+        ...section,
+        rows: undefined,
+        section_type: remainingRow.section_type,
+        shelves: remainingRow.shelves,
+        component_config: remainingRow.component_config,
+      };
+
+      const updatedSections = currentSections.map((s, i) =>
+        i === sectionIndex ? updatedSection : s
+      );
+
+      return {
+        config: {
+          ...prev.config,
+          cabinet: { ...prev.config.cabinet, sections: updatedSections },
+        },
+        isDirty: true,
+        lastError: null,
+      };
+    }
+
+    // Multiple rows still remain - just update the rows
+    const updatedSection: SectionSpec = { ...section, rows: updatedRows };
     const updatedSections = currentSections.map((s, i) =>
       i === sectionIndex ? updatedSection : s
     );
